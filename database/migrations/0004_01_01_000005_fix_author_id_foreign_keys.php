@@ -9,16 +9,19 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('projects', function (Blueprint $table) {
+            $table->unsignedBigInteger('author_id')->nullable()->change();
             $table->dropForeign(['author_id']);
             $table->foreign('author_id')->references('id')->on('users')->nullOnDelete();
         });
 
         Schema::table('tasks', function (Blueprint $table) {
+            $table->unsignedBigInteger('author_id')->nullable()->change();
             $table->dropForeign(['author_id']);
             $table->foreign('author_id')->references('id')->on('users')->nullOnDelete();
         });
 
         Schema::table('comments', function (Blueprint $table) {
+            $table->unsignedBigInteger('author_id')->nullable()->change();
             $table->dropForeign(['author_id']);
             $table->foreign('author_id')->references('id')->on('users')->nullOnDelete();
         });
@@ -28,16 +31,19 @@ return new class extends Migration
     {
         Schema::table('projects', function (Blueprint $table) {
             $table->dropForeign(['author_id']);
+            $table->unsignedBigInteger('author_id')->nullable(false)->change();
             $table->foreign('author_id')->references('id')->on('users')->cascadeOnDelete();
         });
 
         Schema::table('tasks', function (Blueprint $table) {
             $table->dropForeign(['author_id']);
+            $table->unsignedBigInteger('author_id')->nullable(false)->change();
             $table->foreign('author_id')->references('id')->on('users')->cascadeOnDelete();
         });
 
         Schema::table('comments', function (Blueprint $table) {
             $table->dropForeign(['author_id']);
+            $table->unsignedBigInteger('author_id')->nullable(false)->change();
             $table->foreign('author_id')->references('id')->on('users')->cascadeOnDelete();
         });
     }
