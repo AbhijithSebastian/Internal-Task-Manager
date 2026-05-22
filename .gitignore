@@ -18,3 +18,10 @@
 npm-debug.log
 yarn-error.log
 coverage
+
+# Cleanup junk
+database/database.sqlite
+test.php
+validate_app.php
+AGENTS.md
+e2e/debug*.cjs
