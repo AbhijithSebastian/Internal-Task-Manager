@@ -27,6 +27,18 @@ class Task extends Model implements HasMedia
         HasAttachments,
         LogsActivity;
 
+    public ?int $tempAssigneeId = null;
+
+    protected static function booted()
+    {
+        static::saved(function ($task) {
+            if ($task->tempAssigneeId !== null) {
+                $task->assignees()->sync([$task->tempAssigneeId]);
+                $task->tempAssigneeId = null;
+            }
+        });
+    }
+
     protected $fillable = [
         'title',
         'description',
@@ -38,6 +50,7 @@ class Task extends Model implements HasMedia
         'estimated_hours',
         'project_id',
         'author_id',
+        'assignee_id',
         'assignee_ids',
         'parent_id',
         'requires_approval',
@@ -70,6 +83,16 @@ class Task extends Model implements HasMedia
     public function setAssigneeIdsAttribute($value)
     {
         // Handled in TaskService sync
+    }
+
+    public function getAssigneeIdAttribute()
+    {
+        return $this->assignees->first()?->id;
+    }
+
+    public function setAssigneeIdAttribute($value)
+    {
+        $this->tempAssigneeId = $value ? (int) $value : null;
     }
 
     protected $appends = [

@@ -63,8 +63,8 @@ class ReportService implements ReportServiceInterface
             ->withCount(['tasks as completed_tasks' => fn ($q) => $q
                 ->whereNull('parent_id')
                 ->where('status', TaskStatus::Done)
-                ->when($filters['date_from'] ?? null, fn ($q, $d) => $q->whereDate('updated_at', '>=', $d))
-                ->when($filters['date_to'] ?? null, fn ($q, $d) => $q->whereDate('updated_at', '<=', $d))
+                ->when($filters['date_from'] ?? null, fn ($q, $d) => $q->whereDate('tasks.updated_at', '>=', $d))
+                ->when($filters['date_to'] ?? null, fn ($q, $d) => $q->whereDate('tasks.updated_at', '<=', $d))
             ]);
 
         if ($projectIds = $filters['project_ids'] ?? null) {
@@ -225,16 +225,16 @@ class ReportService implements ReportServiceInterface
         }
 
         if ($dateFrom = $filters['date_from'] ?? null) {
-            $query->whereDate('date', '>=', $dateFrom);
+            $query->whereDate('meeting_date', '>=', $dateFrom);
         }
         if ($dateTo = $filters['date_to'] ?? null) {
-            $query->whereDate('date', '<=', $dateTo);
+            $query->whereDate('meeting_date', '<=', $dateTo);
         }
 
-        return $query->latest('date')->get()->map(fn ($l) => [
+        return $query->latest('meeting_date')->get()->map(fn ($l) => [
             'meeting_id' => $l->id,
             'project_name' => $l->project?->name ?? 'N/A',
-            'date' => $l->date->format('Y-m-d'),
+            'date' => $l->meeting_date?->format('Y-m-d'),
             'title' => $l->title,
             'attendees' => is_array($l->attendees) ? implode(', ', $l->attendees) : ($l->attendees ?? ''),
             'summary' => $l->summary,

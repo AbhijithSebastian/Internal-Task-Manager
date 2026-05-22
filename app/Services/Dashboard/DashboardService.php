@@ -89,14 +89,14 @@ class DashboardService
             'delayed_tasks' => Task::whereIn('project_id', $projectIds)
                 ->whereNull('parent_id')
                 ->overdue()
-                ->with('project', 'assignee')
+                ->with('project', 'assignees')
                 ->orderBy('due_date')
                 ->limit(10)
                 ->get(),
             'pending_approvals' => Task::whereIn('project_id', $projectIds)
                 ->where('requires_approval', true)
                 ->where('status', TaskStatus::InReview)
-                ->with('project', 'assignee', 'author')
+                ->with('project', 'assignees', 'author')
                 ->latest()
                 ->limit(10)
                 ->get(),
@@ -118,13 +118,13 @@ class DashboardService
                 ->get(),
             'review_tasks' => Task::whereIn('project_id', $projectIds)
                 ->where('status', TaskStatus::InReview)
-                ->with('project', 'assignee')
+                ->with('project', 'assignees')
                 ->latest()
                 ->limit(10)
                 ->get(),
             'blocked_tasks' => Task::whereIn('project_id', $projectIds)
                 ->where('status', TaskStatus::Blocked)
-                ->with('project', 'assignee')
+                ->with('project', 'assignees')
                 ->latest()
                 ->limit(10)
                 ->get(),

@@ -52,7 +52,7 @@ class ProjectService extends BaseService
             'members',
             'projectManager',
             'teamLead',
-            'tasks' => fn ($q) => $q->whereNull('parent_id')->with(['assignee', 'author'])->latest(),
+            'tasks' => fn ($q) => $q->whereNull('parent_id')->with(['assignees', 'author'])->latest(),
         ])
             ->withCount(['tasks', 'members'])
             ->withTrashed()
@@ -256,7 +256,7 @@ class ProjectService extends BaseService
         $statuses = ['backlog', 'todo', 'in_progress', 'in_review', 'done'];
         $tasks = $project->tasks()
             ->whereNull('parent_id')
-            ->with(['assignee', 'author'])
+            ->with(['assignees', 'author'])
             ->get();
 
         $columns = [];

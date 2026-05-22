@@ -12,8 +12,9 @@ class MeetingLog extends Model
 
     protected $fillable = [
         'project_id',
+        'author_id',
         'title',
-        'date',
+        'meeting_date',
         'attendees',
         'summary',
         'decisions_taken',
@@ -23,12 +24,17 @@ class MeetingLog extends Model
     ];
 
     protected $casts = [
-        'date' => 'date',
+        'meeting_date' => 'date',
         'attendees' => 'array',
     ];
 
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
+    }
+
+    public function author(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'author_id');
     }
 }
