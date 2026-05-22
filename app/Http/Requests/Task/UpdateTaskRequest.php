@@ -25,6 +25,7 @@ class UpdateTaskRequest extends FormRequest
             'due_date' => ['nullable', 'date'],
             'employee_eta' => ['nullable', 'date'],
             'estimated_hours' => ['nullable', 'numeric', 'min:0', 'max:9999'],
+            'assignee_id' => ['nullable', 'exists:users,id'],
             'assignee_ids' => ['nullable', 'array'],
             'assignee_ids.*' => ['exists:users,id'],
             'dependency_ids' => ['nullable', 'array'],

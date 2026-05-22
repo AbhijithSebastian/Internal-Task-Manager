@@ -92,11 +92,60 @@
                             </div>
 
                             <div>
-                                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Assignee</label>
-                                <select v-model="form.assignee_id" class="input w-full text-sm">
-                                    <option :value="null">Unassigned</option>
-                                    <option v-for="m in projectMembers" :key="m.id" :value="m.id">{{ m.name }}</option>
-                                </select>
+                                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Assignees</label>
+                                <div class="relative" ref="assigneeContainer">
+                                    <button 
+                                        type="button" 
+                                        class="input w-full text-left text-sm flex items-center justify-between min-h-[38px] py-1.5 px-3 bg-white"
+                                        @click="isAssigneeDropdownOpen = !isAssigneeDropdownOpen"
+                                    >
+                                        <div class="flex flex-wrap gap-1.5">
+                                            <span v-slot:default v-if="form.assignee_ids.length === 0" class="text-gray-400">Unassigned</span>
+                                            <span 
+                                                v-for="id in form.assignee_ids" 
+                                                :key="id" 
+                                                class="inline-flex items-center gap-1 rounded bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700 hover:bg-gray-200"
+                                            >
+                                                {{ getMemberName(id) }}
+                                                <button 
+                                                    type="button" 
+                                                    class="text-gray-400 hover:text-gray-600 focus:outline-none ml-1 text-sm font-bold" 
+                                                    @click.stop="toggleAssignee(id)"
+                                                >
+                                                    &times;
+                                                </button>
+                                            </span>
+                                        </div>
+                                        <svg class="h-4 w-4 text-gray-400 ml-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </button>
+
+                                    <!-- Dropdown Menu -->
+                                    <div 
+                                        v-if="isAssigneeDropdownOpen" 
+                                        class="absolute z-30 mt-1 w-full rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none max-h-60 overflow-y-auto p-1 space-y-1"
+                                    >
+                                        <div v-if="projectMembers.length === 0" class="text-xs text-gray-400 p-2 text-center">
+                                            No members available
+                                        </div>
+                                        <button 
+                                            v-for="m in projectMembers" 
+                                            :key="m.id" 
+                                            type="button"
+                                            class="w-full text-left px-3 py-2 text-sm rounded-md flex items-center justify-between hover:bg-gray-50 focus:bg-gray-50 focus:outline-none"
+                                            @click="toggleAssignee(m.id)"
+                                        >
+                                            <span class="font-medium" :class="form.assignee_ids.includes(m.id) ? 'text-primary-700 font-semibold' : 'text-gray-700'">
+                                                {{ m.name }}
+                                            </span>
+                                            <svg v-slot:default v-if="form.assignee_ids.includes(m.id)" class="h-4 w-4 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+                                <p v-slot:default v-if="form.errors.assignee_ids" class="mt-1 text-xs text-red-600">{{ form.errors.assignee_ids }}</p>
                             </div>
 
                             <hr class="border-gray-100" />
@@ -168,7 +217,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { useForm, Link } from '@inertiajs/vue3'
 import { route } from 'ziggy-js'
 import AppLayout from '@/Layouts/AppLayout.vue'
@@ -181,6 +230,8 @@ const availableDeps = props.available_dependencies.filter((t: any) => !props.tas
 
 const newTag = ref('')
 const addDepId = ref<number | null>(null)
+const isAssigneeDropdownOpen = ref(false)
+const assigneeContainer = ref<HTMLElement | null>(null)
 
 const _dependencyIds = reactive<{ id: number; title: string }[]>(
     (props.task.dependencies ?? []).map((d: any) => ({ id: d.id, title: d.title }))
@@ -202,7 +253,7 @@ const form = useForm({
     description: props.task.description ?? '',
     status: props.task.status,
     priority: props.task.priority,
-    assignee_id: props.task.assignee_id ?? null,
+    assignee_ids: props.task.assignees?.map((a: any) => a.id) ?? [],
     due_date: props.task.due_date ? props.task.due_date.substring(0, 10) : '',
     employee_eta: props.task.employee_eta ? props.task.employee_eta.substring(0, 10) : '',
     estimated_hours: props.task.estimated_hours ?? '',
@@ -210,6 +261,33 @@ const form = useForm({
     dependency_ids: [...(props.task.dependencies?.map((d: any) => d.id) ?? [])],
     requires_approval: props.task.requires_approval ?? false,
     approver_id: props.task.approver_id ?? null,
+})
+
+function toggleAssignee(id: number) {
+    const idx = form.assignee_ids.indexOf(id)
+    if (idx > -1) {
+        form.assignee_ids.splice(idx, 1)
+    } else {
+        form.assignee_ids.push(id)
+    }
+}
+
+function getMemberName(id: number) {
+    return projectMembers.find((m: any) => m.id === id)?.name || 'Unknown'
+}
+
+function handleClickOutside(event: MouseEvent) {
+    if (assigneeContainer.value && !assigneeContainer.value.contains(event.target as Node)) {
+        isAssigneeDropdownOpen.value = false
+    }
+}
+
+onMounted(() => {
+    document.addEventListener('click', handleClickOutside)
+})
+
+onUnmounted(() => {
+    document.removeEventListener('click', handleClickOutside)
 })
 
 function addTag() {

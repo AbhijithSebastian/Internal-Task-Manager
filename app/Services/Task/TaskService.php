@@ -78,9 +78,16 @@ class TaskService extends BaseService
                 $task->dependencies()->attach($data['dependency_ids']);
             }
 
-            if (isset($data['assignee_ids']) && is_array($data['assignee_ids'])) {
-                $task->assignees()->attach($data['assignee_ids']);
+            $assigneeIds = $data['assignee_ids'] ?? [];
+            if (isset($data['assignee_id']) && !empty($data['assignee_id'])) {
+                $assigneeIds[] = $data['assignee_id'];
+            }
+            $assigneeIds = array_unique(array_filter($assigneeIds));
+
+            if (!empty($assigneeIds)) {
+                $task->assignees()->attach($assigneeIds);
                 
+                $task->load('assignees');
                 foreach ($task->assignees as $assignee) {
                     if ($assignee->id !== auth()->id()) {
                         $assignee->notify(new TaskAssignedNotification($task, auth()->user()));
@@ -124,9 +131,17 @@ class TaskService extends BaseService
                 $changed['dependencies'] = true;
             }
 
-            if (isset($data['assignee_ids'])) {
+            if (isset($data['assignee_ids']) || isset($data['assignee_id'])) {
+                $assigneeIds = $data['assignee_ids'] ?? [];
+                if (isset($data['assignee_id'])) {
+                    if (!empty($data['assignee_id'])) {
+                        $assigneeIds[] = $data['assignee_id'];
+                    }
+                }
+                $assigneeIds = array_unique(array_filter($assigneeIds));
+
                 $oldAssignees = $task->assignees->pluck('id')->toArray();
-                $task->assignees()->sync($data['assignee_ids']);
+                $task->assignees()->sync($assigneeIds);
                 
                 $newAssignees = $task->assignees()->get();
                 $newAssigneeIds = $newAssignees->pluck('id')->toArray();

@@ -434,18 +434,57 @@
                         </div>
                     </div>
 
-                    <div class="card">
-                        <div class="card-header"><h3 class="text-base font-semibold">Assignment</h3></div>
-                        <div class="card-body space-y-3">
-                            <div class="flex items-center gap-2 text-sm">
-                                <img v-if="task.assignee" :src="task.assignee.avatar" alt="" class="h-6 w-6 rounded-full">
-                                <span class="text-gray-500">Assignee:</span>
-                                <span class="text-gray-900 font-medium">{{ task.assignee?.name ?? 'Unassigned' }}</span>
+                    <div class="card bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                        <div class="p-4 border-b border-gray-100"><h3 class="text-sm font-semibold text-gray-900 uppercase tracking-wider">Assignees</h3></div>
+                        <div class="p-4 space-y-4">
+                            <!-- Display list of current assignees -->
+                            <div class="space-y-2">
+                                <div v-if="task.assignees.length === 0" class="text-sm text-gray-500 italic">No assignees linked.</div>
+                                <div v-else class="flex flex-col gap-2">
+                                    <div v-for="a in task.assignees" :key="a.id" class="flex items-center gap-2.5 rounded-lg bg-gray-50/50 border border-gray-100 px-3 py-2 text-sm text-gray-700">
+                                        <div class="h-6 w-6 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center font-semibold text-xs uppercase">
+                                            {{ a.name.substring(0, 2) }}
+                                        </div>
+                                        <span class="font-medium flex-1 text-gray-900">{{ a.name }}</span>
+                                        <button v-slot:default v-if="can('tasks.assign')" type="button" class="text-xs text-red-600 hover:text-red-800 font-medium px-2 py-1" @click="removeAssignee(a.id)">Remove</button>
+                                    </div>
+                                </div>
                             </div>
-                            <select v-model="assignForm.assignee_id" class="input" @change="assignTask">
-                                <option value="">Unassign</option>
-                                <option v-for="m in projectMembers" :key="m.id" :value="m.id">{{ m.name }}</option>
-                            </select>
+                            
+                            <!-- Dropdown for adding assignees -->
+                            <div v-if="can('tasks.assign')" class="relative pt-2" ref="assigneeContainer">
+                                <button 
+                                    type="button" 
+                                    class="input w-full text-left text-sm flex items-center justify-between min-h-[38px] py-1.5 px-3 bg-white"
+                                    @click="isAssigneeDropdownOpen = !isAssigneeDropdownOpen"
+                                >
+                                    <span class="text-gray-500 font-medium">Add Assignee...</span>
+                                    <svg class="h-4 w-4 text-gray-400 ml-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </button>
+
+                                <!-- Dropdown Menu -->
+                                <div 
+                                    v-if="isAssigneeDropdownOpen" 
+                                    class="absolute z-30 mt-1 w-full rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none max-h-60 overflow-y-auto p-1 space-y-1"
+                                >
+                                    <div v-if="unassignedMembers.length === 0" class="text-xs text-gray-400 p-2 text-center">
+                                        All project members assigned
+                                    </div>
+                                    <button 
+                                        v-for="m in unassignedMembers" 
+                                        :key="m.id" 
+                                        type="button"
+                                        class="w-full text-left px-3 py-2 text-sm rounded-md flex items-center justify-between hover:bg-gray-50 focus:bg-gray-50 focus:outline-none"
+                                        @click="addAssignee(m.id)"
+                                    >
+                                        <span class="font-medium text-gray-700">
+                                            {{ m.name }}
+                                        </span>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -538,7 +577,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, nextTick, watch } from 'vue'
+import { ref, reactive, computed, nextTick, watch, onMounted, onUnmounted } from 'vue'
 import { Link, router, useForm, usePage } from '@inertiajs/vue3'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
@@ -565,7 +604,41 @@ const props = defineProps<{ task: any; comments: any; project_members: any; avai
 const projectMembers = props.project_members
 const availableDependencies = props.available_dependencies
 
-const isAssignee = computed(() => props.task.assignee_id === page.props.auth.user?.id)
+const isAssignee = computed(() => props.task.assignees?.some((a: any) => a.id === page.props.auth.user?.id))
+
+const isAssigneeDropdownOpen = ref(false)
+const assigneeContainer = ref<HTMLElement | null>(null)
+
+const unassignedMembers = computed(() => {
+    return projectMembers.filter((m: any) => !props.task.assignees?.some((a: any) => a.id === m.id))
+})
+
+function addAssignee(id: number) {
+    isAssigneeDropdownOpen.value = false
+    const currentIds = props.task.assignees?.map((a: any) => a.id) ?? []
+    const newIds = [...currentIds, id]
+    router.post(route('tasks.assign', props.task.id), { assignee_ids: newIds }, { preserveScroll: true })
+}
+
+function removeAssignee(id: number) {
+    const currentIds = props.task.assignees?.map((a: any) => a.id) ?? []
+    const newIds = currentIds.filter((cid: number) => cid !== id)
+    router.post(route('tasks.assign', props.task.id), { assignee_ids: newIds }, { preserveScroll: true })
+}
+
+function handleClickOutside(event: MouseEvent) {
+    if (assigneeContainer.value && !assigneeContainer.value.contains(event.target as Node)) {
+        isAssigneeDropdownOpen.value = false
+    }
+}
+
+onMounted(() => {
+    document.addEventListener('click', handleClickOutside)
+})
+
+onUnmounted(() => {
+    document.removeEventListener('click', handleClickOutside)
+})
 const showEmployeeBlockForm = ref(false)
 const employeeBlockReason = ref('')
 const employeeEtaUpdating = ref(false)
@@ -673,13 +746,13 @@ const replyFormParentId = ref<number | null>(null)
 const subtaskForm = useForm({ title: '', priority: 'medium', due_date: '', assignee_id: null as number | null })
 const commentForm = useForm({ body: '' })
 const replyForm = useForm({ body: '' })
-const assignForm = useForm({ assignee_id: props.task.assignee_id ?? '' })
+const assignForm = useForm({ assignee_id: '' })
 const dependencyForm = useForm({ dependency_id: null as number | null })
 const blockForm = reactive({ reason: '' })
 const rejectForm = reactive({ reason: '' })
 
 const canSubmitForReview = computed(() => {
-    return props.task.assignee_id === page.props.auth.user.id
+    return isAssignee.value
         && can('tasks.submit-approval')
         && props.task.status === 'in_progress'
 })

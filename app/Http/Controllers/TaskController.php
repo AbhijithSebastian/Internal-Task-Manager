@@ -30,12 +30,20 @@ class TaskController extends Controller
 
         $user = auth()->user();
 
+        $stats = [
+            'total' => Task::query()->whereHas('project', fn($q) => $q->byMember($user->id))->count(),
+            'my_tasks' => Task::query()->whereHas('assignees', fn($q) => $q->where('users.id', $user->id))->count(),
+            'overdue' => Task::query()->whereHas('project', fn($q) => $q->byMember($user->id))->overdue()->count(),
+            'blocked' => Task::query()->whereHas('project', fn($q) => $q->byMember($user->id))->blocked()->count(),
+        ];
+
         return Inertia::render('Tasks/Index', [
             'tasks' => $this->taskService->list(request()->all()),
             'filters' => request()->only(['search', 'status', 'priority', 'project_id', 'assignee_id', 'tag', 'sort_by', 'sort_direction']),
             'projects' => $user->projects()->get(['id', 'name']),
             'tags' => $this->taskService->getAllTags(),
             'members' => User::active()->get(['id', 'name']),
+            'stats' => $stats,
         ]);
     }
 
@@ -156,11 +164,17 @@ class TaskController extends Controller
         $this->authorize('assign', $task);
 
         $validated = $request->validate([
-            'assignee_id' => ['required', 'exists:users,id'],
+            'assignee_id' => ['nullable', 'required_without:assignee_ids', 'exists:users,id'],
+            'assignee_ids' => ['nullable', 'array'],
+            'assignee_ids.*' => ['exists:users,id'],
         ]);
 
-        $user = User::findOrFail($validated['assignee_id']);
-        $this->taskService->assign($task, $user);
+        if ($request->has('assignee_ids')) {
+            $this->taskService->update($task, ['assignee_ids' => $validated['assignee_ids'] ?? []]);
+        } else {
+            $user = User::findOrFail($validated['assignee_id']);
+            $this->taskService->assign($task, $user);
+        }
 
         return redirect()->back()->with('success', 'Task assigned successfully.');
     }

@@ -60,16 +60,19 @@ class UserService extends BaseService
         return DB::transaction(function () use ($data) {
             $data['password'] = Hash::make($data['password']);
 
+            $role = $data['role'] ?? null;
+            unset($data['role']);
+
             $user = User::create($data);
 
-            if (isset($data['role'])) {
-                $user->syncRoles([$data['role']]);
+            if ($role) {
+                $user->syncRoles([$role]);
             }
 
             log_activity($user, 'User created', [
                 'name' => $user->name,
                 'email' => $user->email,
-                'role' => $data['role'] ?? null,
+                'role' => $role,
             ]);
 
             return $user->load('roles');
@@ -93,12 +96,15 @@ class UserService extends BaseService
                 unset($data['password']);
             }
 
+            $role = $data['role'] ?? null;
+            unset($data['role']);
+
             $user->update($data);
 
-            if (isset($data['role'])) {
+            if ($role) {
                 $oldRole = $user->roles->first()?->name;
-                $user->syncRoles([$data['role']]);
-                $changed['role'] = ['old' => $oldRole, 'new' => $data['role']];
+                $user->syncRoles([$role]);
+                $changed['role'] = ['old' => $oldRole, 'new' => $role];
             }
 
             if (!empty($changed)) {

@@ -23,6 +23,7 @@ class StoreTaskRequest extends FormRequest
             'due_date' => ['nullable', 'date'],
             'estimated_hours' => ['nullable', 'numeric', 'min:0', 'max:9999'],
             'project_id' => ['required', 'exists:projects,id'],
+            'assignee_id' => ['nullable', 'exists:users,id'],
             'assignee_ids' => ['nullable', 'array'],
             'assignee_ids.*' => ['exists:users,id'],
             'dependency_ids' => ['nullable', 'array'],
