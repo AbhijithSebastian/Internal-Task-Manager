@@ -1,87 +1,248 @@
 <template>
     <AppLayout>
-        <div class="space-y-8">
-            <div>
-                <h2 class="text-2xl font-bold text-gray-900">Dashboard</h2>
-                <p class="mt-1 text-sm text-gray-600">Welcome back, {{ $page.props.auth.user.name }}</p>
-            </div>
+        <div class="space-y-5">
 
-            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <Link v-for="stat in statsList" :key="stat.label" :href="stat.route" class="card p-6 hover:shadow-md transition-shadow cursor-pointer">
-                    <div class="flex items-center gap-4">
-                        <component :is="stat.icon" class="h-8 w-8 text-primary-600" />
-                        <div>
-                            <p class="text-2xl font-bold text-gray-900">{{ stat.value }}</p>
-                            <p class="text-sm text-gray-600">{{ stat.label }}</p>
+            <!-- ═══════════════════════════════════════════════════════════
+                 SECTION A — Compact greeting strip
+            ═══════════════════════════════════════════════════════════ -->
+            <section class="flex items-center justify-between gap-4">
+                <div>
+                    <p class="text-[11px] font-medium uppercase tracking-widest text-gray-400">
+                        {{ greeting }}, {{ userName }}
+                    </p>
+                    <h2 class="mt-1 text-xl font-semibold tracking-tight text-gray-900">
+                        What needs attention today?
+                    </h2>
+                </div>
+                <Link
+                    :href="route('tasks.create')"
+                    class="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-gray-900 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-all duration-150 hover:bg-gray-700 active:scale-[0.98]"
+                >
+                    <PlusIcon class="h-4 w-4" />
+                    New Task
+                </Link>
+            </section>
+
+            <!-- ═══════════════════════════════════════════════════════════
+                 SECTION B — KPI Cards (4 equal)
+            ═══════════════════════════════════════════════════════════ -->
+            <section class="grid grid-cols-2 gap-4 xl:grid-cols-4">
+                <Link
+                    v-for="stat in statsList"
+                    :key="stat.label"
+                    :href="stat.route"
+                    class="group rounded-2xl border border-gray-200/70 bg-white px-5 py-4 shadow-[0_1px_3px_0_rgba(0,0,0,0.04)] transition-all duration-150 hover:border-gray-300/80 hover:shadow-[0_4px_12px_0_rgba(0,0,0,0.07)]"
+                >
+                    <div class="flex items-start justify-between">
+                        <div class="rounded-lg bg-gray-100 p-2 transition-colors group-hover:bg-gray-200/70">
+                            <component :is="stat.icon" class="h-4 w-4 text-gray-600" />
                         </div>
                     </div>
+                    <p class="mt-4 text-2xl font-semibold tabular-nums text-gray-900">
+                        {{ stat.value ?? '—' }}
+                    </p>
+                    <p class="mt-0.5 text-xs font-medium text-gray-500">
+                        {{ stat.label }}
+                    </p>
                 </Link>
-            </div>
+            </section>
 
-            <EmployeeDashboard
-                v-if="role === 'employee'"
-                :my-tasks="roleData.my_tasks"
-                :overdue-tasks="roleData.overdue_tasks"
-                :mentions="roleData.mentions"
-                :pending-approvals="roleData.pending_approvals"
-            />
-            <PmDashboard
-                v-if="role === 'project-manager'"
-                :active-projects="roleData.active_projects"
-                :delayed-tasks="roleData.delayed_tasks"
-                :pending-approvals="roleData.pending_approvals"
-                :workload="roleData.workload"
-            />
-            <LeadDashboard
-                v-if="role === 'team-lead'"
-                :team-workload="roleData.team_workload"
-                :review-tasks="roleData.review_tasks"
-                :blocked-tasks="roleData.blocked_tasks"
-            />
-            <AdminDashboard
-                v-if="role === 'super-admin'"
-                :project-progress="roleData.project_progress"
-                :status-distribution="roleData.status_distribution"
-                :tasks-over-time="roleData.tasks_over_time"
-                :team-workload="roleData.team_workload"
-            />
+            <!-- ═══════════════════════════════════════════════════════════
+                 SECTION C — Bento: Priority Tasks + Upcoming Deadlines
+            ═══════════════════════════════════════════════════════════ -->
+            <section class="grid grid-cols-1 gap-4 xl:grid-cols-12">
 
-            <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                <div class="card">
-                    <div class="card-header">
-                        <h3 class="text-base font-semibold text-gray-900">Upcoming Deadlines</h3>
+                <!-- Priority Tasks (left, wider) -->
+                <div class="rounded-2xl border border-gray-200/70 bg-white shadow-[0_1px_3px_0_rgba(0,0,0,0.04)] xl:col-span-7">
+                    <div class="flex items-center justify-between border-b border-gray-100 px-5 py-4">
+                        <div>
+                            <h3 class="text-[13px] font-semibold text-gray-900">{{ primaryPanelTitle }}</h3>
+                            <p class="mt-0.5 text-[11px] text-gray-400">Priority work requiring attention</p>
+                        </div>
+                        <Link
+                            :href="route('tasks.index')"
+                            class="text-[11px] font-medium text-gray-400 transition-colors hover:text-gray-700"
+                        >
+                            View all →
+                        </Link>
                     </div>
-                    <div class="card-body">
-                        <div v-if="upcoming_deadlines.length === 0" class="text-sm text-gray-500">No upcoming deadlines.</div>
-                        <ul v-else class="divide-y divide-gray-200">
-                            <li v-for="task in upcoming_deadlines" :key="task.id" class="flex items-center justify-between py-3">
-                                <div class="min-w-0 flex-1">
-                                    <Link :href="route('tasks.show', task.id)" class="text-sm font-medium text-gray-900 hover:text-primary-600 truncate block">{{ task.title }}</Link>
-                                    <p class="text-xs text-gray-500">{{ task.project?.name }}</p>
+
+                    <div v-if="primaryItems.length === 0" class="px-5 py-10 text-center">
+                        <div class="mx-auto mb-2 flex h-9 w-9 items-center justify-center rounded-xl bg-gray-100">
+                            <CheckCircleIcon class="h-5 w-5 text-gray-400" />
+                        </div>
+                        <p class="text-sm text-gray-400">Nothing urgent right now.</p>
+                    </div>
+
+                    <ul v-else class="divide-y divide-gray-50">
+                        <li
+                            v-for="item in primaryItems.slice(0, 8)"
+                            :key="item.id"
+                            class="group flex items-center justify-between gap-4 px-5 py-3.5 transition-colors hover:bg-gray-50/70"
+                        >
+                            <div class="flex min-w-0 items-center gap-3">
+                                <!-- Status dot -->
+                                <span class="h-1.5 w-1.5 shrink-0 rounded-full" :class="taskDotClass(item)" />
+                                <div class="min-w-0">
+                                    <Link
+                                        :href="route('tasks.show', item.id)"
+                                        class="block truncate text-[13px] font-medium text-gray-800 transition-colors hover:text-gray-900"
+                                    >
+                                        {{ item.title }}
+                                    </Link>
+                                    <p class="mt-0.5 truncate text-[11px] text-gray-400">
+                                        {{ item.project?.name || 'Internal Task' }}
+                                    </p>
                                 </div>
-                                <Badge :variant="dayjs(task.due_date).diff(dayjs(), 'day') <= 1 ? 'danger' : 'warning'" class="shrink-0 ml-4">
-                                    {{ dayjs(task.due_date).format('MMM D, YYYY') }}
-                                </Badge>
-                            </li>
-                        </ul>
-                    </div>
+                            </div>
+
+                            <div class="flex shrink-0 items-center gap-2">
+                                <span
+                                    v-if="item.priority"
+                                    class="rounded-md bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-500 capitalize"
+                                >
+                                    {{ item.priority }}
+                                </span>
+                                <span
+                                    v-if="item.status"
+                                    class="rounded-md border border-gray-200 bg-gray-50 px-2 py-0.5 text-[10px] font-medium text-gray-500"
+                                >
+                                    {{ formatStatus(item.status) }}
+                                </span>
+                                <span v-if="item.due_date" class="rounded-md bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-500">
+                                    {{ formatDate(item.due_date) }}
+                                </span>
+                            </div>
+                        </li>
+                    </ul>
                 </div>
 
-                <div class="card">
-                    <div class="card-header">
-                        <h3 class="text-base font-semibold text-gray-900">Recent Activity</h3>
+                <!-- Upcoming Deadlines (right, narrower) -->
+                <div class="rounded-2xl border border-gray-200/70 bg-white shadow-[0_1px_3px_0_rgba(0,0,0,0.04)] xl:col-span-5">
+                    <div class="flex items-center justify-between border-b border-gray-100 px-5 py-4">
+                        <div>
+                            <h3 class="text-[13px] font-semibold text-gray-900">Upcoming Deadlines</h3>
+                            <p class="mt-0.5 text-[11px] text-gray-400">Tasks due in the next 7 days</p>
+                        </div>
+                        <Link
+                            :href="route('tasks.index')"
+                            class="text-[11px] font-medium text-gray-400 transition-colors hover:text-gray-700"
+                        >
+                            View all →
+                        </Link>
                     </div>
-                    <div class="card-body">
-                        <div v-if="recent_activities.length === 0" class="text-sm text-gray-500">No recent activity.</div>
-                        <ul v-else class="divide-y divide-gray-200">
-                            <li v-for="activity in recent_activities" :key="activity.id" class="py-3 text-sm text-gray-600">
-                                {{ activity.description }}
-                                <span class="text-xs text-gray-400">{{ dayjs(activity.created_at).fromNow() }}</span>
-                            </li>
-                        </ul>
+
+                    <div v-if="upcoming_deadlines.length === 0" class="px-5 py-10 text-center">
+                        <p class="text-sm text-gray-400">No upcoming deadlines.</p>
                     </div>
+
+                    <ul v-else class="divide-y divide-gray-50">
+                        <li
+                            v-for="task in upcoming_deadlines.slice(0, 8)"
+                            :key="task.id"
+                            class="flex items-start justify-between gap-3 px-5 py-3 transition-colors hover:bg-gray-50/70"
+                        >
+                            <div class="flex min-w-0 items-start gap-2.5">
+                                <span class="mt-[5px] h-1.5 w-1.5 shrink-0 rounded-full" :class="deadlineDotClass(task)" />
+                                <div class="min-w-0">
+                                    <Link
+                                        :href="route('tasks.show', task.id)"
+                                        class="block truncate text-[13px] font-medium text-gray-800 transition-colors hover:text-gray-900"
+                                    >
+                                        {{ task.title }}
+                                    </Link>
+                                    <p class="mt-0.5 truncate text-[11px] text-gray-400">
+                                        {{ task.project?.name }}
+                                    </p>
+                                </div>
+                            </div>
+                            <span class="shrink-0 rounded-md bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-500">
+                                {{ formatDate(task.due_date) }}
+                            </span>
+                        </li>
+                    </ul>
                 </div>
-            </div>
+            </section>
+
+            <!-- ═══════════════════════════════════════════════════════════
+                 SECTION D — Recent Activity + Team Workload
+            ═══════════════════════════════════════════════════════════ -->
+            <section class="grid grid-cols-1 gap-4 xl:grid-cols-2">
+
+                <!-- Recent Activity -->
+                <div class="rounded-2xl border border-gray-200/70 bg-white shadow-[0_1px_3px_0_rgba(0,0,0,0.04)]">
+                    <div class="border-b border-gray-100 px-5 py-4">
+                        <h3 class="text-[13px] font-semibold text-gray-900">Recent Activity</h3>
+                        <p class="mt-0.5 text-[11px] text-gray-400">Latest updates from your workspace</p>
+                    </div>
+
+                    <div v-if="recent_activities.length === 0" class="px-5 py-10 text-center">
+                        <p class="text-sm text-gray-400">No recent activity.</p>
+                    </div>
+
+                    <ul v-else class="divide-y divide-gray-50 px-5">
+                        <li
+                            v-for="activity in recent_activities.slice(0, 6)"
+                            :key="activity.id"
+                            class="flex gap-3 py-3.5"
+                        >
+                            <div class="flex flex-col items-center">
+                                <span class="mt-[5px] h-1.5 w-1.5 shrink-0 rounded-full bg-gray-300" />
+                            </div>
+                            <div class="min-w-0 flex-1">
+                                <p class="text-[13px] leading-snug text-gray-700">
+                                    {{ activity.description }}
+                                </p>
+                                <p class="mt-1 text-[11px] text-gray-400">
+                                    {{ dayjs(activity.created_at).fromNow() }}
+                                </p>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Team Workload -->
+                <div class="rounded-2xl border border-gray-200/70 bg-white shadow-[0_1px_3px_0_rgba(0,0,0,0.04)]">
+                    <div class="border-b border-gray-100 px-5 py-4">
+                        <h3 class="text-[13px] font-semibold text-gray-900">Team Workload</h3>
+                        <p class="mt-0.5 text-[11px] text-gray-400">Current task distribution</p>
+                    </div>
+
+                    <div v-if="teamWorkload.length === 0" class="px-5 py-10 text-center">
+                        <p class="text-sm text-gray-400">No workload data available.</p>
+                    </div>
+
+                    <ul v-else class="divide-y divide-gray-50 px-5">
+                        <li
+                            v-for="member in teamWorkload.slice(0, 6)"
+                            :key="member.id"
+                            class="py-3.5"
+                        >
+                            <div class="mb-2 flex items-center justify-between gap-2">
+                                <div class="flex items-center gap-2">
+                                    <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gray-200 text-[9px] font-semibold uppercase text-gray-600">
+                                        {{ initials(member.name) }}
+                                    </div>
+                                    <span class="text-[13px] font-medium text-gray-800">{{ member.name }}</span>
+                                </div>
+                                <div class="flex items-center gap-2 text-[11px] text-gray-400">
+                                    <span>{{ member.pending_tasks || 0 }} tasks</span>
+                                    <span class="font-semibold text-gray-600">
+                                        {{ workloadPercent(member) }}%
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="h-1 w-full overflow-hidden rounded-full bg-gray-100">
+                                <div
+                                    class="h-1 rounded-full bg-gray-800 transition-all duration-500"
+                                    :style="{ width: `${workloadPercent(member)}%` }"
+                                />
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </section>
+
         </div>
     </AppLayout>
 </template>
@@ -89,42 +250,128 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Link, usePage } from '@inertiajs/vue3'
+import { route } from 'ziggy-js'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import AppLayout from '@/Layouts/AppLayout.vue'
-import Badge from '@/Components/Badge.vue'
-import EmployeeDashboard from './Partials/EmployeeDashboard.vue'
-import PmDashboard from './Partials/PmDashboard.vue'
-import LeadDashboard from './Partials/LeadDashboard.vue'
-import AdminDashboard from './Partials/AdminDashboard.vue'
-import { FolderIcon, ClipboardDocumentListIcon, CheckCircleIcon, ExclamationTriangleIcon } from '@heroicons/vue/24/outline'
-import { route } from 'ziggy-js'
+import {
+    ClipboardDocumentListIcon,
+    CheckCircleIcon,
+    ExclamationTriangleIcon,
+    EyeIcon,
+    PlusIcon,
+} from '@heroicons/vue/24/outline'
 
 dayjs.extend(relativeTime)
 
 const page = usePage()
 
 const props = defineProps<{
-    stats: {
-        active_projects: number
-        total_tasks: number
-        assigned_tasks: number
-        completed_tasks: number
-        overdue_tasks: number
-        in_review_tasks: number
-    }
+    stats: any
     role_data: Record<string, any>
     upcoming_deadlines: any[]
     recent_activities: any[]
 }>()
 
+// ── Auth ──────────────────────────────────────────────────────
 const role = computed(() => (page.props.auth.user as any)?.role ?? 'employee')
-const roleData = computed(() => props.role_data ?? {})
+const userName = computed(() => (page.props.auth.user as any)?.name?.split(' ')[0] ?? 'there')
 
+// ── Greeting ──────────────────────────────────────────────────
+const greeting = computed(() => {
+    const hour = new Date().getHours()
+    if (hour < 12) return 'Good morning'
+    if (hour < 18) return 'Good afternoon'
+    return 'Good evening'
+})
+
+// ── KPI Stats ─────────────────────────────────────────────────
 const statsList = computed(() => [
-    { label: 'Active Projects', value: props.stats.active_projects, icon: FolderIcon, route: route('projects.index') },
-    { label: 'Assigned Tasks', value: props.stats.assigned_tasks, icon: ClipboardDocumentListIcon, route: route('tasks.index') },
-    { label: 'Completed', value: props.stats.completed_tasks, icon: CheckCircleIcon, route: route('tasks.index', { status: 'done' }) },
-    { label: 'Overdue', value: props.stats.overdue_tasks, icon: ExclamationTriangleIcon, route: route('tasks.index', { status: 'overdue' }) },
+    {
+        label: 'Assigned Tasks',
+        value: props.stats.assigned_tasks,
+        icon: ClipboardDocumentListIcon,
+        route: route('tasks.index'),
+    },
+    {
+        label: 'Completed',
+        value: props.stats.completed_tasks,
+        icon: CheckCircleIcon,
+        route: route('tasks.index'),
+    },
+    {
+        label: 'Overdue',
+        value: props.stats.overdue_tasks,
+        icon: ExclamationTriangleIcon,
+        route: route('tasks.index'),
+    },
+    {
+        label: 'In Review',
+        value: props.stats.in_review_tasks,
+        icon: EyeIcon,
+        route: route('tasks.index'),
+    },
 ])
+
+// ── Primary Panel (role-aware) ────────────────────────────────
+const primaryPanelTitle = computed(() => {
+    if (role.value === 'project-manager') return 'Delayed Tasks'
+    if (role.value === 'team-lead') return 'Review Queue'
+    if (role.value === 'super-admin') return 'Pending Approvals'
+    return 'My Tasks'
+})
+
+const primaryItems = computed(() => {
+    if (role.value === 'project-manager') return props.role_data.delayed_tasks || []
+    if (role.value === 'team-lead') return props.role_data.review_tasks || []
+    // For super-admin show pending approvals (tasks needing action), fallback to delayed
+    if (role.value === 'super-admin') return props.role_data.pending_approvals || props.role_data.delayed_tasks || []
+    return props.role_data.my_tasks || []
+})
+
+// ── Team Workload ─────────────────────────────────────────────
+const teamWorkload = computed(() => {
+    return props.role_data.team_workload || props.role_data.workload || []
+})
+
+// ── Helpers ───────────────────────────────────────────────────
+function formatDate(date: string) {
+    if (!date) return '—'
+    return dayjs(date).format('MMM D')
+}
+
+function formatStatus(status: string) {
+    return status.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+}
+
+function initials(name: string) {
+    if (!name) return '?'
+    return name
+        .split(' ')
+        .slice(0, 2)
+        .map((n) => n[0])
+        .join('')
+}
+
+function workloadPercent(member: any) {
+    const tasks = member.pending_tasks || 0
+    return Math.min(Math.round(tasks * 10), 100)
+}
+
+function taskDotClass(item: any) {
+    const s = item.status || ''
+    if (s === 'blocked') return 'bg-gray-600'
+    if (s === 'in_review') return 'bg-gray-400'
+    if (s === 'in_progress') return 'bg-gray-700'
+    if (item.is_overdue) return 'bg-gray-500'
+    return 'bg-gray-300'
+}
+
+function deadlineDotClass(task: any) {
+    if (!task.due_date) return 'bg-gray-300'
+    const diff = dayjs(task.due_date).diff(dayjs(), 'day')
+    if (diff <= 1) return 'bg-gray-700'
+    if (diff <= 3) return 'bg-gray-500'
+    return 'bg-gray-300'
+}
 </script>

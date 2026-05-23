@@ -1,16 +1,19 @@
 <template>
     <AppLayout>
         <div class="space-y-6">
-            <div class="flex items-center justify-between">
+            <Breadcrumbs :items="[{ label: 'Reports' }]" />
+
+            <!-- Header -->
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h2 class="text-2xl font-bold text-gray-900">Reports</h2>
-                    <p class="mt-1 text-sm text-gray-600">Analytics and insights across projects</p>
+                    <h2 class="text-2xl font-bold tracking-tight text-gray-900">Reports</h2>
+                    <p class="mt-1 text-sm text-gray-500">Analytics and insights across projects</p>
                 </div>
-                <div class="flex items-center gap-3">
-                    <a :href="exportUrl('csv')" class="btn-secondary btn-sm">CSV</a>
-                    <a :href="exportUrl('xlsx')" class="btn-secondary btn-sm">Excel</a>
-                    <a :href="exportUrl('pdf')" class="btn-secondary btn-sm">PDF</a>
-                    <a :href="exportUrl('html')" target="_blank" class="btn-secondary btn-sm">Print HTML</a>
+                <div class="flex items-center gap-2">
+                    <a :href="exportUrl('csv')" class="btn-secondary btn-sm">Export CSV</a>
+                    <a :href="exportUrl('xlsx')" class="btn-secondary btn-sm">Export Excel</a>
+                    <a :href="exportUrl('pdf')" class="btn-secondary btn-sm">Export PDF</a>
+                    <a :href="exportUrl('html')" target="_blank" class="btn-secondary btn-sm">Print</a>
                 </div>
             </div>
 
@@ -261,6 +264,7 @@ import { router } from '@inertiajs/vue3'
 import { route } from 'ziggy-js'
 import AppLayout from '@/Layouts/AppLayout.vue'
 import Badge from '@/Components/Badge.vue'
+import Breadcrumbs from '@/Components/Breadcrumbs.vue'
 
 const props = defineProps<{
     reports: Record<string, any[]>

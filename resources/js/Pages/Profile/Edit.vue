@@ -1,9 +1,11 @@
 <template>
     <AppLayout>
         <div class="mx-auto max-w-2xl space-y-6">
+            <Breadcrumbs :items="[{ label: 'Profile & Settings' }]" />
+
             <div>
-                <h2 class="text-2xl font-bold text-gray-900">Profile</h2>
-                <p class="mt-1 text-sm text-gray-600">Your personal information and preferences</p>
+                <h2 class="text-2xl font-bold tracking-tight text-gray-900">Profile</h2>
+                <p class="mt-1 text-sm text-gray-500">Your personal information and preferences</p>
             </div>
 
             <div class="card p-6">
@@ -80,6 +82,8 @@
 import { ref } from 'vue'
 import { useForm, router } from '@inertiajs/vue3'
 import { route } from 'ziggy-js'
+import AppLayout from '@/Layouts/AppLayout.vue'
+import Breadcrumbs from '@/Components/Breadcrumbs.vue'
 
 const props = defineProps<{ user: any }>()
 

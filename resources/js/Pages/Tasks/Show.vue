@@ -446,7 +446,7 @@
                                             {{ a.name.substring(0, 2) }}
                                         </div>
                                         <span class="font-medium flex-1 text-gray-900">{{ a.name }}</span>
-                                        <button v-slot:default v-if="can('tasks.assign')" type="button" class="text-xs text-red-600 hover:text-red-800 font-medium px-2 py-1" @click="removeAssignee(a.id)">Remove</button>
+                                        <button v-if="can('tasks.assign')" type="button" class="text-xs text-red-600 hover:text-red-800 font-medium px-2 py-1" @click="removeAssignee(a.id)">Remove</button>
                                     </div>
                                 </div>
                             </div>

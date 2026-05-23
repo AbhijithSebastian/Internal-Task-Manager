@@ -100,7 +100,7 @@
                                         @click="isAssigneeDropdownOpen = !isAssigneeDropdownOpen"
                                     >
                                         <div class="flex flex-wrap gap-1.5">
-                                            <span v-slot:default v-if="form.assignee_ids.length === 0" class="text-gray-400">Unassigned</span>
+                                            <span v-if="form.assignee_ids.length === 0" class="text-gray-400">Unassigned</span>
                                             <span 
                                                 v-for="id in form.assignee_ids" 
                                                 :key="id" 
@@ -139,13 +139,13 @@
                                             <span class="font-medium" :class="form.assignee_ids.includes(m.id) ? 'text-primary-700 font-semibold' : 'text-gray-700'">
                                                 {{ m.name }}
                                             </span>
-                                            <svg v-slot:default v-if="form.assignee_ids.includes(m.id)" class="h-4 w-4 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <svg v-if="form.assignee_ids.includes(m.id)" class="h-4 w-4 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                                             </svg>
                                         </button>
                                     </div>
                                 </div>
-                                <p v-slot:default v-if="form.errors.assignee_ids" class="mt-1 text-xs text-red-600">{{ form.errors.assignee_ids }}</p>
+                                <p v-if="form.errors.assignee_ids" class="mt-1 text-xs text-red-600">{{ form.errors.assignee_ids }}</p>
                             </div>
 
                             <hr class="border-gray-100" />

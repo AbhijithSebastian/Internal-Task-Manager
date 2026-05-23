@@ -1,12 +1,16 @@
 <template>
     <AppLayout>
         <div class="space-y-6">
-            <div class="flex items-center justify-between">
+            <Breadcrumbs :items="[{ label: 'Projects' }]" />
+
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h2 class="text-2xl font-bold text-gray-900">Projects</h2>
-                    <p class="mt-1 text-sm text-gray-600">Manage your team projects</p>
+                    <h2 class="text-2xl font-bold tracking-tight text-gray-900">Projects</h2>
+                    <p class="mt-1 text-sm text-gray-500">Manage your team projects</p>
                 </div>
-                <Link v-if="can('projects.create')" :href="route('projects.create')" class="btn-primary">New Project</Link>
+                <Link v-if="can('projects.create')" :href="route('projects.create')" class="btn-primary inline-flex items-center gap-2">
+                    New Project
+                </Link>
             </div>
 
             <div class="card">
@@ -30,38 +34,39 @@
                     </div>
                 </div>
 
-                <div v-if="projects.data.length > 0" class="grid grid-cols-1 gap-4 p-6 sm:grid-cols-2 lg:grid-cols-3">
-                    <div v-for="project in projects.data" :key="project.id" class="card p-6 hover:shadow-md transition-shadow relative group">
-                        <Link :href="route('projects.show', project.id)">
-                            <div class="flex items-start justify-between">
-                                <h3 class="text-base font-semibold text-gray-900">{{ project.name }}</h3>
-                                <div class="flex gap-1.5">
+                <div v-if="projects.data.length > 0" class="grid grid-cols-1 gap-4 p-6 sm:grid-cols-2 xl:grid-cols-3">
+                    <div v-for="project in projects.data" :key="project.id" class="group relative rounded-2xl border border-gray-200/70 bg-white p-5 shadow-[0_1px_3px_0_rgba(0,0,0,0.04)] transition-all hover:shadow-[0_4px_12px_0_rgba(0,0,0,0.07)]">
+                        <Link :href="route('projects.show', project.id)" class="block">
+                            <div class="flex items-start justify-between gap-2">
+                                <h3 class="text-[15px] font-semibold text-gray-900 group-hover:text-gray-700">{{ project.name }}</h3>
+                                <div class="flex shrink-0 gap-1">
                                     <Badge :variant="statusBadge(project.status)">{{ project.status_label ?? project.status }}</Badge>
-                                    <Badge v-if="project.priority" :variant="priorityBadge(project.priority)">{{ project.priority }}</Badge>
                                 </div>
                             </div>
-                            <p v-if="project.description" class="mt-2 text-sm text-gray-600 line-clamp-2">{{ project.description }}</p>
-                            <div class="mt-4 space-y-1.5 text-sm text-gray-500">
-                                <div class="flex items-center gap-4">
-                                    <span>{{ project.members_count }} members</span>
-                                    <span>{{ project.tasks_count }} tasks</span>
-                                    <span v-if="project.completion_rate !== null && project.completion_rate !== undefined" class="font-medium" :class="completionColor(project.completion_rate)">{{ project.completion_rate }}% done</span>
+                            <p v-if="project.description" class="mt-2 text-[13px] text-gray-500 line-clamp-2">{{ project.description }}</p>
+
+                            <!-- Progress bar -->
+                            <div v-if="project.completion_rate !== null && project.completion_rate !== undefined" class="mt-4">
+                                <div class="flex items-center justify-between mb-1">
+                                    <span class="text-[11px] font-medium text-gray-400">Progress</span>
+                                    <span class="text-[11px] font-semibold tabular-nums text-gray-600">{{ project.completion_rate }}%</span>
                                 </div>
-                                <div v-if="project.project_manager" class="flex items-center gap-1">
-                                    <UserIcon class="h-3.5 w-3.5 text-gray-400" />
-                                    <span>PM: {{ project.project_manager.name }}</span>
+                                <div class="h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
+                                    <div
+                                        class="h-1.5 rounded-full bg-gray-800 transition-all duration-500"
+                                        :style="{ width: `${project.completion_rate}%` }"
+                                    />
                                 </div>
-                                <div v-if="project.team_lead" class="flex items-center gap-1">
-                                    <UserIcon class="h-3.5 w-3.5 text-gray-400" />
-                                    <span>Lead: {{ project.team_lead.name }}</span>
-                                </div>
-                                <div v-if="project.end_date" class="flex items-center gap-1">
-                                    <CalendarDaysIcon class="h-3.5 w-3.5 text-gray-400" />
-                                    <span>Due {{ project.end_date }}</span>
-                                </div>
+                            </div>
+
+                            <div class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[12px] text-gray-400">
+                                <span>{{ project.members_count }} members</span>
+                                <span>{{ project.tasks_count }} tasks</span>
+                                <span v-if="project.project_manager">PM: {{ project.project_manager.name }}</span>
+                                <span v-if="project.end_date">Due {{ project.end_date }}</span>
                             </div>
                         </Link>
-                        <div v-if="can('projects.update') && project.status !== 'archived'" class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div v-if="can('projects.update') && project.status !== 'archived'" class="absolute right-3 top-3 opacity-0 group-hover:opacity-100 transition-opacity">
                             <button class="btn-secondary btn-sm text-xs" @click.stop="confirmArchive(project)">Archive</button>
                         </div>
                     </div>
@@ -91,6 +96,7 @@ import { route } from 'ziggy-js'
 import { usePermissions } from '@/Composables/usePermissions'
 import AppLayout from '@/Layouts/AppLayout.vue'
 import Badge from '@/Components/Badge.vue'
+import Breadcrumbs from '@/Components/Breadcrumbs.vue'
 import Pagination from '@/Components/Pagination.vue'
 import Modal from '@/Components/Modal.vue'
 import { UserIcon, CalendarDaysIcon } from '@heroicons/vue/24/outline'

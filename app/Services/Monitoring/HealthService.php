@@ -102,7 +102,7 @@ class HealthService
             $pending = DB::table('jobs')->count();
 
             $horizonRunning = Cache::store('redis')->has('horizon:supervisor-1');
-            $horizonStatus = $horizonRunning ? 'running' : 'stopped';
+$horizonStatus = $horizonRunning ? 'running' : 'stopped';
 
             return [
                 'status' => $horizonRunning ? 'ok' : 'warning',

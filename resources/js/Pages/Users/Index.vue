@@ -1,10 +1,12 @@
 <template>
     <AppLayout>
         <div class="space-y-6">
-            <div class="flex items-center justify-between">
+            <Breadcrumbs :items="[{ label: 'Team' }]" />
+
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h2 class="text-2xl font-bold text-gray-900">Users</h2>
-                    <p class="mt-1 text-sm text-gray-600">Manage team members and their roles</p>
+                    <h2 class="text-2xl font-bold tracking-tight text-gray-900">Team</h2>
+                    <p class="mt-1 text-sm text-gray-500">Manage team members and their roles</p>
                 </div>
                 <Link v-if="can('users.create')" :href="route('users.create')" class="btn-primary">Add User</Link>
             </div>
@@ -136,6 +138,7 @@ import { route } from 'ziggy-js'
 import { usePermissions } from '@/Composables/usePermissions'
 import AppLayout from '@/Layouts/AppLayout.vue'
 import Badge from '@/Components/Badge.vue'
+import Breadcrumbs from '@/Components/Breadcrumbs.vue'
 import Pagination from '@/Components/Pagination.vue'
 import Modal from '@/Components/Modal.vue'
 import EmptyState from '@/Components/EmptyState.vue'

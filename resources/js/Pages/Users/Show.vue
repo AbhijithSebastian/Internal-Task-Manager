@@ -48,22 +48,23 @@
                 </div>
 
                 <div class="lg:col-span-2 space-y-6">
+                    <!-- Stats row -->
                     <div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
-                        <div class="card p-4 text-center">
-                            <p class="text-2xl font-bold text-gray-900">{{ stats.total_projects }}</p>
-                            <p class="text-xs text-gray-500">Projects</p>
+                        <div class="rounded-2xl border border-gray-200/70 bg-white px-4 py-4 text-center shadow-[0_1px_3px_0_rgba(0,0,0,0.04)]">
+                            <p class="text-2xl font-bold tabular-nums text-gray-900">{{ stats.total_projects }}</p>
+                            <p class="mt-1 text-[11px] font-medium uppercase tracking-widest text-gray-400">Projects</p>
                         </div>
-                        <div class="card p-4 text-center">
-                            <p class="text-2xl font-bold text-gray-900">{{ stats.total_tasks }}</p>
-                            <p class="text-xs text-gray-500">Total Tasks</p>
+                        <div class="rounded-2xl border border-gray-200/70 bg-white px-4 py-4 text-center shadow-[0_1px_3px_0_rgba(0,0,0,0.04)]">
+                            <p class="text-2xl font-bold tabular-nums text-gray-900">{{ stats.total_tasks }}</p>
+                            <p class="mt-1 text-[11px] font-medium uppercase tracking-widest text-gray-400">Total Tasks</p>
                         </div>
-                        <div class="card p-4 text-center">
-                            <p class="text-2xl font-bold text-green-600">{{ stats.completed_tasks }}</p>
-                            <p class="text-xs text-gray-500">Completed</p>
+                        <div class="rounded-2xl border border-gray-200/70 bg-white px-4 py-4 text-center shadow-[0_1px_3px_0_rgba(0,0,0,0.04)]">
+                            <p class="text-2xl font-bold tabular-nums text-gray-900">{{ stats.completed_tasks }}</p>
+                            <p class="mt-1 text-[11px] font-medium uppercase tracking-widest text-gray-400">Completed</p>
                         </div>
-                        <div class="card p-4 text-center">
-                            <p class="text-2xl font-bold text-yellow-600">{{ stats.in_progress_tasks }}</p>
-                            <p class="text-xs text-gray-500">In Progress</p>
+                        <div class="rounded-2xl border border-gray-200/70 bg-white px-4 py-4 text-center shadow-[0_1px_3px_0_rgba(0,0,0,0.04)]">
+                            <p class="text-2xl font-bold tabular-nums text-gray-900">{{ stats.in_progress_tasks }}</p>
+                            <p class="mt-1 text-[11px] font-medium uppercase tracking-widest text-gray-400">In Progress</p>
                         </div>
                     </div>
 
@@ -107,6 +108,7 @@
 
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3'
+import { route } from 'ziggy-js'
 import { usePermissions } from '@/Composables/usePermissions'
 import AppLayout from '@/Layouts/AppLayout.vue'
 import Badge from '@/Components/Badge.vue'

@@ -1,9 +1,11 @@
 <template>
-    <div class="min-h-screen bg-gray-50">
+    <div class="min-h-screen bg-[#f7f8fa]">
         <Sidebar :sidebar-open="sidebarOpen" @close="sidebarOpen = false" />
-        <div class="lg:pl-64">
+
+        <div class="lg:pl-60">
             <Navbar @menu-click="sidebarOpen = true" />
-            <main class="py-8 px-4 sm:px-6 lg:px-8">
+
+            <main class="px-6 py-6 lg:px-8 lg:py-7">
                 <slot />
             </main>
         </div>
@@ -24,12 +26,8 @@ const page = usePage()
 watch(
     () => page.props.flash,
     (flash: any) => {
-        if (flash?.success) {
-            toast.success(flash.success)
-        }
-        if (flash?.error) {
-            toast.error(flash.error)
-        }
+        if (flash?.success) toast.success(flash.success)
+        if (flash?.error) toast.error(flash.error)
     },
     { deep: true, immediate: true }
 )

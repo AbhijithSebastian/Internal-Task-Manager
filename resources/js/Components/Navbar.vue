@@ -1,40 +1,73 @@
 <template>
-    <div class="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-gray-200 bg-white px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:px-8">
-        <button type="button" class="-m-2.5 p-2.5 text-gray-700 lg:hidden" @click="emit('menuClick')">
-            <Bars3Icon class="h-6 w-6" />
-        </button>
-        <div class="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
-            <div class="relative flex flex-1">
-                <button class="flex w-full items-center gap-2 rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-400 hover:border-gray-400 hover:text-gray-500 transition-colors" @click="openSearch">
-                    <MagnifyingGlassIcon class="h-5 w-5 shrink-0" />
-                    <span class="flex-1 text-left">Search tasks, projects...</span>
-                    <kbd class="hidden sm:inline-flex items-center rounded border border-gray-200 bg-white px-1.5 py-0.5 text-xs text-gray-400"><span class="text-xs">&#8984;</span>K</kbd>
+    <header class="sticky top-0 z-40 border-b border-gray-100/80 bg-white/95 backdrop-blur-sm">
+        <div class="flex h-14 items-center justify-between px-6 lg:px-8">
+            <!-- Left: mobile toggle + page title -->
+            <div class="flex items-center gap-3">
+                <button
+                    type="button"
+                    class="rounded-lg p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors lg:hidden"
+                    @click="emit('menuClick')"
+                >
+                    <Bars3Icon class="h-5 w-5" />
                 </button>
+
+                <h1 class="text-sm font-semibold text-gray-800 tracking-tight">Dashboard</h1>
+            </div>
+
+            <!-- Right: bell + avatar -->
+            <div class="flex items-center gap-1.5">
+                <!-- Notification Bell -->
+                <Link
+                    :href="route('notifications.index')"
+                    class="relative rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700"
+                >
+                    <BellIcon class="h-5 w-5" />
+                    <span
+                        v-if="liveUnread > 0"
+                        class="absolute right-1.5 top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-gray-900 text-[9px] font-semibold text-white"
+                    >
+                        {{ liveUnread > 9 ? '9+' : liveUnread }}
+                    </span>
+                </Link>
+
+                <!-- Divider -->
+                <div class="mx-1 h-5 w-px bg-gray-200" />
+
+                <!-- Avatar + name -->
+                <Link
+                    :href="route('profile.edit')"
+                    class="flex items-center gap-2.5 rounded-lg px-2 py-1.5 transition-colors hover:bg-gray-100"
+                >
+                    <div class="relative">
+                        <img
+                            :src="$page.props.auth.user.avatar"
+                            alt=""
+                            class="h-7 w-7 rounded-full object-cover ring-1 ring-gray-200"
+                            @error="onAvatarError"
+                        />
+                        <span class="absolute -bottom-px -right-px h-2.5 w-2.5 rounded-full bg-emerald-400 ring-1 ring-white" />
+                    </div>
+                    <div class="hidden md:block">
+                        <p class="text-xs font-semibold text-gray-800 leading-none">
+                            {{ $page.props.auth.user.name }}
+                        </p>
+                        <p class="mt-0.5 text-[10px] text-gray-400 leading-none capitalize">
+                            {{ ($page.props.auth.user.role as string)?.replace('-', ' ') }}
+                        </p>
+                    </div>
+                    <ChevronDownIcon class="hidden h-3 w-3 text-gray-400 md:block" />
+                </Link>
             </div>
         </div>
-        <div class="flex items-center gap-x-4 lg:gap-x-6">
-            <Link :href="route('notifications.index')" class="relative">
-                <BellIcon class="h-6 w-6 text-gray-400 hover:text-gray-600" />
-                <span v-if="liveUnread > 0" class="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs text-white">
-                    {{ liveUnread > 9 ? '9+' : liveUnread }}
-                </span>
-            </Link>
-            <div class="flex items-center gap-x-2 text-sm">
-                <img :src="$page.props.auth.user.avatar" alt="" class="h-8 w-8 rounded-full" @error="onAvatarError">
-                <span class="hidden lg:block">{{ $page.props.auth.user.name }}</span>
-            </div>
-        </div>
-        <SearchModal />
-    </div>
+    </header>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import { Link } from '@inertiajs/vue3'
 import { route } from 'ziggy-js'
-import { Bars3Icon, MagnifyingGlassIcon, BellIcon } from '@heroicons/vue/24/outline'
 import axios from 'axios'
-import SearchModal from '@/Components/SearchModal.vue'
+import { Bars3Icon, BellIcon, ChevronDownIcon } from '@heroicons/vue/24/outline'
 
 const props = defineProps<{ unreadCount?: number }>()
 const emit = defineEmits<{ menuClick: [] }>()
@@ -61,14 +94,8 @@ onUnmounted(() => {
     if (pollInterval) clearInterval(pollInterval)
 })
 
-function openSearch() {
-    window.dispatchEvent(new CustomEvent('opensearch'))
-}
-
-const avatarRef = ref<HTMLImageElement | null>(null)
 function onAvatarError(e: Event) {
     const img = e.target as HTMLImageElement
     img.style.display = 'none'
-    img.insertAdjacentHTML('afterend', '<div class="h-8 w-8 rounded-full bg-primary-100 flex items-center justify-center text-sm font-medium text-primary-700">' + ($page.props.auth.user.name?.[0]?.toUpperCase() ?? '?') + '</div>')
 }
 </script>
