@@ -19,7 +19,7 @@ class DashboardController extends Controller
         return Inertia::render('Dashboard/Index', [
             'stats' => $this->dashboardService->getStats($user),
             'role_data' => $this->dashboardService->getRoleSpecificData($user),
-            'upcoming_deadlines' => $this->dashboardService->getUpcomingDeadlines($user),
+            'current_projects' => $this->dashboardService->getCurrentProjects($user),
             'recent_activities' => $this->dashboardService->getRecentActivities($user),
         ]);
     }

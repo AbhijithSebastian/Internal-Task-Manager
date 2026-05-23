@@ -112,53 +112,66 @@
                                 <span v-if="item.due_date" class="rounded-md bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-500">
                                     {{ formatDate(item.due_date) }}
                                 </span>
+                                <button
+                                    v-if="item.status === 'in_review' && canApproveTask(item)"
+                                    @click.stop="approveTask(item.id)"
+                                    class="rounded bg-gray-950 px-2 py-0.5 text-[10px] font-semibold text-white hover:bg-gray-700 transition"
+                                >
+                                    Approve
+                                </button>
                             </div>
                         </li>
                     </ul>
                 </div>
 
-                <!-- Upcoming Deadlines (right, narrower) -->
+                <!-- Current Projects (right, narrower) -->
                 <div class="rounded-2xl border border-gray-200/70 bg-white shadow-[0_1px_3px_0_rgba(0,0,0,0.04)] xl:col-span-5">
                     <div class="flex items-center justify-between border-b border-gray-100 px-5 py-4">
                         <div>
-                            <h3 class="text-[13px] font-semibold text-gray-900">Upcoming Deadlines</h3>
-                            <p class="mt-0.5 text-[11px] text-gray-400">Tasks due in the next 7 days</p>
+                            <h3 class="text-[13px] font-semibold text-gray-900">Current Projects</h3>
+                            <p class="mt-0.5 text-[11px] text-gray-400">Active projects you are involved in</p>
                         </div>
                         <Link
-                            :href="route('tasks.index')"
+                            :href="route('projects.index')"
                             class="text-[11px] font-medium text-gray-400 transition-colors hover:text-gray-700"
                         >
                             View all →
                         </Link>
                     </div>
 
-                    <div v-if="upcoming_deadlines.length === 0" class="px-5 py-10 text-center">
-                        <p class="text-sm text-gray-400">No upcoming deadlines.</p>
+                    <div v-if="current_projects.length === 0" class="px-5 py-10 text-center">
+                        <p class="text-sm text-gray-400">No active projects.</p>
                     </div>
 
                     <ul v-else class="divide-y divide-gray-50">
                         <li
-                            v-for="task in upcoming_deadlines.slice(0, 8)"
-                            :key="task.id"
-                            class="flex items-start justify-between gap-3 px-5 py-3 transition-colors hover:bg-gray-50/70"
+                            v-for="project in current_projects.slice(0, 8)"
+                            :key="project.id"
+                            class="px-5 py-3.5 transition-colors hover:bg-gray-50/70"
                         >
-                            <div class="flex min-w-0 items-start gap-2.5">
-                                <span class="mt-[5px] h-1.5 w-1.5 shrink-0 rounded-full" :class="deadlineDotClass(task)" />
+                            <div class="flex items-start justify-between gap-3 mb-1.5">
                                 <div class="min-w-0">
                                     <Link
-                                        :href="route('tasks.show', task.id)"
-                                        class="block truncate text-[13px] font-medium text-gray-800 transition-colors hover:text-gray-900"
+                                        :href="route('projects.show', project.id)"
+                                        class="block truncate text-[13px] font-semibold text-gray-800 transition-colors hover:text-gray-900"
                                     >
-                                        {{ task.title }}
+                                        {{ project.name }}
                                     </Link>
-                                    <p class="mt-0.5 truncate text-[11px] text-gray-400">
-                                        {{ task.project?.name }}
+                                    <p v-if="project.project_manager" class="mt-0.5 truncate text-[11px] text-gray-400">
+                                        PM: {{ project.project_manager.name }}
                                     </p>
                                 </div>
+                                <span class="shrink-0 text-[11px] font-medium text-gray-600">
+                                    {{ project.completion_rate !== null && project.completion_rate !== undefined ? `${project.completion_rate}%` : '0%' }}
+                                </span>
                             </div>
-                            <span class="shrink-0 rounded-md bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-500">
-                                {{ formatDate(task.due_date) }}
-                            </span>
+                            <!-- Progress Bar -->
+                            <div class="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
+                                <div
+                                    class="h-1.5 rounded-full bg-gray-950 transition-all duration-500"
+                                    :style="{ width: `${project.completion_rate ?? 0}%` }"
+                                />
+                            </div>
                         </li>
                     </ul>
                 </div>
@@ -249,8 +262,9 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Link, usePage } from '@inertiajs/vue3'
+import { Link, usePage, router } from '@inertiajs/vue3'
 import { route } from 'ziggy-js'
+import { usePermissions } from '@/Composables/usePermissions'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import AppLayout from '@/Layouts/AppLayout.vue'
@@ -269,9 +283,25 @@ const page = usePage()
 const props = defineProps<{
     stats: any
     role_data: Record<string, any>
-    upcoming_deadlines: any[]
+    current_projects: any[]
     recent_activities: any[]
 }>()
+
+const { can } = usePermissions()
+
+function canApproveTask(task: any) {
+    const user = page.props.auth.user as any
+    if (!user) return false
+    if (user.is_super_admin) return true
+    if (!can('tasks.approve')) return false
+    return task.approver_id === user.id || user.role === 'project-manager' || user.role === 'team-lead'
+}
+
+function approveTask(taskId: number) {
+    router.post(route('tasks.approve', taskId), {}, {
+        preserveScroll: true,
+    })
+}
 
 // ── Auth ──────────────────────────────────────────────────────
 const role = computed(() => (page.props.auth.user as any)?.role ?? 'employee')
@@ -315,17 +345,17 @@ const statsList = computed(() => [
 
 // ── Primary Panel (role-aware) ────────────────────────────────
 const primaryPanelTitle = computed(() => {
-    if (role.value === 'project-manager') return 'Delayed Tasks'
+    if (role.value === 'project-manager') return 'Pending Tasks'
     if (role.value === 'team-lead') return 'Review Queue'
-    if (role.value === 'super-admin') return 'Pending Approvals'
+    if (role.value === 'super-admin') return 'Pending Tasks'
     return 'My Tasks'
 })
 
 const primaryItems = computed(() => {
-    if (role.value === 'project-manager') return props.role_data.delayed_tasks || []
+    if (role.value === 'project-manager') return props.role_data.pending_approvals || []
     if (role.value === 'team-lead') return props.role_data.review_tasks || []
     // For super-admin show pending approvals (tasks needing action), fallback to delayed
-    if (role.value === 'super-admin') return props.role_data.pending_approvals || props.role_data.delayed_tasks || []
+    if (role.value === 'super-admin') return props.role_data.pending_approvals || []
     return props.role_data.my_tasks || []
 })
 

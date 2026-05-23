@@ -175,6 +175,8 @@ Route::middleware(['auth', 'session.timeout:120'])->group(function () {
 
         Route::get('reports', [ReportController::class, 'index'])
             ->name('reports.index');
+        Route::get('reports/project/{project}/preview', [ReportController::class, 'projectPreview'])
+            ->name('reports.project.preview');
         Route::get('reports/export', [ReportController::class, 'export'])
             ->name('reports.export');
 });

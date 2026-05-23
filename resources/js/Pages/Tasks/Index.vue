@@ -48,19 +48,19 @@
                             @input="filter"
                         >
                     </div>
-                    <select v-model="filters.status" class="input py-2 text-sm" @change="filter">
+                    <select v-model="filters.status" class="input py-2 text-sm max-w-[180px] w-full" @change="filter">
                         <option value="">All Statuses</option>
                         <option v-for="s in statuses" :key="s.value" :value="s.value">{{ s.label }}</option>
                     </select>
-                    <select v-model="filters.priority" class="input py-2 text-sm" @change="filter">
+                    <select v-model="filters.priority" class="input py-2 text-sm max-w-[180px] w-full" @change="filter">
                         <option value="">All Priorities</option>
                         <option v-for="p in priorities" :key="p.value" :value="p.value">{{ p.label }}</option>
                     </select>
-                    <select v-model="filters.project_id" class="input py-2 text-sm" @change="filter">
+                    <select v-model="filters.project_id" class="input py-2 text-sm max-w-[200px] w-full" @change="filter">
                         <option value="">All Projects</option>
                         <option v-for="p in projects" :key="p.id" :value="p.id">{{ p.name }}</option>
                     </select>
-                    <select v-model="filters.assignee_id" class="input py-2 text-sm" @change="filter">
+                    <select v-model="filters.assignee_id" class="input py-2 text-sm max-w-[200px] w-full" @change="filter">
                         <option value="">All Assignees</option>
                         <option v-for="m in members" :key="m.id" :value="m.id">{{ m.name }}</option>
                     </select>
@@ -115,6 +115,28 @@
                         <MinusCircleIcon class="h-3.5 w-3.5" />
                         Mark On Hold
                     </button>
+                    <div class="mx-2 h-4 w-px bg-white/20" />
+                    
+                    <!-- Change Priority Dropdown -->
+                    <select
+                        class="bg-white/10 text-white rounded-lg border-transparent px-3 py-1.5 text-[12px] font-medium transition focus:ring-0 focus:border-transparent hover:bg-white/20 cursor-pointer"
+                        @change="bulkUpdatePriority(($event.target as HTMLSelectElement).value); ($event.target as HTMLSelectElement).value = ''"
+                        :disabled="bulkProcessing"
+                    >
+                        <option value="" disabled selected class="bg-gray-900">Change Priority</option>
+                        <option v-for="p in priorities" :key="p.value" :value="p.value" class="bg-gray-900">{{ p.label }}</option>
+                    </select>
+
+                    <!-- Assign User Dropdown -->
+                    <select
+                        class="bg-white/10 text-white rounded-lg border-transparent px-3 py-1.5 text-[12px] font-medium transition focus:ring-0 focus:border-transparent hover:bg-white/20 cursor-pointer"
+                        @change="bulkAssignUser(($event.target as HTMLSelectElement).value); ($event.target as HTMLSelectElement).value = ''"
+                        :disabled="bulkProcessing"
+                    >
+                        <option value="" disabled selected class="bg-gray-900">Assign User</option>
+                        <option v-for="m in members" :key="m.id" :value="m.id" class="bg-gray-900">{{ m.name }}</option>
+                    </select>
+
                     <div class="mx-2 h-4 w-px bg-white/20" />
                     <button
                         class="inline-flex items-center gap-1.5 rounded-lg bg-red-600/80 px-3 py-1.5 text-[12px] font-medium text-white transition hover:bg-red-500"
@@ -428,6 +450,51 @@ async function bulkDelete() {
         })
     }
     router.delete(route('tasks.destroy', ids[ids.length - 1]), {
+        onSuccess: () => { selectedIds.value = [] },
+        onFinish: () => { bulkProcessing.value = false },
+    })
+}
+
+async function bulkUpdatePriority(priority: string) {
+    if (!selectedIds.value.length || bulkProcessing.value || !priority) return
+    bulkProcessing.value = true
+
+    const ids = [...selectedIds.value]
+    
+    for (let i = 0; i < ids.length - 1; i++) {
+        await new Promise<void>((resolve) => {
+            router.put(route('tasks.update', ids[i]), { priority }, {
+                preserveScroll: true,
+                preserveState: true,
+                onFinish: () => resolve(),
+            })
+        })
+    }
+    
+    router.put(route('tasks.update', ids[ids.length - 1]), { priority }, {
+        onSuccess: () => { selectedIds.value = [] },
+        onFinish: () => { bulkProcessing.value = false },
+    })
+}
+
+async function bulkAssignUser(userIdStr: string) {
+    if (!selectedIds.value.length || bulkProcessing.value || !userIdStr) return
+    bulkProcessing.value = true
+
+    const ids = [...selectedIds.value]
+    const assignee_id = parseInt(userIdStr, 10)
+    
+    for (let i = 0; i < ids.length - 1; i++) {
+        await new Promise<void>((resolve) => {
+            router.post(route('tasks.assign', ids[i]), { assignee_id }, {
+                preserveScroll: true,
+                preserveState: true,
+                onFinish: () => resolve(),
+            })
+        })
+    }
+    
+    router.post(route('tasks.assign', ids[ids.length - 1]), { assignee_id }, {
         onSuccess: () => { selectedIds.value = [] },
         onFinish: () => { bulkProcessing.value = false },
     })

@@ -2,6 +2,7 @@
 
 namespace App\Services\Dashboard;
 
+use App\Enums\ProjectStatus;
 use App\Enums\TaskStatus;
 use App\Enums\UserRole;
 use App\Models\Comment;
@@ -169,17 +170,41 @@ class DashboardService
                 ->withCount(['tasks as overdue_tasks' => fn ($q) => $q->whereNull('parent_id')->overdue()])
                 ->get()
                 ->map(fn ($u) => ['id' => $u->id, 'name' => $u->name, 'pending_tasks' => (int) $u->pending_tasks, 'overdue_tasks' => (int) $u->overdue_tasks]),
+            'pending_approvals' => Task::where('requires_approval', true)
+                ->where('status', TaskStatus::InReview)
+                ->with('project', 'assignees', 'author')
+                ->latest()
+                ->limit(10)
+                ->get(),
         ];
     }
 
-    public function getUpcomingDeadlines(User $user, int $days = 7): \Illuminate\Database\Eloquent\Collection
+    public function getCurrentProjects(User $user): \Illuminate\Database\Eloquent\Collection
     {
-        return Task::whereHas('assignees', fn ($q) => $q->where('users.id', $user->id))
-            ->whereNull('parent_id')
-            ->whereBetween('due_date', [now(), now()->addDays($days)])
-            ->whereNotIn('status', [TaskStatus::Done, TaskStatus::Cancelled])
-            ->with(['project'])
-            ->orderBy('due_date')
+        if ($user->is_super_admin) {
+            return Project::active()
+                ->with(['projectManager'])
+                ->withCount([
+                    'tasks',
+                    'tasks as completed_tasks_count' => fn ($q) => $q->where('status', TaskStatus::Done)
+                ])
+                ->orderBy('name')
+                ->limit(10)
+                ->get();
+        }
+
+        return Project::active()
+            ->where(function ($query) use ($user) {
+                $query->whereHas('members', fn ($q) => $q->where('users.id', $user->id))
+                    ->orWhere('pm_id', $user->id)
+                    ->orWhere('lead_id', $user->id);
+            })
+            ->with(['projectManager'])
+            ->withCount([
+                'tasks',
+                'tasks as completed_tasks_count' => fn ($q) => $q->where('status', TaskStatus::Done)
+            ])
+            ->orderBy('name')
             ->limit(10)
             ->get();
     }

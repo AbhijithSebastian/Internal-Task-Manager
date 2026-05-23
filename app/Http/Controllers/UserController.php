@@ -54,7 +54,7 @@ class UserController extends Controller
         $user->load([
             'roles',
             'projects' => fn ($q) => $q->withCount('tasks')->orderBy('projects.created_at', 'desc')->limit(5),
-            'tasks' => fn ($q) => $q->with('project')->latest()->limit(5),
+            'tasks' => fn ($q) => $q->with('project')->latest('tasks.created_at')->limit(5),
         ]);
 
         return Inertia::render('Users/Show', [

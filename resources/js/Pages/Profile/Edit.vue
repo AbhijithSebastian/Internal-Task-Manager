@@ -1,6 +1,6 @@
 <template>
     <AppLayout>
-        <div class="mx-auto max-w-2xl space-y-6">
+        <div class="mx-auto max-w-6xl space-y-6">
             <Breadcrumbs :items="[{ label: 'Profile & Settings' }]" />
 
             <div>
@@ -8,72 +8,82 @@
                 <p class="mt-1 text-sm text-gray-500">Your personal information and preferences</p>
             </div>
 
-            <div class="card p-6">
-                <h3 class="text-base font-semibold text-gray-900 mb-4">Avatar</h3>
-                <div class="flex items-center gap-6">
-                    <img :src="avatarPreview || user.avatar" alt="" class="h-20 w-20 rounded-full object-cover">
-                    <div class="space-y-2">
-                        <label class="btn-secondary btn-sm cursor-pointer">
-                            Upload Photo
-                            <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" class="hidden" @change="handleAvatarUpload">
-                        </label>
-                        <button class="btn-sm text-sm text-red-600 hover:text-red-500" @click="removeAvatar">Remove</button>
-                        <p class="text-xs text-gray-500">JPEG, PNG, or WebP. Max 2MB.</p>
+            <!-- Two-column grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+                <!-- Left column: Avatar card -->
+                <div class="lg:col-span-1">
+                    <div class="card p-6">
+                        <h3 class="text-base font-semibold text-gray-900 mb-4">Avatar</h3>
+                        <div class="flex flex-col items-center text-center gap-4">
+                            <img :src="avatarPreview || user.avatar" alt="" class="h-28 w-28 rounded-full object-cover border border-gray-200/80 shadow-sm">
+                            <div class="space-y-2 w-full flex flex-col items-center">
+                                <label class="btn-secondary btn-sm cursor-pointer w-full text-center">
+                                    Upload Photo
+                                    <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" class="hidden" @change="handleAvatarUpload">
+                                </label>
+                                <button class="btn-sm text-sm text-red-600 hover:text-red-500 w-full text-center" @click="removeAvatar">Remove</button>
+                                <p class="text-xs text-gray-400 mt-1">JPEG, PNG, or WebP. Max 2MB.</p>
+                            </div>
+                        </div>
+                        <p v-if="avatarError" class="mt-2 text-sm text-red-600 text-center">{{ avatarError }}</p>
                     </div>
                 </div>
-                <p v-if="avatarError" class="mt-2 text-sm text-red-600">{{ avatarError }}</p>
+
+                <!-- Right/Main column: Profile info + Password -->
+                <div class="lg:col-span-2 space-y-6">
+                    <form @submit.prevent="submitProfile" class="card p-6 space-y-6">
+                        <h3 class="text-base font-semibold text-gray-900">Personal Information</h3>
+                        <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                            <div>
+                                <label class="label">Name <span class="text-red-500">*</span></label>
+                                <input v-model="profileForm.name" type="text" class="input">
+                                <p v-if="profileForm.errors.name" class="mt-1 text-sm text-red-600">{{ profileForm.errors.name }}</p>
+                            </div>
+                            <div>
+                                <label class="label">Email <span class="text-red-500">*</span></label>
+                                <input v-model="profileForm.email" type="email" class="input">
+                                <p v-if="profileForm.errors.email" class="mt-1 text-sm text-red-600">{{ profileForm.errors.email }}</p>
+                            </div>
+                            <div>
+                                <label class="label">Job Title</label>
+                                <input v-model="profileForm.job_title" type="text" disabled class="input bg-gray-50 text-gray-500 cursor-not-allowed border-gray-200">
+                                <p class="text-[10px] text-gray-400 mt-1">Job title can only be updated by admins.</p>
+                            </div>
+                            <div>
+                                <label class="label">Phone</label>
+                                <input v-model="profileForm.phone" type="text" class="input">
+                            </div>
+                        </div>
+                        <div class="flex justify-end pt-4 border-t border-gray-100">
+                            <button type="submit" :disabled="profileForm.processing" class="btn-primary">Save Changes</button>
+                        </div>
+                    </form>
+
+                    <form @submit.prevent="submitPassword" class="card p-6 space-y-6">
+                        <h3 class="text-base font-semibold text-gray-900">Change Password</h3>
+                        <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                            <div>
+                                <label class="label">Current Password <span class="text-red-500">*</span></label>
+                                <input v-model="passwordForm.current_password" type="password" class="input">
+                                <p v-if="passwordForm.errors.current_password" class="mt-1 text-sm text-red-600">{{ passwordForm.errors.current_password }}</p>
+                            </div>
+                            <div></div>
+                            <div>
+                                <label class="label">New Password <span class="text-red-500">*</span></label>
+                                <input v-model="passwordForm.password" type="password" class="input" placeholder="Min 8 characters">
+                                <p v-if="passwordForm.errors.password" class="mt-1 text-sm text-red-600">{{ passwordForm.errors.password }}</p>
+                            </div>
+                            <div>
+                                <label class="label">Confirm Password <span class="text-red-500">*</span></label>
+                                <input v-model="passwordForm.password_confirmation" type="password" class="input" placeholder="Repeat password">
+                            </div>
+                        </div>
+                        <div class="flex justify-end pt-4 border-t border-gray-100">
+                            <button type="submit" :disabled="passwordForm.processing" class="btn-primary">Update Password</button>
+                        </div>
+                    </form>
+                </div>
             </div>
-
-            <form @submit.prevent="submitProfile" class="card p-6 space-y-6">
-                <h3 class="text-base font-semibold text-gray-900">Personal Information</h3>
-                <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                    <div>
-                        <label class="label">Name <span class="text-red-500">*</span></label>
-                        <input v-model="profileForm.name" type="text" class="input">
-                        <p v-if="profileForm.errors.name" class="mt-1 text-sm text-red-600">{{ profileForm.errors.name }}</p>
-                    </div>
-                    <div>
-                        <label class="label">Email <span class="text-red-500">*</span></label>
-                        <input v-model="profileForm.email" type="email" class="input">
-                        <p v-if="profileForm.errors.email" class="mt-1 text-sm text-red-600">{{ profileForm.errors.email }}</p>
-                    </div>
-                    <div>
-                        <label class="label">Job Title</label>
-                        <input v-model="profileForm.job_title" type="text" class="input">
-                    </div>
-                    <div>
-                        <label class="label">Phone</label>
-                        <input v-model="profileForm.phone" type="text" class="input">
-                    </div>
-                </div>
-                <div class="flex justify-end">
-                    <button type="submit" :disabled="profileForm.processing" class="btn-primary">Save Changes</button>
-                </div>
-            </form>
-
-            <form @submit.prevent="submitPassword" class="card p-6 space-y-6">
-                <h3 class="text-base font-semibold text-gray-900">Change Password</h3>
-                <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                    <div>
-                        <label class="label">Current Password <span class="text-red-500">*</span></label>
-                        <input v-model="passwordForm.current_password" type="password" class="input">
-                        <p v-if="passwordForm.errors.current_password" class="mt-1 text-sm text-red-600">{{ passwordForm.errors.current_password }}</p>
-                    </div>
-                    <div></div>
-                    <div>
-                        <label class="label">New Password <span class="text-red-500">*</span></label>
-                        <input v-model="passwordForm.password" type="password" class="input" placeholder="Min 8 characters">
-                        <p v-if="passwordForm.errors.password" class="mt-1 text-sm text-red-600">{{ passwordForm.errors.password }}</p>
-                    </div>
-                    <div>
-                        <label class="label">Confirm Password <span class="text-red-500">*</span></label>
-                        <input v-model="passwordForm.password_confirmation" type="password" class="input" placeholder="Repeat password">
-                    </div>
-                </div>
-                <div class="flex justify-end">
-                    <button type="submit" :disabled="passwordForm.processing" class="btn-primary">Update Password</button>
-                </div>
-            </form>
         </div>
     </AppLayout>
 </template>

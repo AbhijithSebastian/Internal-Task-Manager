@@ -70,6 +70,99 @@ class ReportController extends Controller
         };
     }
 
+    public function projectPreview(Project $project): \Illuminate\Http\JsonResponse
+    {
+        $this->authorize(Permission::REPORTS_VIEW->value);
+
+        $project->load(['projectManager', 'teamLead', 'members']);
+
+        $totalTasks = $project->tasks()->whereNull('parent_id')->count();
+        $completedTasks = $project->tasks()->whereNull('parent_id')->where('status', TaskStatus::Done->value)->count();
+        $completionRate = $totalTasks > 0 ? round(($completedTasks / $totalTasks) * 100, 1) : 0;
+
+        $statusCounts = $project->tasks()
+            ->whereNull('parent_id')
+            ->select('status', \DB::raw('count(*) as count'))
+            ->groupBy('status')
+            ->pluck('count', 'status')
+            ->toArray();
+
+        $tasksSummary = [];
+        foreach (TaskStatus::cases() as $status) {
+            $tasksSummary[$status->value] = $statusCounts[$status->value] ?? 0;
+        }
+
+        $teamSummary = $project->members->map(fn ($m) => [
+            'name' => $m->name,
+            'role' => $m->pivot->role,
+            'avatar' => $m->avatar,
+            'assigned_tasks_count' => $project->tasks()->whereNull('parent_id')->whereHas('assignees', fn ($q) => $q->where('users.id', $m->id))->count(),
+        ]);
+
+        $upcomingDeadlines = $project->tasks()
+            ->whereNull('parent_id')
+            ->whereNotNull('due_date')
+            ->where('status', '!=', TaskStatus::Done->value)
+            ->orderBy('due_date', 'asc')
+            ->limit(5)
+            ->get(['id', 'title', 'due_date', 'status', 'priority'])
+            ->map(fn ($t) => [
+                'id' => $t->id,
+                'title' => $t->title,
+                'due_date' => $t->due_date?->format('Y-m-d'),
+                'status' => $t->status,
+                'priority' => $t->priority?->value,
+            ]);
+
+        // Health Score
+        $blockedTasks = $project->tasks()->whereNull('parent_id')->where('status', TaskStatus::Blocked->value)->count();
+        $overdueTasks = $project->tasks()->whereNull('parent_id')->overdue()->count();
+        $inProgressTasks = $project->tasks()->whereNull('parent_id')->where('status', TaskStatus::InProgress->value)->count();
+
+        $healthScore = 100;
+        if ($totalTasks > 0) {
+            $completionWeight = 0.4;
+            $blockedWeight = 0.3;
+            $overdueWeight = 0.3;
+
+            $completionScore = ($completedTasks / $totalTasks) * 100;
+            $blockedRatio = $blockedTasks / $totalTasks;
+            $overdueRatio = $overdueTasks / $totalTasks;
+
+            $blockedScore = max(0, 100 - ($blockedRatio * 100));
+            $overdueScore = max(0, 100 - ($overdueRatio * 100));
+
+            $healthScore = (int) round(
+                ($completionScore * $completionWeight) +
+                ($blockedScore * $blockedWeight) +
+                ($overdueScore * $overdueWeight)
+            );
+        }
+
+        return response()->json([
+            'project' => [
+                'id' => $project->id,
+                'name' => $project->name,
+                'description' => $project->description,
+                'status' => $project->status_label,
+                'priority' => $project->priority_label,
+                'start_date' => $project->start_date?->format('Y-m-d'),
+                'end_date' => $project->end_date?->format('Y-m-d'),
+                'pm' => $project->projectManager?->name,
+                'lead' => $project->teamLead?->name,
+            ],
+            'progress_summary' => [
+                'total_tasks' => $totalTasks,
+                'completed_tasks' => $completedTasks,
+                'completion_rate' => $completionRate,
+            ],
+            'tasks_summary' => $tasksSummary,
+            'team_summary' => $teamSummary,
+            'deadlines' => $upcomingDeadlines,
+            'health_score' => $healthScore,
+        ]);
+    }
+
     private function exportCsv(iterable $data, string $type): StreamedResponse
     {
         $headers = [
@@ -199,7 +292,7 @@ class ReportController extends Controller
         $user = Auth::user();
         $filters = $request->validated();
 
-        $projectIds = match ($user->role) {
+        $allowedProjectIds = match ($user->role) {
             UserRole::SuperAdmin => null,
             UserRole::ProjectManager => Project::where('pm_id', $user->id)->pluck('id')->toArray(),
             UserRole::TeamLead => Project::where('lead_id', $user->id)->pluck('id')->toArray(),
@@ -207,8 +300,12 @@ class ReportController extends Controller
             default => null,
         };
 
-        if ($projectIds !== null) {
-            $filters['project_ids'] = $projectIds;
+        if (isset($filters['project_ids'])) {
+            if ($allowedProjectIds !== null) {
+                $filters['project_ids'] = array_intersect($filters['project_ids'], $allowedProjectIds);
+            }
+        } elseif ($allowedProjectIds !== null) {
+            $filters['project_ids'] = $allowedProjectIds;
         }
 
         if ($user->role === UserRole::Employee && !isset($filters['user_id'])) {

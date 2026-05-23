@@ -40,17 +40,25 @@ abstract class BasePolicy
     {
         return $user->id === $model->{$ownerColumn};
     }
-
     protected function isProjectMember(User $user, object $project): bool
     {
-        return $project->members()->where('user_id', $user->id)->exists();
+        return $project->members()->where('user_id', $user->id)->exists()
+            || $project->pm_id === $user->id
+            || $project->lead_id === $user->id;
     }
 
     protected function getProjectRole(User $user, object $project): ?string
     {
         $membership = $project->members()->where('user_id', $user->id)->first();
+        if ($membership) {
+            return $membership->pivot->role;
+        }
 
-        return $membership?->pivot->role;
+        if ($project->pm_id === $user->id || $project->lead_id === $user->id) {
+            return 'manager';
+        }
+
+        return null;
     }
 
     protected function hasProjectRole(User $user, object $project, array $roles): bool

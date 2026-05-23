@@ -8,6 +8,6 @@ interface DashboardServiceInterface
 {
     public function getStats(User $user): array;
     public function getRoleSpecificData(User $user): array;
-    public function getUpcomingDeadlines(User $user, int $days = 7): \Illuminate\Database\Eloquent\Collection;
+    public function getCurrentProjects(User $user): \Illuminate\Database\Eloquent\Collection;
     public function getRecentActivities(User $user, int $limit = 10): \Illuminate\Database\Eloquent\Collection;
 }
