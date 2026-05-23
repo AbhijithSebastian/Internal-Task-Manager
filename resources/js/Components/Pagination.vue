@@ -23,7 +23,7 @@
                     </Link>
                     <template v-for="(link, index) in pagination.links" :key="index">
                         <span v-if="link.url === null" class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-700 ring-1 ring-inset ring-gray-300">{{ link.label }}</span>
-                        <Link v-else :href="link.url" :class="[link.active ? 'bg-primary-600 text-white' : 'text-gray-900 hover:bg-gray-50', 'relative inline-flex items-center px-4 py-2 text-sm font-semibold ring-1 ring-inset ring-gray-300']">{{ link.label }}</Link>
+                        <Link v-else :href="link.url" :class="[link.active ? 'bg-gray-900 text-white' : 'text-gray-900 hover:bg-gray-50', 'relative inline-flex items-center px-4 py-2 text-sm font-semibold ring-1 ring-inset ring-gray-300']">{{ link.label }}</Link>
                     </template>
                     <Link v-if="pagination.next_page_url" :href="pagination.next_page_url" class="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
                         <ChevronRightIcon class="h-5 w-5" />

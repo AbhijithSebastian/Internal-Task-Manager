@@ -30,11 +30,12 @@ if (!function_exists('status_badge_variant')) {
     function status_badge_variant(string $status): string
     {
         return match ($status) {
-            TaskStatus::Done->value, ProjectStatus::Active->value => 'success',
+            TaskStatus::Done->value, ProjectStatus::Completed->value => 'success',
             TaskStatus::InProgress->value, TaskStatus::InReview->value => 'warning',
             TaskStatus::Cancelled->value, ProjectStatus::Archived->value => 'danger',
-            TaskStatus::Backlog->value, ProjectStatus::Completed->value => 'neutral',
-            TaskStatus::Todo->value, ProjectStatus::OnHold->value => 'info',
+            TaskStatus::Backlog->value => 'neutral',
+            TaskStatus::Todo->value, ProjectStatus::Active->value => 'info',
+            ProjectStatus::OnHold->value => 'warning',
             default => 'neutral',
         };
     }

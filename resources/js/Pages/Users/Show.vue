@@ -135,7 +135,7 @@ function statusBadge(status: string): string {
     const map: Record<string, string> = {
         backlog: 'neutral', todo: 'info', in_progress: 'warning',
         in_review: 'warning', done: 'success', cancelled: 'danger',
-        active: 'success', on_hold: 'warning', completed: 'info', archived: 'neutral',
+        active: 'info', on_hold: 'warning', completed: 'success', archived: 'neutral',
     }
     return map[status] ?? 'neutral'
 }

@@ -45,7 +45,11 @@ class UserSeeder extends Seeder
                 'email' => strtolower($name) . '@internaltool.com',
                 'password' => bcrypt('password'),
             ]);
-            $user->assignRole(UserRole::Employee->value);
+            if ($name === 'Abhijith') {
+                $user->assignRole(UserRole::SuperAdmin->value);
+            } else {
+                $user->assignRole(UserRole::Employee->value);
+            }
         }
     }
 }

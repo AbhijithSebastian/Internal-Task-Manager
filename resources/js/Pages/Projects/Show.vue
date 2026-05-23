@@ -260,7 +260,7 @@ const hasTasks = computed(() => totalTasks.value > 0)
 const hasTimelineItems = computed(() => (props.timeline.overdue?.length ?? 0) + (props.timeline.upcoming?.length ?? 0) + (props.timeline.completed?.length ?? 0) > 0)
 
 function statusBadge(status: string): string {
-    const map: Record<string, string> = { active: 'success', on_hold: 'warning', completed: 'info', archived: 'neutral' }
+    const map: Record<string, string> = { active: 'info', on_hold: 'warning', completed: 'success', archived: 'neutral' }
     return map[status] ?? 'neutral'
 }
 
