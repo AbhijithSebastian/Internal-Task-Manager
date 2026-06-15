@@ -1,5 +1,10 @@
 <template>
-    <span :class="classes">
+    <span
+        :class="[
+            'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium',
+            variantClass,
+        ]"
+    >
         <slot />
     </span>
 </template>
@@ -8,18 +13,18 @@
 import { computed } from 'vue'
 
 const props = defineProps<{
-    variant?: 'success' | 'warning' | 'danger' | 'info' | 'neutral'
+    variant?: 'success' | 'warning' | 'danger' | 'info' | 'neutral' | 'brand'
 }>()
 
-const classes = computed(() => {
-    const map = {
-        success: 'bg-green-100 text-green-800',
-        warning: 'bg-yellow-100 text-yellow-800',
-        danger: 'bg-red-100 text-red-800',
-        info: 'bg-blue-100 text-blue-800',
-        neutral: 'bg-gray-100 text-gray-800',
+const variantClass = computed(() => {
+    const map: Record<string, string> = {
+        success: 'bg-success-50 text-success',
+        warning: 'bg-warning-50 text-warning',
+        danger: 'bg-danger-50 text-danger',
+        info: 'bg-brand-primary-50 text-brand-primary-600',
+        brand: 'bg-brand-primary-500 text-white',
+        neutral: 'bg-gray-100 text-text-secondary',
     }
-
-    return `inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${map[props.variant ?? 'neutral']}`
+    return map[props.variant || 'neutral']
 })
 </script>

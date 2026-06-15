@@ -4,12 +4,12 @@
             <Breadcrumbs :items="[{ label: 'Projects', route: 'projects.index' }, { label: project.name, route: 'projects.show', params: { id: project.id } }, { label: 'Edit' }]" :back="{ route: 'projects.show', params: { id: project.id } }" />
 
             <div>
-                <h2 class="text-2xl font-bold text-gray-900">Edit Project</h2>
-                <p class="mt-1 text-sm text-gray-600">{{ project.name }}</p>
+                <h2 class="text-2xl font-bold text-text-primary">Edit Project</h2>
+                <p class="mt-1 text-sm text-text-secondary">{{ project.name }}</p>
             </div>
 
-            <div class="card p-6">
-                <h3 class="text-base font-semibold text-gray-900 mb-4">Status</h3>
+            <div class="card card-body">
+                <h3 class="text-base font-semibold text-text-primary mb-4">Status</h3>
                 <div class="flex items-center gap-3">
                     <Badge :variant="statusBadge(project.status)" class="text-sm">{{ project.status_label ?? project.status }}</Badge>
                     <select v-model="statusForm.status" class="input max-w-[180px]" @change="changeStatus">
@@ -21,17 +21,17 @@
                 </div>
             </div>
 
-            <form @submit.prevent="submit" class="card p-6 space-y-6">
-                <h3 class="text-base font-semibold text-gray-900">Project Information</h3>
+            <form @submit.prevent="submit" class="card card-body space-y-6">
+                <h3 class="text-base font-semibold text-text-primary">Project Information</h3>
                 <div>
-                    <label class="label">Project Name <span class="text-red-500">*</span></label>
+                    <label class="label">Project Name <span class="text-danger">*</span></label>
                     <input v-model="form.name" type="text" class="input">
-                    <p v-if="form.errors.name" class="mt-1 text-sm text-red-600">{{ form.errors.name }}</p>
+                    <p v-if="form.errors.name" class="mt-1 text-sm text-danger">{{ form.errors.name }}</p>
                 </div>
                 <div>
                     <label class="label">Description</label>
                     <textarea v-model="form.description" rows="4" class="input" />
-                    <p v-if="form.errors.description" class="mt-1 text-sm text-red-600">{{ form.errors.description }}</p>
+                    <p v-if="form.errors.description" class="mt-1 text-sm text-danger">{{ form.errors.description }}</p>
                 </div>
                 <div class="grid grid-cols-2 gap-4">
                     <div>
@@ -51,13 +51,13 @@
                     <div>
                         <label class="label">End Date</label>
                         <input v-model="form.end_date" type="date" class="input">
-                        <p v-if="form.errors.end_date" class="mt-1 text-sm text-red-600">{{ form.errors.end_date }}</p>
+                        <p v-if="form.errors.end_date" class="mt-1 text-sm text-danger">{{ form.errors.end_date }}</p>
                     </div>
                 </div>
 
-                <hr class="border-gray-200">
+                <hr class="border-border">
 
-                <h3 class="text-base font-semibold text-gray-900">Team</h3>
+                <h3 class="text-base font-semibold text-text-primary">Team</h3>
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="label">Project Manager</label>
@@ -78,10 +78,10 @@
                 <div>
                     <label class="label">Members</label>
                     <div class="space-y-2">
-                        <div v-for="member in project.members" :key="member.id" class="flex items-center justify-between rounded-lg border border-gray-200 px-3 py-2">
+                        <div v-for="member in project.members" :key="member.id" class="flex items-center justify-between rounded-card border border-border px-3 py-2">
                             <div class="flex items-center gap-2">
                                 <img :src="member.avatar" alt="" class="h-7 w-7 rounded-full">
-                                <span class="text-sm text-gray-900">{{ member.name }}</span>
+                                <span class="text-sm text-text-primary">{{ member.name }}</span>
                                 <Badge variant="info" class="text-[10px]">{{ member.pivot?.role }}</Badge>
                             </div>
                             <div class="flex items-center gap-2">
@@ -89,7 +89,7 @@
                                     <option value="member" :selected="member.pivot?.role === 'member'">Member</option>
                                     <option value="manager" :selected="member.pivot?.role === 'manager'">Manager</option>
                                 </select>
-                                <button class="text-xs text-red-600 hover:text-red-500" @click="removeMember(member)">Remove</button>
+                                <button class="text-xs text-danger hover:text-danger" @click="removeMember(member)">Remove</button>
                             </div>
                         </div>
                         <div class="flex items-center gap-2">
@@ -102,29 +102,29 @@
                     </div>
                 </div>
 
-                <hr class="border-gray-200">
+                <hr class="border-border">
 
-                <h3 class="text-base font-semibold text-gray-900">Project Links</h3>
+                <h3 class="text-base font-semibold text-text-primary">Project Links</h3>
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="label">Figma URL</label>
                         <input v-model="form.figma_url" type="url" class="input" placeholder="https://figma.com/file/...">
-                        <p v-if="form.errors.figma_url" class="mt-1 text-sm text-red-600">{{ form.errors.figma_url }}</p>
+                        <p v-if="form.errors.figma_url" class="mt-1 text-sm text-danger">{{ form.errors.figma_url }}</p>
                     </div>
                     <div>
                         <label class="label">GitHub URL</label>
                         <input v-model="form.github_url" type="url" class="input" placeholder="https://github.com/...">
-                        <p v-if="form.errors.github_url" class="mt-1 text-sm text-red-600">{{ form.errors.github_url }}</p>
+                        <p v-if="form.errors.github_url" class="mt-1 text-sm text-danger">{{ form.errors.github_url }}</p>
                     </div>
                     <div>
                         <label class="label">Docs URL</label>
                         <input v-model="form.docs_url" type="url" class="input" placeholder="https://docs.google.com/...">
-                        <p v-if="form.errors.docs_url" class="mt-1 text-sm text-red-600">{{ form.errors.docs_url }}</p>
+                        <p v-if="form.errors.docs_url" class="mt-1 text-sm text-danger">{{ form.errors.docs_url }}</p>
                     </div>
                     <div>
                         <label class="label">Meeting URL</label>
                         <input v-model="form.meeting_url" type="url" class="input" placeholder="https://meet.google.com/...">
-                        <p v-if="form.errors.meeting_url" class="mt-1 text-sm text-red-600">{{ form.errors.meeting_url }}</p>
+                        <p v-if="form.errors.meeting_url" class="mt-1 text-sm text-danger">{{ form.errors.meeting_url }}</p>
                     </div>
                 </div>
 

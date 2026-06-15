@@ -11,6 +11,7 @@ use App\Services\Task\TaskService;
 use App\Services\User\UserService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
 
@@ -49,6 +50,13 @@ class AppServiceProvider extends ServiceProvider
         $this->configureVite();
         $this->registerMacros();
         $this->suppressPhp85Deprecations();
+
+        \Illuminate\Support\Facades\Route::bind('role', function (string $value) {
+            if (is_numeric($value)) {
+                return \Spatie\Permission\Models\Role::findOrFail((int) $value);
+            }
+            return \Spatie\Permission\Models\Role::findByName($value);
+        });
     }
 
     private function registerServiceBindings(): void
@@ -78,7 +86,8 @@ class AppServiceProvider extends ServiceProvider
 
     private function configureModelStrictness(): void
     {
-        Model::shouldBeStrict(!$this->app->environment('production'));
+        Model::preventLazyLoading(!$this->app->isProduction());
+        Model::shouldBeStrict($this->app->isLocal());
 
         if ($this->app->environment('local')) {
             DB::listen(function ($query) {

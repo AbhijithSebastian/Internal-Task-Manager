@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Services\Attachment\AttachmentService;
 use App\Services\Comment\CommentService;
 use App\Services\Task\TaskService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -29,28 +30,42 @@ class TaskController extends Controller
         $this->authorize('viewAny', Task::class);
 
         $user = auth()->user();
+        $tab = request('tab', 'all');
 
         $stats = [
-            'total' => Task::query()->whereHas('project', fn($q) => $q->byMember($user->id))->count(),
-            'my_tasks' => Task::query()->whereHas('assignees', fn($q) => $q->where('users.id', $user->id))->count(),
-            'overdue' => Task::query()->whereHas('project', fn($q) => $q->byMember($user->id))->overdue()->count(),
-            'blocked' => Task::query()->whereHas('project', fn($q) => $q->byMember($user->id))->blocked()->count(),
+            'total' => Task::query()->whereHas('project', fn($q) => $q->byMember($user->id))->whereNull('parent_id')->count(),
+            'my_tasks' => Task::query()->whereHas('assignees', fn($q) => $q->where('users.id', $user->id))->whereNull('parent_id')->count(),
+            'my_subtasks' => Task::query()->whereNotNull('parent_id')->whereHas('assignees', fn($q) => $q->where('users.id', $user->id))->count(),
+            'blocked' => Task::query()->whereHas('project', fn($q) => $q->byMember($user->id))->whereNull('parent_id')->blocked()->count(),
         ];
 
+        $filters = request()->only(['search', 'status', 'priority', 'project_id', 'assignee_id', 'tag', 'sort_by', 'sort_direction', 'tab']);
+
+        if ($tab === 'my-subtasks') {
+            $tasks = $this->taskService->listMySubtasks($user->id, $filters);
+        } else {
+            $tasks = $this->taskService->list($filters);
+        }
+
         return Inertia::render('Tasks/Index', [
-            'tasks' => $this->taskService->list(request()->all()),
-            'filters' => request()->only(['search', 'status', 'priority', 'project_id', 'assignee_id', 'tag', 'sort_by', 'sort_direction']),
-            'projects' => $user->projects()->get(['id', 'name']),
+            'tasks' => $tasks,
+            'filters' => $filters,
+            'projects' => $user->hasRole('super-admin')
+                ? Project::get(['id', 'name'])
+                : $user->projects()->get(['id', 'name']),
             'tags' => $this->taskService->getAllTags(),
             'members' => User::active()->get(['id', 'name']),
             'stats' => $stats,
+            'userRole' => $user->getRoleNames()->first() ?? 'employee',
         ]);
     }
 
     public function create(): \Inertia\Response|\Illuminate\Http\RedirectResponse
     {
         $user = auth()->user();
-        $projects = $user->projects()->active()->get(['id', 'name']);
+        $projects = $user->hasRole('super-admin')
+            ? Project::active()->get(['id', 'name'])
+            : $user->projects()->active()->get(['id', 'name']);
 
         if ($projects->isEmpty()) {
             return redirect()->route('tasks.index')
@@ -67,7 +82,17 @@ class TaskController extends Controller
         $project = Project::findOrFail($request->project_id);
         $this->authorize('create', [Task::class, $project]);
 
-        $this->taskService->create($request->validated());
+        $data = $request->validated();
+        $subtasksData = $data['subtasks'] ?? [];
+        unset($data['subtasks']);
+
+        $task = $this->taskService->create($data);
+
+        if (!empty($subtasksData)) {
+            foreach ($subtasksData as $subtaskData) {
+                $this->taskService->createSubtask($task, $subtaskData);
+            }
+        }
 
         return redirect()->route('tasks.index')
             ->with('success', 'Task created successfully.');
@@ -110,7 +135,7 @@ class TaskController extends Controller
     {
         $this->authorize('update', $task);
 
-        $task->load(['author', 'assignees', 'approver', 'project', 'dependencies']);
+        $task->load(['author', 'assignees', 'approver', 'project', 'dependencies', 'subtasks' => fn ($q) => $q->with(['assignees'])]);
 
         $projectMembers = $task->project ? $task->project->members()->get(['id', 'name']) : collect();
         $availableDependencies = $task->project ? $task->project->tasks()
@@ -118,9 +143,14 @@ class TaskController extends Controller
             ->where('id', '!=', $task->id)
             ->get(['id', 'title']) : collect();
 
+        $user = auth()->user();
+        $projects = $user->hasRole('super-admin')
+            ? Project::get(['id', 'name'])
+            : $user->projects()->get(['id', 'name']);
+
         return Inertia::render('Tasks/Edit', [
             'task' => $task,
-            'projects' => auth()->user()->projects()->get(['id', 'name']),
+            'projects' => $projects,
             'project_members' => $projectMembers,
             'available_dependencies' => $availableDependencies,
         ]);
@@ -267,7 +297,12 @@ class TaskController extends Controller
             'estimated_hours' => ['nullable', 'numeric', 'min:0', 'max:999'],
             'assignee_ids' => ['nullable', 'array'],
             'assignee_ids.*' => ['exists:users,id'],
+            'assignee_id' => ['nullable', 'integer', 'exists:users,id'],
         ]);
+
+        if (isset($validated['assignee_id']) && !isset($validated['assignee_ids'])) {
+            $validated['assignee_ids'] = [$validated['assignee_id']];
+        }
 
         $this->taskService->createSubtask($task, $validated);
 
@@ -278,6 +313,10 @@ class TaskController extends Controller
     {
         $this->authorize('update', $subtask);
 
+        if ($subtask->parent_id !== $task->id) {
+            abort(404);
+        }
+
         $validated = $request->validate([
             'title' => ['sometimes', 'string', 'max:500'],
             'description' => ['nullable', 'string'],
@@ -286,7 +325,12 @@ class TaskController extends Controller
             'estimated_hours' => ['nullable', 'numeric', 'min:0', 'max:999'],
             'assignee_ids' => ['nullable', 'array'],
             'assignee_ids.*' => ['exists:users,id'],
+            'assignee_id' => ['nullable', 'integer', 'exists:users,id'],
         ]);
+
+        if (isset($validated['assignee_id']) && !isset($validated['assignee_ids'])) {
+            $validated['assignee_ids'] = [$validated['assignee_id']];
+        }
 
         $this->taskService->updateSubtask($subtask, $validated);
 
@@ -297,9 +341,42 @@ class TaskController extends Controller
     {
         $this->authorize('delete', $subtask);
 
+        if ($subtask->parent_id !== $task->id) {
+            abort(404);
+        }
+
         $this->taskService->deleteSubtask($subtask);
 
         return redirect()->back()->with('success', 'Subtask deleted.');
     }
 
+    public function bulkDeleteSubtasks(Request $request, Task $task): RedirectResponse
+    {
+        $this->authorize('update', $task);
+
+        $validated = $request->validate([
+            'subtask_ids' => ['required', 'array', 'min:1'],
+            'subtask_ids.*' => ['integer', 'exists:tasks,id,parent_id,' . $task->id],
+        ]);
+
+        Task::whereIn('id', $validated['subtask_ids'])
+            ->where('parent_id', $task->id)
+            ->delete();
+
+        return redirect()->back()->with('success', 'Completed subtasks deleted.');
+    }
+
+    public function parentTasks(Request $request): JsonResponse
+    {
+        $projectId = $request->input('project_id');
+        $user = $request->user();
+
+        $tasks = Task::whereNull('parent_id')
+            ->when($projectId, fn ($q) => $q->where('project_id', $projectId))
+            ->whereHas('project', fn ($q) => $q->byMember($user->id))
+            ->orderBy('title')
+            ->get(['id', 'title', 'project_id']);
+
+        return response()->json(['tasks' => $tasks]);
+    }
 }

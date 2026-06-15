@@ -14,7 +14,7 @@ class ReportFilterRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'tab' => 'nullable|string|in:task_completion,overdue_analysis,team_productivity,project_health,workload_distribution,weekly_summary,meeting_logs',
+            'tab' => 'nullable|string|in:task_completion,workload_distribution,weekly_summary,meeting_logs',
             'project_id' => 'nullable|exists:projects,id',
             'project_ids' => 'nullable|array',
             'project_ids.*' => 'exists:projects,id',

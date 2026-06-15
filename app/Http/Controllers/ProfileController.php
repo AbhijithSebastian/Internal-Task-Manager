@@ -71,11 +71,17 @@ class ProfileController extends Controller
             'avatar' => ['required', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:2048'],
         ]);
 
-        $user->addMedia($request->file('avatar'))
+        $file = $request->file('avatar');
+
+        abort_unless($file->isValid(), 422, 'Invalid file upload.');
+
+        $fileName = $file->getClientOriginalName();
+
+        $user->addMedia($file)
             ->toMediaCollection('avatar');
 
         log_activity($user, 'Avatar updated', [
-            'file_name' => $request->file('avatar')->getClientOriginalName(),
+            'file_name' => $fileName,
         ]);
 
         return redirect()->back()->with('success', 'Avatar updated successfully.');

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ActivityController;
+use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\NewPasswordController;
@@ -9,6 +10,7 @@ use App\Http\Controllers\CommentController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\IntegrationController;
 use App\Http\Controllers\MeetingLogController;
+use App\Http\Controllers\MilestoneController;
 use App\Http\Controllers\MonitoringController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
@@ -20,11 +22,19 @@ use Illuminate\Support\Facades\Route;
 
 // ─── Guest Routes (unauthenticated only) ───
 
+Route::get('/test-auth', function () {
+    return response()->json([
+        'authenticated' => auth()->check(),
+        'user' => auth()->user()?->email,
+        'session_id' => session()->getId(),
+        'cookie_name' => config('session.cookie'),
+    ]);
+});
 Route::middleware('guest')->group(function () {
     Route::get('login', [AuthenticatedSessionController::class, 'create'])
         ->name('login');
     Route::post('login', [AuthenticatedSessionController::class, 'store'])
-        ->middleware('throttle:5,15');
+        ->middleware('throttle:100,15');
 
     Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])
         ->name('password.request');
@@ -41,9 +51,22 @@ Route::middleware('guest')->group(function () {
 
 // ─── Authenticated Routes (session required) ───
 
-Route::middleware(['auth', 'session.timeout:120'])->group(function () {
+Route::middleware(['auth'])->group(function () {
     Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])
         ->name('logout');
+
+    Route::get('permissions', [\App\Http\Controllers\PermissionController::class, 'index'])
+        ->name('permissions.index');
+    Route::get('permissions/users/{user}', [\App\Http\Controllers\PermissionController::class, 'show'])
+        ->name('permissions.show');
+    Route::put('permissions/users/{user}', [\App\Http\Controllers\PermissionController::class, 'update'])
+        ->name('permissions.update');
+    Route::put('permissions/users/{user}/role', [\App\Http\Controllers\PermissionController::class, 'updateRole'])
+        ->name('permissions.users.role');
+    Route::get('permissions/roles', [\App\Http\Controllers\PermissionController::class, 'roles'])
+        ->name('permissions.roles');
+    Route::put('permissions/roles/{role}', [\App\Http\Controllers\PermissionController::class, 'updateRolePermissions'])
+        ->name('permissions.roles.update');
 
     Route::get('attachments/{media}/serve', [AttachmentController::class, 'serve'])
         ->name('attachments.serve');
@@ -56,6 +79,7 @@ Route::middleware(['auth', 'session.timeout:120'])->group(function () {
     Route::get('monitoring', [MonitoringController::class, 'index'])
         ->name('monitoring');
 
+    Route::resource('announcements', AnnouncementController::class);
     Route::get('profile', [ProfileController::class, 'edit'])
         ->name('profile.edit');
     Route::patch('profile', [ProfileController::class, 'update'])
@@ -100,6 +124,13 @@ Route::middleware(['auth', 'session.timeout:120'])->group(function () {
         Route::delete('meeting-logs/{meeting_log}', [MeetingLogController::class, 'destroy'])
             ->name('meeting-logs.destroy');
 
+        Route::post('projects/{project}/milestones', [MilestoneController::class, 'store'])
+            ->name('projects.milestones.store');
+        Route::put('milestones/{milestone}', [MilestoneController::class, 'update'])
+            ->name('milestones.update');
+        Route::delete('milestones/{milestone}', [MilestoneController::class, 'destroy'])
+            ->name('milestones.destroy');
+
         Route::get('projects/{project}/integrations', [IntegrationController::class, 'index'])
             ->name('projects.integrations.index');
         Route::post('projects/{project}/integrations', [IntegrationController::class, 'store'])
@@ -114,6 +145,8 @@ Route::middleware(['auth', 'session.timeout:120'])->group(function () {
             ->name('integrations.destroy');
 
         Route::resource('tasks', TaskController::class);
+        Route::get('tasks/parents', [TaskController::class, 'parentTasks'])
+            ->name('tasks.parents');
         Route::patch('tasks/{task}/status', [TaskController::class, 'updateStatus'])
             ->name('tasks.status');
         Route::post('tasks/{task}/assign', [TaskController::class, 'assign'])
@@ -138,6 +171,8 @@ Route::middleware(['auth', 'session.timeout:120'])->group(function () {
             ->name('tasks.subtasks.update');
         Route::delete('tasks/{task}/subtasks/{subtask}', [TaskController::class, 'deleteSubtask'])
             ->name('tasks.subtasks.destroy');
+        Route::post('tasks/{task}/subtasks/bulk-delete', [TaskController::class, 'bulkDeleteSubtasks'])
+            ->name('tasks.subtasks.bulk-delete');
         Route::post('tasks/{task}/attachments', [AttachmentController::class, 'storeTask'])
             ->name('tasks.attachments.upload');
         Route::delete('tasks/{task}/attachments/{media}', [AttachmentController::class, 'destroyTask'])
@@ -179,4 +214,17 @@ Route::middleware(['auth', 'session.timeout:120'])->group(function () {
             ->name('reports.project.preview');
         Route::get('reports/export', [ReportController::class, 'export'])
             ->name('reports.export');
+        Route::get('/test-auth', function () {
+
+    return [
+
+        'authenticated' => auth()->check(),
+
+        'user' => auth()->user()?->email,
+
+        'session_id' => session()->getId(),
+
+    ];
+
+});
 });

@@ -18,6 +18,7 @@ return [
         'model_morph_key' => 'model_id',
         'team_foreign_key' => 'team_id',
     ],
+    'super_admin_role_name' => 'super-admin',
     'register_permission_check_method' => true,
     'register_octane_reset_listener' => false,
     'teams' => false,
@@ -28,6 +29,6 @@ return [
     'cache' => [
         'expiration_time' => \DateInterval::createFromDateString('24 hours'),
         'key' => 'spatie.permission.cache',
-        'store' => 'redis',
+        'store' => 'file',
     ],
 ];

@@ -12,7 +12,7 @@ class UserSeeder extends Seeder
     {
         $superAdmin = User::factory()->create([
             'name' => 'Super Admin',
-            'email' => 'admin@internaltool.com',
+            'email' => 'abhijith@tool.com',
             'password' => bcrypt('password'),
         ]);
         $superAdmin->assignRole(UserRole::SuperAdmin->value);

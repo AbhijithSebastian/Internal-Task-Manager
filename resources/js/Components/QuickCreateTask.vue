@@ -3,16 +3,16 @@
         <template #title>Quick Create Task</template>
         <form @submit.prevent="submit" class="space-y-4">
             <div>
-                <label class="label">Project <span class="text-red-500">*</span></label>
+                <label class="label">Project <span class="text-danger">*</span></label>
                 <select v-model="form.project_id" class="input" required>
                     <option v-for="p in projects" :key="p.id" :value="p.id">{{ p.name }}</option>
                 </select>
-                <p v-if="form.errors.project_id" class="mt-1 text-sm text-red-600">{{ form.errors.project_id }}</p>
+                <p v-if="form.errors.project_id" class="mt-1 text-sm text-danger">{{ form.errors.project_id }}</p>
             </div>
             <div>
-                <label class="label">Title <span class="text-red-500">*</span></label>
+                <label class="label">Title <span class="text-danger">*</span></label>
                 <input ref="titleInput" v-model="form.title" type="text" class="input" placeholder="What needs to be done?" autofocus required>
-                <p v-if="form.errors.title" class="mt-1 text-sm text-red-600">{{ form.errors.title }}</p>
+                <p v-if="form.errors.title" class="mt-1 text-sm text-danger">{{ form.errors.title }}</p>
             </div>
             <div class="grid grid-cols-2 gap-3">
                 <div>

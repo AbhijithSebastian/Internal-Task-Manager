@@ -1,42 +1,54 @@
 <template>
-    <div v-if="pagination.total > pagination.per_page" class="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6">
-        <div class="flex flex-1 justify-between sm:hidden">
-            <Link v-if="pagination.prev_page_url" :href="pagination.prev_page_url" class="btn-secondary btn-sm">Previous</Link>
-            <Link v-if="pagination.next_page_url" :href="pagination.next_page_url" class="btn-secondary btn-sm">Next</Link>
-        </div>
-        <div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
-            <div>
-                <p class="text-sm text-gray-700">
-                    Showing
-                    <span class="font-medium">{{ pagination.from }}</span>
-                    to
-                    <span class="font-medium">{{ pagination.to }}</span>
-                    of
-                    <span class="font-medium">{{ pagination.total }}</span>
-                    results
-                </p>
-            </div>
-            <div>
-                <nav class="isolate inline-flex -space-x-px rounded-md shadow-sm">
-                    <Link v-if="pagination.prev_page_url" :href="pagination.prev_page_url" class="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
-                        <ChevronLeftIcon class="h-5 w-5" />
-                    </Link>
-                    <template v-for="(link, index) in pagination.links" :key="index">
-                        <span v-if="link.url === null" class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-700 ring-1 ring-inset ring-gray-300">{{ link.label }}</span>
-                        <Link v-else :href="link.url" :class="[link.active ? 'bg-gray-900 text-white' : 'text-gray-900 hover:bg-gray-50', 'relative inline-flex items-center px-4 py-2 text-sm font-semibold ring-1 ring-inset ring-gray-300']">{{ link.label }}</Link>
-                    </template>
-                    <Link v-if="pagination.next_page_url" :href="pagination.next_page_url" class="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
-                        <ChevronRightIcon class="h-5 w-5" />
-                    </Link>
-                </nav>
-            </div>
+    <div v-if="p.last_page > 1" class="flex items-center justify-between gap-4 pt-4">
+        <p class="text-sm text-text-secondary">
+            Showing {{ p.from }}–{{ p.to }} of {{ p.total }}
+        </p>
+
+        <div class="flex items-center gap-1">
+            <Link
+                v-if="p.current_page > 1"
+                :href="p.path + '?page=' + (p.current_page - 1)"
+                class="btn-ghost btn-sm"
+            >
+                <ChevronLeftIcon class="h-4 w-4" />
+                Previous
+            </Link>
+
+            <template v-for="(link, i) in p.links" :key="i">
+                <Link
+                    v-if="link.url && !isNaN(Number(link.label))"
+                    :href="link.url"
+                    :class="[
+                        'flex items-center justify-center rounded-lg px-3 py-1.5 text-sm font-medium transition-colors min-w-[32px]',
+                        link.active
+                            ? 'bg-brand-primary-50 text-brand-primary-600'
+                            : 'text-text-secondary hover:bg-gray-100 hover:text-text-primary',
+                    ]"
+                    v-html="link.label"
+                />
+            </template>
+
+            <Link
+                v-if="p.current_page < p.last_page"
+                :href="p.path + '?page=' + (p.current_page + 1)"
+                class="btn-ghost btn-sm"
+            >
+                Next
+                <ChevronRightIcon class="h-4 w-4" />
+            </Link>
         </div>
     </div>
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { Link } from '@inertiajs/vue3'
-import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/vue/20/solid'
+import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/vue/24/outline'
 
-defineProps<{ pagination: any }>()
+const props = defineProps({
+    meta: { type: Object, default: null },
+    pagination: { type: Object, default: null },
+})
+
+const p = computed(() => props.meta || props.pagination || { last_page: 0, current_page: 0, from: 0, to: 0, total: 0, path: '', links: [] })
 </script>

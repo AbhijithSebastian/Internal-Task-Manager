@@ -2,11 +2,13 @@
 
 namespace App\Providers;
 
+use App\Models\Announcement;
 use App\Models\Comment;
 use App\Models\Integration;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
+use App\Policies\AnnouncementPolicy;
 use App\Policies\CommentPolicy;
 use App\Policies\IntegrationPolicy;
 use App\Policies\ProjectPolicy;
@@ -23,6 +25,7 @@ class AuthServiceProvider extends ServiceProvider
         Comment::class => CommentPolicy::class,
         Integration::class => IntegrationPolicy::class,
         \App\Models\MeetingLog::class => \App\Policies\MeetingLogPolicy::class,
+        Announcement::class => AnnouncementPolicy::class,
     ];
 
     public function boot(): void
@@ -32,5 +35,8 @@ class AuthServiceProvider extends ServiceProvider
         \Illuminate\Support\Facades\Gate::define('viewHorizon', function ($user) {
             return $user->hasRole('super-admin');
         });
+
+        \Illuminate\Support\Facades\Gate::define('view', \App\Policies\PermissionPolicy::class . '@view');
+        \Illuminate\Support\Facades\Gate::define('manage', \App\Policies\PermissionPolicy::class . '@manage');
     }
 }

@@ -3,55 +3,37 @@
         <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <div class="card">
                 <div class="card-header">
-                    <h3 class="text-base font-semibold text-gray-900">Active Projects</h3>
-                    <Link :href="route('projects.index')" class="text-sm text-primary-600 hover:text-primary-500">View all</Link>
+                    <h3 class="text-card-title">Active Projects</h3>
+                    <Link :href="route('projects.index')" class="text-sm font-medium text-brand-primary-500 hover:text-brand-primary-600 transition-colors">View all</Link>
                 </div>
                 <div class="card-body space-y-4">
-                    <div v-if="activeProjects.length === 0" class="text-sm text-gray-500">No active projects.</div>
+                    <div v-if="activeProjects.length === 0" class="text-sm text-text-secondary">No active projects.</div>
                     <div v-for="project in activeProjects" :key="project.id">
                         <div class="flex items-center justify-between mb-1">
-                            <Link :href="route('projects.show', project.id)" class="text-sm font-medium text-gray-900 hover:text-primary-600">{{ project.name }}</Link>
-                            <span class="text-xs text-gray-500">{{ project.completed_tasks ?? 0 }}/{{ project.total_tasks ?? 0 }}</span>
+                            <Link :href="route('projects.show', project.id)" class="text-sm font-medium text-text-primary hover:text-brand-primary-500">{{ project.name }}</Link>
+                            <span class="text-xs text-text-secondary">{{ project.completed_tasks ?? 0 }}/{{ project.total_tasks ?? 0 }}</span>
                         </div>
-                        <div class="h-2 rounded-full bg-gray-200">
-                            <div class="h-2 rounded-full bg-primary-500 transition-all" :style="{ width: Math.round(completionRate(project)) + '%' }" />
+                        <div class="h-2 w-full overflow-hidden rounded-full bg-page">
+                            <div class="h-2 rounded-full bg-brand-primary-500 transition-all" :style="{ width: Math.round(completionRate(project)) + '%' }" />
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="text-base font-semibold text-red-900">Delayed Tasks</h3>
-                    <Link :href="route('tasks.index', { status: 'overdue' })" class="text-sm text-primary-600 hover:text-primary-500">View all</Link>
-                </div>
-                <div class="card-body">
-                    <div v-if="delayedTasks.length === 0" class="text-sm text-gray-500">No delayed tasks.</div>
-                    <ul v-else class="divide-y divide-gray-200">
-                        <li v-for="task in delayedTasks" :key="task.id" class="flex items-center justify-between py-3">
-                            <div class="min-w-0 flex-1">
-                                <Link :href="route('tasks.show', task.id)" class="text-sm font-medium text-gray-900 hover:text-primary-600 truncate block">{{ task.title }}</Link>
-                                <p class="text-xs text-gray-500">{{ task.project?.name }} &middot; {{ task.assignee?.name }}</p>
-                            </div>
-                            <Badge variant="danger" class="shrink-0 ml-4">{{ dayjs(task.due_date).format('MMM D, YYYY') }}</Badge>
-                        </li>
-                    </ul>
-                </div>
-            </div>
         </div>
 
         <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <div class="card">
                 <div class="card-header">
-                    <h3 class="text-base font-semibold text-gray-900">Pending Approvals</h3>
+                    <h3 class="text-card-title">Pending Approvals</h3>
                 </div>
                 <div class="card-body">
-                    <div v-if="pendingApprovals.length === 0" class="text-sm text-gray-500">No pending approvals.</div>
-                    <ul v-else class="divide-y divide-gray-200">
+                    <div v-if="pendingApprovals.length === 0" class="text-sm text-text-secondary">No pending approvals.</div>
+                    <ul v-else class="divide-y divide-border">
                         <li v-for="task in pendingApprovals" :key="task.id" class="flex items-center justify-between py-3">
                             <div class="min-w-0 flex-1">
-                                <Link :href="route('tasks.show', task.id)" class="text-sm font-medium text-gray-900 hover:text-primary-600 truncate block">{{ task.title }}</Link>
-                                <p class="text-xs text-gray-500">{{ task.project?.name }} &middot; {{ task.author?.name }}</p>
+                                <Link :href="route('tasks.show', task.id)" class="text-sm font-medium text-text-primary hover:text-brand-primary-500 truncate block">{{ task.title }}</Link>
+                                <p class="text-xs text-text-secondary">{{ task.project?.name }} &middot; {{ task.author?.name }}</p>
                             </div>
                             <Badge variant="warning" class="shrink-0 ml-4">Pending</Badge>
                         </li>
@@ -61,26 +43,24 @@
 
             <div class="card">
                 <div class="card-header">
-                    <h3 class="text-base font-semibold text-gray-900">Workload</h3>
+                    <h3 class="text-card-title">Workload</h3>
                 </div>
                 <div class="card-body p-0">
-                    <table v-if="workload.length > 0" class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
+                    <table v-if="workload.length > 0" class="min-w-full divide-y divide-border">
+                        <thead class="bg-page">
                             <tr>
-                                <th class="px-4 py-2 text-left text-xs font-medium uppercase text-gray-500">Member</th>
-                                <th class="px-4 py-2 text-center text-xs font-medium uppercase text-gray-500">Pending</th>
-                                <th class="px-4 py-2 text-center text-xs font-medium uppercase text-gray-500">Overdue</th>
+                                <th class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider text-text-secondary">Member</th>
+                                <th class="px-4 py-2 text-center text-xs font-semibold uppercase tracking-wider text-text-secondary">Pending</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-gray-200">
-                            <tr v-for="user in workload" :key="user.id" class="hover:bg-gray-50">
-                                <td class="px-4 py-2 text-sm text-gray-900">{{ user.name }}</td>
-                                <td class="px-4 py-2 text-center text-sm text-gray-600">{{ user.pending_tasks }}</td>
-                                <td class="px-4 py-2 text-center text-sm" :class="user.overdue_tasks > 0 ? 'text-red-600 font-medium' : 'text-gray-600'">{{ user.overdue_tasks }}</td>
+                        <tbody class="divide-y divide-border">
+                            <tr v-for="user in workload" :key="user.id" class="hover:bg-page/50">
+                                <td class="px-4 py-2 text-sm text-text-primary">{{ user.name }}</td>
+                                <td class="px-4 py-2 text-center text-sm text-text-secondary">{{ user.pending_tasks }}</td>
                             </tr>
                         </tbody>
                     </table>
-                    <div v-else class="p-6 text-sm text-gray-500">No workload data.</div>
+                    <div v-else class="p-6 text-sm text-text-secondary">No workload data.</div>
                 </div>
             </div>
         </div>
@@ -94,7 +74,6 @@ import Badge from '@/Components/Badge.vue'
 
 defineProps<{
     activeProjects: any[]
-    delayedTasks: any[]
     pendingApprovals: any[]
     workload: any[]
 }>()

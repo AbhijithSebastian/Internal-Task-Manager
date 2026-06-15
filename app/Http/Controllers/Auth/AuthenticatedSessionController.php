@@ -26,19 +26,20 @@ class AuthenticatedSessionController extends Controller
     }
 
     public function store(LoginRequest $request): RedirectResponse
-    {
-        $credentials = $request->only('email', 'password');
-        $remember = $request->boolean('remember');
-
-        $user = $this->authService->authenticate($credentials);
-
-        auth()->login($user, $remember);
-
-        $request->session()->regenerate();
-
-        return redirect()->intended(route('dashboard'))
-            ->with('success', __('auth.welcome_back', ['name' => $user->name]));
+{
+    if (!auth()->attempt(
+        $request->only('email', 'password'),
+        $request->boolean('remember')
+    )) {
+        return back()->withErrors([
+            'email' => 'Invalid credentials.',
+        ]);
     }
+
+    $request->session()->regenerate();
+
+    return redirect()->route('dashboard');
+}
 
     public function destroy(Request $request): RedirectResponse
     {

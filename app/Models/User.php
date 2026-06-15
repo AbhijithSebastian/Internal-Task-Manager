@@ -37,6 +37,7 @@ class User extends Authenticatable implements HasMedia
         'email_verified_at',
         'last_login_at',
         'last_login_ip',
+        'inherit_role_permissions',
     ];
 
     protected $hidden = [
@@ -49,6 +50,7 @@ class User extends Authenticatable implements HasMedia
         'last_login_at' => 'datetime',
         'password' => 'hashed',
         'is_active' => 'boolean',
+        'inherit_role_permissions' => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
@@ -68,11 +70,13 @@ class User extends Authenticatable implements HasMedia
                 $this->addMediaConversion('thumb')
                     ->width(150)
                     ->height(150)
-                    ->sharpen(10);
+                    ->sharpen(10)
+                    ->nonQueued();
                 $this->addMediaConversion('small')
                     ->width(64)
                     ->height(64)
-                    ->sharpen(10);
+                    ->sharpen(10)
+                    ->nonQueued();
             });
 
         $this->addMediaCollection('attachments');
@@ -137,6 +141,17 @@ class User extends Authenticatable implements HasMedia
         } catch (\Illuminate\Database\Eloquent\MissingAttributeException) {
             return '';
         }
+    }
+
+    public function getAvatarOriginalAttribute(): string
+    {
+        $media = $this->getFirstMedia('avatar');
+
+        if ($media) {
+            return $media->getFullUrl();
+        }
+
+        return $this->avatar;
     }
 
     public function getGravatarUrlAttribute(): string

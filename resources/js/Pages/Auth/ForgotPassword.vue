@@ -1,7 +1,7 @@
 <template>
     <AuthLayout>
         <form @submit.prevent="submit" class="space-y-5" novalidate>
-            <p class="text-sm text-gray-600 leading-relaxed">
+            <p class="text-sm text-text-secondary leading-relaxed">
                 Forgot your password? Enter your email address and we'll send you a link to reset it.
             </p>
 
@@ -12,12 +12,12 @@
                     v-model="form.email"
                     type="email"
                     class="input"
-                    :class="{ 'border-red-500': form.errors.email }"
+                    :class="{ 'input-error': form.errors.email }"
                     placeholder="you@company.com"
                     autocomplete="email"
                     required
                 >
-                <p v-if="form.errors.email" class="mt-1 text-sm text-red-600">{{ form.errors.email }}</p>
+                <p v-if="form.errors.email" class="mt-1.5 text-sm text-danger">{{ form.errors.email }}</p>
             </div>
 
             <button
@@ -32,9 +32,9 @@
                 {{ form.wasSuccessful ? 'Email sent' : form.processing ? 'Sending…' : 'Send reset link' }}
             </button>
 
-            <p class="text-center text-sm text-gray-600">
+            <p class="text-center text-sm text-text-secondary">
                 Remember your password?
-                <Link :href="route('login')" class="font-medium text-primary-600 hover:text-primary-500 transition-colors">Sign in</Link>
+                <Link :href="route('login')" class="font-medium text-brand-primary-500 hover:text-brand-primary-600 transition-colors">Sign in</Link>
             </p>
         </form>
     </AuthLayout>

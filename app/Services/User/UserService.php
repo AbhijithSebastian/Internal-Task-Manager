@@ -171,12 +171,17 @@ class UserService extends BaseService
 
     public function uploadAvatar(User $user, UploadedFile $file): User
     {
+        abort_unless($file->isValid(), 422, 'Invalid file upload.');
+
+        $fileSize = $file->getSize();
+        $fileName = $file->getClientOriginalName();
+
         $user->addMedia($file)
             ->toMediaCollection('avatar');
 
         log_activity($user, 'Avatar updated', [
-            'file_name' => $file->getClientOriginalName(),
-            'file_size' => $file->getSize(),
+            'file_name' => $fileName,
+            'file_size' => $fileSize,
         ]);
 
         return $user->fresh();

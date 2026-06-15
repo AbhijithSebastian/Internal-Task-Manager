@@ -21,11 +21,6 @@ Schedule::command('tasks:send-due-reminders')
     ->withoutOverlapping()
     ->onOneServer();
 
-Schedule::command('tasks:send-overdue')
-    ->dailyAt('09:00')
-    ->withoutOverlapping()
-    ->onOneServer();
-
 // ─── Horizon Metrics ──────────────────────────────────────────────────────────
 
 Schedule::command('horizon:snapshot')

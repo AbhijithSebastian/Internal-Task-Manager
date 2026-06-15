@@ -276,12 +276,10 @@ class ProjectService extends BaseService
             ->get(['id', 'title', 'status', 'priority', 'due_date', 'created_at']);
 
         $upcoming = $tasks->filter(fn ($t) => $t->due_date && $t->due_date >= now()->startOfDay())->values();
-        $overdue = $tasks->filter(fn ($t) => $t->due_date && $t->due_date < now()->startOfDay() && $t->status !== 'done')->values();
         $completed = $tasks->filter(fn ($t) => $t->status === 'done')->values();
 
         return [
             'upcoming' => $upcoming,
-            'overdue' => $overdue,
             'completed' => $completed,
         ];
     }

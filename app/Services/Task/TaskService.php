@@ -30,15 +30,22 @@ class TaskService extends BaseService
 
     public function list(array $filters = []): LengthAwarePaginator
     {
+        $user = auth()->user();
+
         $query = Task::query()
             ->with(['author', 'assignees', 'project'])
             ->withCount(['comments', 'subtasks', 'dependencies'])
             ->whereNull('parent_id')
+            ->when($user && !$user->hasRole('super-admin'), function ($q) use ($user) {
+                if ($user->hasRole('project-manager')) {
+                    return $q->whereHas('project', fn ($pq) => $pq->where('pm_id', $user->id));
+                }
+                return $q->whereHas('project', fn ($pq) => $pq->byMember($user->id));
+            })
             ->when($filters['search'] ?? null, fn ($q, $s) => $q->search($s))
             ->when($filters['project_id'] ?? null, fn ($q, $id) => $q->where('project_id', $id))
             ->when($filters['status'] ?? null, fn ($q, $s) => match ($s) {
                 'pending' => $q->pending(),
-                'overdue' => $q->overdue(),
                 'blocked' => $q->blocked(),
                 'needs_review' => $q->awaitingApproval(),
                 default => $q->where('status', $s),
@@ -47,8 +54,12 @@ class TaskService extends BaseService
             ->when($filters['assignee_id'] ?? null, fn ($q, $id) => $q->whereHas('assignees', fn ($q2) => $q2->where('users.id', $id)))
             ->when($filters['author_id'] ?? null, fn ($q, $id) => $q->where('author_id', $id))
             ->when($filters['tag'] ?? null, fn ($q, $t) => $q->byTag($t))
-            ->when($filters['overdue'] ?? false, fn ($q) => $q->overdue())
-            ->when($filters['trashed'] ?? false, fn ($q) => $q->withTrashed());
+            ->when($filters['trashed'] ?? false, fn ($q) => $q->withTrashed())
+            ->when($filters['tab'] ?? null, fn ($q, $tab) => match ($tab) {
+                'my-tasks' => $q->whereHas('assignees', fn ($aq) => $aq->where('users.id', $user->id)),
+                'completed' => $q->where('status', \App\Enums\TaskStatus::Done),
+                default => $q,
+            });
 
         $query = $this->sort(
             $query,
@@ -473,6 +484,37 @@ class TaskService extends BaseService
         $filters['project_id'] = $projectId;
 
         return $this->list($filters);
+    }
+
+    public function listMySubtasks(int $userId, array $filters = []): LengthAwarePaginator
+    {
+        $query = Task::query()
+            ->whereNotNull('parent_id')
+            ->whereHas('assignees', fn ($q) => $q->where('users.id', $userId))
+            ->with([
+                'author',
+                'assignees',
+                'project',
+                'parent' => fn ($q) => $q->with(['project']),
+            ])
+            ->withCount(['comments'])
+            ->when($filters['search'] ?? null, fn ($q, $s) => $q->search($s))
+            ->when($filters['status'] ?? null, fn ($q, $s) => match ($s) {
+                'pending' => $q->pending(),
+                'blocked' => $q->blocked(),
+                default => $q->where('status', $s),
+            })
+            ->when($filters['priority'] ?? null, fn ($q, $p) => $q->where('priority', $p))
+            ->when($filters['project_id'] ?? null, fn ($q, $id) => $q->where('project_id', $id));
+
+        $query = $this->sort(
+            $query,
+            $filters['sort_by'] ?? 'created_at',
+            $filters['sort_direction'] ?? 'desc',
+            ['title', 'status', 'priority', 'due_date', 'created_at'],
+        );
+
+        return $this->paginate($query, $filters['per_page'] ?? null);
     }
 
     public function getAllTags(int $projectId = null): array

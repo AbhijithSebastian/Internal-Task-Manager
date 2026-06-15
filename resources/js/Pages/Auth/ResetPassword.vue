@@ -9,7 +9,7 @@
                     id="email"
                     v-model="form.email"
                     type="email"
-                    class="input bg-gray-50"
+                    class="input bg-gray-50 text-text-secondary"
                     readonly
                     autocomplete="email"
                 >
@@ -22,11 +22,11 @@
                     v-model="form.password"
                     type="password"
                     class="input"
-                    :class="{ 'border-red-500': form.errors.password }"
+                    :class="{ 'input-error': form.errors.password }"
                     autocomplete="new-password"
                     required
                 >
-                <p v-if="form.errors.password" class="mt-1 text-sm text-red-600">{{ form.errors.password }}</p>
+                <p v-if="form.errors.password" class="mt-1.5 text-sm text-danger">{{ form.errors.password }}</p>
             </div>
 
             <div>

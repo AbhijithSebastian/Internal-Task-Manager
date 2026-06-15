@@ -18,20 +18,46 @@ class DashboardService
     {
         $projectIds = $user->projects()->pluck('projects.id');
 
+        $now = now();
+        $weekStart = $now->copy()->startOfWeek();
+        $weekEnd = $now->copy()->endOfWeek();
+        $prevWeekStart = $now->copy()->subWeek()->startOfWeek();
+        $prevWeekEnd = $now->copy()->subWeek()->endOfWeek();
+
+        $activeProjects = Project::whereIn('id', $projectIds)->where('status', 'active');
+        $tasksDueThisWeek = Task::whereIn('project_id', $projectIds)
+            ->whereNull('parent_id')
+            ->whereBetween('due_date', [$weekStart, $weekEnd]);
+        $inReviewTasks = Task::whereIn('project_id', $projectIds)
+            ->where('status', TaskStatus::InReview)->whereNull('parent_id');
+        // Previous week values for trends
+        $prevActiveProjects = Project::whereIn('id', $projectIds)->where('status', 'active')
+            ->where('created_at', '<=', $prevWeekEnd);
+        $prevTasksDueThisWeek = Task::whereIn('project_id', $projectIds)
+            ->whereNull('parent_id')
+            ->whereBetween('due_date', [$prevWeekStart, $prevWeekEnd]);
+        $prevInReviewTasks = Task::whereIn('project_id', $projectIds)
+            ->where('status', TaskStatus::InReview)->whereNull('parent_id')
+            ->where('created_at', '<=', $prevWeekEnd);
+
         return [
-            'active_projects' => Project::whereIn('id', $projectIds)
-                ->where('status', 'active')->count(),
-            'total_tasks' => Task::whereIn('project_id', $projectIds)
-                ->whereNull('parent_id')->count(),
-            'assigned_tasks' => Task::whereHas('assignees', fn ($q) => $q->where('users.id', $user->id))
-                ->whereNull('parent_id')->count(),
-            'completed_tasks' => Task::whereHas('assignees', fn ($q) => $q->where('users.id', $user->id))
-                ->where('status', TaskStatus::Done)->whereNull('parent_id')->count(),
-            'overdue_tasks' => Task::whereHas('assignees', fn ($q) => $q->where('users.id', $user->id))
-                ->overdue()->whereNull('parent_id')->count(),
-            'in_review_tasks' => Task::whereIn('project_id', $projectIds)
-                ->where('status', TaskStatus::InReview)->whereNull('parent_id')->count(),
+            'active_projects' => $activeProjects->count(),
+            'tasks_due_this_week' => $tasksDueThisWeek->count(),
+            'pending_reviews' => $inReviewTasks->count(),
+            'trends' => [
+                'active_projects' => $this->calculateTrend($prevActiveProjects->count(), $activeProjects->count()),
+                'tasks_due_this_week' => $this->calculateTrend($prevTasksDueThisWeek->count(), $tasksDueThisWeek->count()),
+                'pending_reviews' => $this->calculateTrend($prevInReviewTasks->count(), $inReviewTasks->count()),
+            ],
         ];
+    }
+
+    private function calculateTrend(int $previous, int $current): int
+    {
+        if ($previous === 0) {
+            return $current > 0 ? 100 : 0;
+        }
+        return (int) round((($current - $previous) / $previous) * 100);
     }
 
     public function getRoleSpecificData(User $user): array
@@ -51,13 +77,6 @@ class DashboardService
             'my_tasks' => Task::whereHas('assignees', fn ($q) => $q->where('users.id', $user->id))
                 ->whereNull('parent_id')
                 ->pending()
-                ->with('project')
-                ->orderBy('due_date')
-                ->limit(10)
-                ->get(),
-            'overdue_tasks' => Task::whereHas('assignees', fn ($q) => $q->where('users.id', $user->id))
-                ->whereNull('parent_id')
-                ->overdue()
                 ->with('project')
                 ->orderBy('due_date')
                 ->limit(10)
@@ -87,13 +106,6 @@ class DashboardService
                 ->withCount(['tasks as total_tasks' => fn ($q) => $q->whereNull('parent_id')])
                 ->withCount(['tasks as completed_tasks' => fn ($q) => $q->whereNull('parent_id')->where('status', TaskStatus::Done)])
                 ->get(),
-            'delayed_tasks' => Task::whereIn('project_id', $projectIds)
-                ->whereNull('parent_id')
-                ->overdue()
-                ->with('project', 'assignees')
-                ->orderBy('due_date')
-                ->limit(10)
-                ->get(),
             'pending_approvals' => Task::whereIn('project_id', $projectIds)
                 ->where('requires_approval', true)
                 ->where('status', TaskStatus::InReview)
@@ -103,7 +115,6 @@ class DashboardService
                 ->get(),
             'workload' => User::whereHas('projects', fn ($q) => $q->whereIn('project_id', $projectIds))
                 ->withCount(['tasks as pending_tasks' => fn ($q) => $q->whereNull('parent_id')->pending()])
-                ->withCount(['tasks as overdue_tasks' => fn ($q) => $q->whereNull('parent_id')->overdue()])
                 ->get(),
         ];
     }
@@ -115,7 +126,6 @@ class DashboardService
         return [
             'team_workload' => User::whereHas('projects', fn ($q) => $q->whereIn('project_id', $projectIds))
                 ->withCount(['tasks as pending_tasks' => fn ($q) => $q->whereNull('parent_id')->pending()])
-                ->withCount(['tasks as overdue_tasks' => fn ($q) => $q->whereNull('parent_id')->overdue()])
                 ->get(),
             'review_tasks' => Task::whereIn('project_id', $projectIds)
                 ->where('status', TaskStatus::InReview)
@@ -159,7 +169,8 @@ class DashboardService
                 'label' => $s->label(),
                 'count' => (int) ($statusCounts[$s->value] ?? 0),
             ])->values(),
-            'tasks_over_time' => Task::whereNull('parent_id')
+            'tasks_over_time' => \DB::table('tasks')
+                ->whereNull('parent_id')
                 ->where('created_at', '>=', now()->subMonth())
                 ->selectRaw('DATE(created_at) as date, COUNT(*) as count')
                 ->groupBy('date')
@@ -167,9 +178,8 @@ class DashboardService
                 ->get(),
             'team_workload' => User::active()
                 ->withCount(['tasks as pending_tasks' => fn ($q) => $q->whereNull('parent_id')->pending()])
-                ->withCount(['tasks as overdue_tasks' => fn ($q) => $q->whereNull('parent_id')->overdue()])
                 ->get()
-                ->map(fn ($u) => ['id' => $u->id, 'name' => $u->name, 'pending_tasks' => (int) $u->pending_tasks, 'overdue_tasks' => (int) $u->overdue_tasks]),
+                ->map(fn ($u) => ['id' => $u->id, 'name' => $u->name, 'pending_tasks' => (int) $u->pending_tasks]),
             'pending_approvals' => Task::where('requires_approval', true)
                 ->where('status', TaskStatus::InReview)
                 ->with('project', 'assignees', 'author')

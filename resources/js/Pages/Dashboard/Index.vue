@@ -1,121 +1,113 @@
 <template>
     <AppLayout>
-        <div class="space-y-5">
-
-            <!-- ═══════════════════════════════════════════════════════════
-                 SECTION A — Compact greeting strip
-            ═══════════════════════════════════════════════════════════ -->
-            <section class="flex items-center justify-between gap-4">
+        <div class="space-y-8">
+            <!-- ═══ Greeting + New Task ═══ -->
+            <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-[11px] font-medium uppercase tracking-widest text-gray-400">
+                    <p class="text-sm font-medium text-text-secondary">
                         {{ greeting }}, {{ userName }}
                     </p>
-                    <h2 class="mt-1 text-xl font-semibold tracking-tight text-gray-900">
-                        What needs attention today?
-                    </h2>
+                    <h1 class="text-2xl font-bold text-text-primary mt-1">What needs attention today?</h1>
                 </div>
-                <Link
-                    :href="route('tasks.create')"
-                    class="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-gray-900 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-all duration-150 hover:bg-gray-700 active:scale-[0.98]"
-                >
-                    <PlusIcon class="h-4 w-4" />
-                    New Task
-                </Link>
-            </section>
+                <div class="flex items-center gap-2">
+                    <button class="btn-secondary btn-sm" @click="showWidgetSettings = true">
+                        <AdjustmentsHorizontalIcon class="h-4 w-4" />
+                    </button>
+                    <Link
+                        :href="route('tasks.create')"
+                        class="btn-primary"
+                    >
+                        <PlusIcon class="h-4 w-4 mr-1.5" />
+                        New Task
+                    </Link>
+                </div>
+            </div>
 
-            <!-- ═══════════════════════════════════════════════════════════
-                 SECTION B — KPI Cards (4 equal)
-            ═══════════════════════════════════════════════════════════ -->
-            <section class="grid grid-cols-2 gap-4 xl:grid-cols-4">
+            <!-- ═══ KPI Grid ═══ -->
+            <div v-if="widgetsVisible.kpi" class="grid grid-cols-2 gap-6 xl:grid-cols-4">
                 <Link
                     v-for="stat in statsList"
                     :key="stat.label"
                     :href="stat.route"
-                    class="group rounded-2xl border border-gray-200/70 bg-white px-5 py-4 shadow-[0_1px_3px_0_rgba(0,0,0,0.04)] transition-all duration-150 hover:border-gray-300/80 hover:shadow-[0_4px_12px_0_rgba(0,0,0,0.07)]"
+                    class="kpi-card group"
                 >
                     <div class="flex items-start justify-between">
-                        <div class="rounded-lg bg-gray-100 p-2 transition-colors group-hover:bg-gray-200/70">
-                            <component :is="stat.icon" class="h-4 w-4 text-gray-600" />
+                        <div class="rounded-lg bg-gray-100 p-2.5 transition-colors group-hover:bg-brand-primary-50">
+                            <component :is="stat.icon" class="h-4 w-4 text-text-secondary group-hover:text-brand-primary-500 transition-colors" />
                         </div>
+                        <span class="text-xs text-text-secondary/60">This week</span>
                     </div>
-                    <p class="mt-4 text-2xl font-semibold tabular-nums text-gray-900">
-                        {{ stat.value ?? '—' }}
-                    </p>
-                    <p class="mt-0.5 text-xs font-medium text-gray-500">
-                        {{ stat.label }}
-                    </p>
+                    <p class="kpi-value">{{ stat.value ?? '—' }}</p>
+                    <p class="kpi-label">{{ stat.label }}</p>
+                    <div class="mt-2">
+                        <span :class="stat.trend >= 0 ? 'kpi-trend-up' : 'kpi-trend-down'">
+                            <ArrowTrendingUpIcon v-if="stat.trend >= 0" class="h-3 w-3" />
+                            <ArrowTrendingDownIcon v-else class="h-3 w-3" />
+                            {{ Math.abs(stat.trend || 0) }}%
+                        </span>
+                    </div>
                 </Link>
-            </section>
+            </div>
 
-            <!-- ═══════════════════════════════════════════════════════════
-                 SECTION C — Bento: Priority Tasks + Upcoming Deadlines
-            ═══════════════════════════════════════════════════════════ -->
-            <section class="grid grid-cols-1 gap-4 xl:grid-cols-12">
-
-                <!-- Priority Tasks (left, wider) -->
-                <div class="rounded-2xl border border-gray-200/70 bg-white shadow-[0_1px_3px_0_rgba(0,0,0,0.04)] xl:col-span-7">
-                    <div class="flex items-center justify-between border-b border-gray-100 px-5 py-4">
-                        <div>
-                            <h3 class="text-[13px] font-semibold text-gray-900">{{ primaryPanelTitle }}</h3>
-                            <p class="mt-0.5 text-[11px] text-gray-400">Priority work requiring attention</p>
+            <!-- ═══ Priority Tasks + Projects ═══ -->
+            <div v-if="widgetsVisible.priorityTasks || widgetsVisible.projects" class="grid grid-cols-1 gap-6 xl:grid-cols-12">
+                <!-- Priority Tasks -->
+                <div v-if="widgetsVisible.priorityTasks" :class="widgetsVisible.projects ? 'card xl:col-span-7' : 'card xl:col-span-12'">
+                    <div class="card-header">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h3 class="text-card-title">{{ primaryPanelTitle }}</h3>
+                                <p class="text-sm text-text-secondary mt-0.5">Priority work requiring attention</p>
+                            </div>
+                            <Link :href="route('tasks.index')" class="text-sm font-medium text-brand-primary-500 hover:text-brand-primary-600 transition-colors">
+                                View all &rarr;
+                            </Link>
                         </div>
-                        <Link
-                            :href="route('tasks.index')"
-                            class="text-[11px] font-medium text-gray-400 transition-colors hover:text-gray-700"
-                        >
-                            View all →
-                        </Link>
                     </div>
 
-                    <div v-if="primaryItems.length === 0" class="px-5 py-10 text-center">
-                        <div class="mx-auto mb-2 flex h-9 w-9 items-center justify-center rounded-xl bg-gray-100">
-                            <CheckCircleIcon class="h-5 w-5 text-gray-400" />
+                    <div v-if="primaryItems.length === 0" class="empty-state">
+                        <div class="empty-state-icon">
+                            <CheckCircleIcon class="h-6 w-6 text-text-secondary" />
                         </div>
-                        <p class="text-sm text-gray-400">Nothing urgent right now.</p>
+                        <p class="empty-state-title">Nothing urgent right now</p>
+                        <p class="empty-state-text">All tasks are on track.</p>
                     </div>
 
-                    <ul v-else class="divide-y divide-gray-50">
+                    <ul v-else class="divide-y divide-border">
                         <li
                             v-for="item in primaryItems.slice(0, 8)"
                             :key="item.id"
-                            class="group flex items-center justify-between gap-4 px-5 py-3.5 transition-colors hover:bg-gray-50/70"
+                            class="group flex items-center justify-between gap-4 px-6 py-4 transition-colors hover:bg-gray-50/50"
                         >
                             <div class="flex min-w-0 items-center gap-3">
-                                <!-- Status dot -->
-                                <span class="h-1.5 w-1.5 shrink-0 rounded-full" :class="taskDotClass(item)" />
+                                <span class="h-2 w-2 shrink-0 rounded-full" :class="taskDotClass(item)" />
                                 <div class="min-w-0">
                                     <Link
                                         :href="route('tasks.show', item.id)"
-                                        class="block truncate text-[13px] font-medium text-gray-800 transition-colors hover:text-gray-900"
+                                        class="block truncate text-sm font-medium text-text-primary transition-colors hover:text-brand-primary-500"
                                     >
                                         {{ item.title }}
                                     </Link>
-                                    <p class="mt-0.5 truncate text-[11px] text-gray-400">
+                                    <p class="mt-0.5 truncate text-xs text-text-secondary">
                                         {{ item.project?.name || 'Internal Task' }}
                                     </p>
                                 </div>
                             </div>
 
                             <div class="flex shrink-0 items-center gap-2">
-                                <span
-                                    v-if="item.priority"
-                                    class="rounded-md bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-500 capitalize"
-                                >
+                                <span v-if="item.priority" class="rounded-md bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-text-secondary capitalize">
                                     {{ item.priority }}
                                 </span>
-                                <span
-                                    v-if="item.status"
-                                    class="rounded-md border border-gray-200 bg-gray-50 px-2 py-0.5 text-[10px] font-medium text-gray-500"
-                                >
+                                <span :class="'status-' + (item.status || 'draft')" class="rounded-md px-2 py-0.5">
                                     {{ formatStatus(item.status) }}
                                 </span>
-                                <span v-if="item.due_date" class="rounded-md bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-500">
+                                <span v-if="item.due_date" class="text-xs text-text-secondary tabular-nums">
                                     {{ formatDate(item.due_date) }}
                                 </span>
                                 <button
                                     v-if="item.status === 'in_review' && canApproveTask(item)"
                                     @click.stop="approveTask(item.id)"
-                                    class="rounded bg-gray-950 px-2 py-0.5 text-[10px] font-semibold text-white hover:bg-gray-700 transition"
+                                    class="btn-primary btn-sm"
                                 >
                                     Approve
                                 </button>
@@ -124,89 +116,84 @@
                     </ul>
                 </div>
 
-                <!-- Current Projects (right, narrower) -->
-                <div class="rounded-2xl border border-gray-200/70 bg-white shadow-[0_1px_3px_0_rgba(0,0,0,0.04)] xl:col-span-5">
-                    <div class="flex items-center justify-between border-b border-gray-100 px-5 py-4">
-                        <div>
-                            <h3 class="text-[13px] font-semibold text-gray-900">Current Projects</h3>
-                            <p class="mt-0.5 text-[11px] text-gray-400">Active projects you are involved in</p>
+                <!-- Current Projects -->
+                <div v-if="widgetsVisible.projects" :class="widgetsVisible.priorityTasks ? 'card xl:col-span-5' : 'card xl:col-span-12'">
+                    <div class="card-header">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h3 class="text-card-title">Current Projects</h3>
+                                <p class="text-sm text-text-secondary mt-0.5">Active projects you are involved in</p>
+                            </div>
+                            <Link :href="route('projects.index')" class="text-sm font-medium text-brand-primary-500 hover:text-brand-primary-600 transition-colors">
+                                View all &rarr;
+                            </Link>
                         </div>
-                        <Link
-                            :href="route('projects.index')"
-                            class="text-[11px] font-medium text-gray-400 transition-colors hover:text-gray-700"
-                        >
-                            View all →
-                        </Link>
                     </div>
 
-                    <div v-if="current_projects.length === 0" class="px-5 py-10 text-center">
-                        <p class="text-sm text-gray-400">No active projects.</p>
+                    <div v-if="current_projects.length === 0" class="empty-state">
+                        <p class="empty-state-text">No active projects.</p>
                     </div>
 
-                    <ul v-else class="divide-y divide-gray-50">
+                    <ul v-else class="divide-y divide-border">
                         <li
                             v-for="project in current_projects.slice(0, 8)"
                             :key="project.id"
-                            class="px-5 py-3.5 transition-colors hover:bg-gray-50/70"
+                            class="px-6 py-4 transition-colors hover:bg-gray-50/50"
                         >
-                            <div class="flex items-start justify-between gap-3 mb-1.5">
+                            <div class="flex items-start justify-between gap-3 mb-2">
                                 <div class="min-w-0">
                                     <Link
                                         :href="route('projects.show', project.id)"
-                                        class="block truncate text-[13px] font-semibold text-gray-800 transition-colors hover:text-gray-900"
+                                        class="block truncate text-sm font-semibold text-text-primary transition-colors hover:text-brand-primary-500"
                                     >
                                         {{ project.name }}
                                     </Link>
-                                    <p v-if="project.project_manager" class="mt-0.5 truncate text-[11px] text-gray-400">
+                                    <p v-if="project.project_manager" class="mt-0.5 text-xs text-text-secondary">
                                         PM: {{ project.project_manager.name }}
                                     </p>
                                 </div>
-                                <span class="shrink-0 text-[11px] font-medium text-gray-600">
+                                <span class="shrink-0 text-sm font-semibold tabular-nums text-text-primary">
                                     {{ project.completion_rate !== null && project.completion_rate !== undefined ? `${project.completion_rate}%` : '0%' }}
                                 </span>
                             </div>
-                            <!-- Progress Bar -->
-                            <div class="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
+                            <div class="h-2 w-full overflow-hidden rounded-full bg-gray-100">
                                 <div
-                                    class="h-1.5 rounded-full bg-gray-950 transition-all duration-500"
+                                    class="h-2 rounded-full bg-brand-primary-500 transition-all duration-500"
                                     :style="{ width: `${project.completion_rate ?? 0}%` }"
                                 />
                             </div>
                         </li>
                     </ul>
                 </div>
-            </section>
+            </div>
 
-            <!-- ═══════════════════════════════════════════════════════════
-                 SECTION D — Recent Activity + Team Workload
-            ═══════════════════════════════════════════════════════════ -->
-            <section class="grid grid-cols-1 gap-4 xl:grid-cols-2">
-
+            <!-- ═══ Recent Activity + Team Workload ═══ -->
+            <div v-if="widgetsVisible.activity || widgetsVisible.workload" class="grid grid-cols-1 gap-6 xl:grid-cols-2">
                 <!-- Recent Activity -->
-                <div class="rounded-2xl border border-gray-200/70 bg-white shadow-[0_1px_3px_0_rgba(0,0,0,0.04)]">
-                    <div class="border-b border-gray-100 px-5 py-4">
-                        <h3 class="text-[13px] font-semibold text-gray-900">Recent Activity</h3>
-                        <p class="mt-0.5 text-[11px] text-gray-400">Latest updates from your workspace</p>
+                <div v-if="widgetsVisible.activity" :class="widgetsVisible.workload ? 'card' : 'card xl:col-span-2'">
+                    <div class="card-header">
+                        <h3 class="text-card-title">Recent Activity</h3>
+                        <p class="text-sm text-text-secondary mt-0.5">Latest updates from your workspace</p>
                     </div>
 
-                    <div v-if="recent_activities.length === 0" class="px-5 py-10 text-center">
-                        <p class="text-sm text-gray-400">No recent activity.</p>
+                    <div v-if="recent_activities.length === 0" class="empty-state">
+                        <p class="empty-state-text">No recent activity.</p>
                     </div>
 
-                    <ul v-else class="divide-y divide-gray-50 px-5">
+                    <ul v-else class="divide-y divide-border">
                         <li
                             v-for="activity in recent_activities.slice(0, 6)"
                             :key="activity.id"
-                            class="flex gap-3 py-3.5"
+                            class="flex gap-4 px-6 py-4"
                         >
                             <div class="flex flex-col items-center">
-                                <span class="mt-[5px] h-1.5 w-1.5 shrink-0 rounded-full bg-gray-300" />
+                                <span class="mt-[5px] h-2 w-2 shrink-0 rounded-full bg-gray-300" />
                             </div>
                             <div class="min-w-0 flex-1">
-                                <p class="text-[13px] leading-snug text-gray-700">
+                                <p class="text-sm leading-snug text-text-primary">
                                     {{ activity.description }}
                                 </p>
-                                <p class="mt-1 text-[11px] text-gray-400">
+                                <p class="mt-1 text-xs text-text-secondary">
                                     {{ dayjs(activity.created_at).fromNow() }}
                                 </p>
                             </div>
@@ -215,68 +202,167 @@
                 </div>
 
                 <!-- Team Workload -->
-                <div class="rounded-2xl border border-gray-200/70 bg-white shadow-[0_1px_3px_0_rgba(0,0,0,0.04)]">
-                    <div class="border-b border-gray-100 px-5 py-4">
-                        <h3 class="text-[13px] font-semibold text-gray-900">Team Workload</h3>
-                        <p class="mt-0.5 text-[11px] text-gray-400">Current task distribution</p>
+                <div v-if="widgetsVisible.workload" :class="widgetsVisible.activity ? 'card' : 'card xl:col-span-2'">
+                    <div class="card-header">
+                        <h3 class="text-card-title">Team Workload</h3>
+                        <p class="text-sm text-text-secondary mt-0.5">Current task distribution</p>
                     </div>
 
-                    <div v-if="teamWorkload.length === 0" class="px-5 py-10 text-center">
-                        <p class="text-sm text-gray-400">No workload data available.</p>
+                    <div v-if="teamWorkload.length === 0" class="empty-state">
+                        <p class="empty-state-text">No workload data available.</p>
                     </div>
 
-                    <ul v-else class="divide-y divide-gray-50 px-5">
+                    <ul v-else class="divide-y divide-border px-6">
                         <li
                             v-for="member in teamWorkload.slice(0, 6)"
                             :key="member.id"
-                            class="py-3.5"
+                            class="py-4"
                         >
                             <div class="mb-2 flex items-center justify-between gap-2">
-                                <div class="flex items-center gap-2">
-                                    <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gray-200 text-[9px] font-semibold uppercase text-gray-600">
+                                <div class="flex items-center gap-3">
+                                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-primary-50 text-sm font-semibold text-brand-primary-600">
                                         {{ initials(member.name) }}
                                     </div>
-                                    <span class="text-[13px] font-medium text-gray-800">{{ member.name }}</span>
+                                    <span class="text-sm font-medium text-text-primary">{{ member.name }}</span>
                                 </div>
-                                <div class="flex items-center gap-2 text-[11px] text-gray-400">
+                                <div class="flex items-center gap-2 text-xs text-text-secondary">
                                     <span>{{ member.pending_tasks || 0 }} tasks</span>
-                                    <span class="font-semibold text-gray-600">
+                                    <span class="font-semibold text-text-primary">
                                         {{ workloadPercent(member) }}%
                                     </span>
                                 </div>
                             </div>
-                            <div class="h-1 w-full overflow-hidden rounded-full bg-gray-100">
+                            <div class="h-2 w-full overflow-hidden rounded-full bg-gray-100">
                                 <div
-                                    class="h-1 rounded-full bg-gray-800 transition-all duration-500"
+                                    class="h-2 rounded-full bg-brand-primary-500 transition-all duration-500"
                                     :style="{ width: `${workloadPercent(member)}%` }"
                                 />
                             </div>
                         </li>
                     </ul>
                 </div>
-            </section>
+            </div>
 
+            <Modal :open="showWidgetSettings" @close="showWidgetSettings = false">
+                <template #title>Customize Dashboard</template>
+                <div class="space-y-4">
+                    <p class="text-sm text-text-secondary">Choose which sections to show on your dashboard.</p>
+                    <div class="space-y-3">
+                        <label
+                            v-for="widget in widgetOptions"
+                            :key="widget.key"
+                            class="flex items-center justify-between rounded-card border border-border bg-page px-4 py-3 cursor-pointer hover:bg-gray-50"
+                        >
+                            <div class="flex items-center gap-3">
+                                <component :is="widget.icon" class="h-5 w-5 text-text-secondary" />
+                                <div>
+                                    <p class="text-sm font-medium text-text-primary">{{ widget.label }}</p>
+                                    <p class="text-xs text-text-secondary">{{ widget.description }}</p>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                role="switch"
+                                :class="widgetsVisible[widget.key] ? 'bg-brand-primary-500' : 'bg-gray-200'"
+                                class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200"
+                                @click="toggleWidget(widget.key)"
+                            >
+                                <span
+                                    :class="widgetsVisible[widget.key] ? 'translate-x-4' : 'translate-x-0'"
+                                    class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200"
+                                />
+                            </button>
+                        </label>
+                    </div>
+                </div>
+                <template #footer>
+                    <div class="flex justify-end">
+                        <button class="btn-primary btn-sm" @click="showWidgetSettings = false">Done</button>
+                    </div>
+                </template>
+            </Modal>
         </div>
     </AppLayout>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, reactive, ref, onMounted } from 'vue'
 import { Link, usePage, router } from '@inertiajs/vue3'
 import { route } from 'ziggy-js'
 import { usePermissions } from '@/Composables/usePermissions'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import AppLayout from '@/Layouts/AppLayout.vue'
+import Modal from '@/Components/Modal.vue'
 import {
     ClipboardDocumentListIcon,
     CheckCircleIcon,
-    ExclamationTriangleIcon,
     EyeIcon,
+    FolderIcon,
     PlusIcon,
+    ArrowTrendingUpIcon,
+    ArrowTrendingDownIcon,
+    AdjustmentsHorizontalIcon,
+    Squares2X2Icon,
+    ListBulletIcon,
+    ClockIcon,
+    UserGroupIcon,
 } from '@heroicons/vue/24/outline'
 
 dayjs.extend(relativeTime)
+
+const WIDGET_STORAGE_KEY = 'dashboard_widgets'
+
+function getDefaultWidgets() {
+    const userRole = (usePage().props.auth.user as any)?.role
+    return {
+        kpi: true,
+        priorityTasks: true,
+        projects: true,
+        activity: true,
+        workload: userRole === 'super-admin' || userRole === 'project-manager',
+    }
+}
+
+function loadWidgetPreferences(): Record<string, boolean> {
+    const defaults = getDefaultWidgets()
+    try {
+        const stored = localStorage.getItem(WIDGET_STORAGE_KEY)
+        if (stored) {
+            const parsed = JSON.parse(stored)
+            return { ...defaults, ...parsed }
+        }
+    } catch {}
+    return { ...defaults }
+}
+
+function saveWidgetPreferences(prefs: Record<string, boolean>) {
+    try {
+        localStorage.setItem(WIDGET_STORAGE_KEY, JSON.stringify(prefs))
+    } catch {}
+}
+
+const showWidgetSettings = ref(false)
+
+const widgetsVisible = reactive(loadWidgetPreferences())
+
+const widgetOptions = [
+    { key: 'kpi', label: 'KPI Metrics', description: 'Active Projects, Due This Week, Pending Reviews', icon: Squares2X2Icon },
+    { key: 'priorityTasks', label: 'Priority Tasks', description: 'High-priority tasks requiring attention', icon: ListBulletIcon },
+    { key: 'projects', label: 'Current Projects', description: 'Active projects with progress bars', icon: FolderIcon },
+    { key: 'activity', label: 'Recent Activity', description: 'Latest workspace activity feed', icon: ClockIcon },
+    { key: 'workload', label: 'Team Workload', description: 'Task distribution across team members', icon: UserGroupIcon },
+]
+
+function toggleWidget(key: string) {
+    widgetsVisible[key] = !widgetsVisible[key]
+    saveWidgetPreferences({ ...widgetsVisible })
+}
+
+onMounted(() => {
+    const prefs = loadWidgetPreferences()
+    Object.assign(widgetsVisible, prefs)
+})
 
 const page = usePage()
 
@@ -303,11 +389,9 @@ function approveTask(taskId: number) {
     })
 }
 
-// ── Auth ──────────────────────────────────────────────────────
 const role = computed(() => (page.props.auth.user as any)?.role ?? 'employee')
 const userName = computed(() => (page.props.auth.user as any)?.name?.split(' ')[0] ?? 'there')
 
-// ── Greeting ──────────────────────────────────────────────────
 const greeting = computed(() => {
     const hour = new Date().getHours()
     if (hour < 12) return 'Good morning'
@@ -315,35 +399,30 @@ const greeting = computed(() => {
     return 'Good evening'
 })
 
-// ── KPI Stats ─────────────────────────────────────────────────
 const statsList = computed(() => [
     {
-        label: 'Assigned Tasks',
-        value: props.stats.assigned_tasks,
+        label: 'Active Projects',
+        value: props.stats.active_projects,
+        icon: FolderIcon,
+        trend: props.stats.trends?.active_projects ?? 0,
+        route: route('projects.index'),
+    },
+    {
+        label: 'Due This Week',
+        value: props.stats.tasks_due_this_week,
         icon: ClipboardDocumentListIcon,
+        trend: props.stats.trends?.tasks_due_this_week ?? 0,
         route: route('tasks.index'),
     },
     {
-        label: 'Completed',
-        value: props.stats.completed_tasks,
-        icon: CheckCircleIcon,
-        route: route('tasks.index'),
-    },
-    {
-        label: 'Overdue',
-        value: props.stats.overdue_tasks,
-        icon: ExclamationTriangleIcon,
-        route: route('tasks.index'),
-    },
-    {
-        label: 'In Review',
-        value: props.stats.in_review_tasks,
+        label: 'Pending Reviews',
+        value: props.stats.pending_reviews,
         icon: EyeIcon,
+        trend: props.stats.trends?.pending_reviews ?? 0,
         route: route('tasks.index'),
     },
 ])
 
-// ── Primary Panel (role-aware) ────────────────────────────────
 const primaryPanelTitle = computed(() => {
     if (role.value === 'project-manager') return 'Pending Tasks'
     if (role.value === 'team-lead') return 'Review Queue'
@@ -354,17 +433,14 @@ const primaryPanelTitle = computed(() => {
 const primaryItems = computed(() => {
     if (role.value === 'project-manager') return props.role_data.pending_approvals || []
     if (role.value === 'team-lead') return props.role_data.review_tasks || []
-    // For super-admin show pending approvals (tasks needing action), fallback to delayed
     if (role.value === 'super-admin') return props.role_data.pending_approvals || []
     return props.role_data.my_tasks || []
 })
 
-// ── Team Workload ─────────────────────────────────────────────
 const teamWorkload = computed(() => {
     return props.role_data.team_workload || props.role_data.workload || []
 })
 
-// ── Helpers ───────────────────────────────────────────────────
 function formatDate(date: string) {
     if (!date) return '—'
     return dayjs(date).format('MMM D')
@@ -376,11 +452,7 @@ function formatStatus(status: string) {
 
 function initials(name: string) {
     if (!name) return '?'
-    return name
-        .split(' ')
-        .slice(0, 2)
-        .map((n) => n[0])
-        .join('')
+    return name.split(' ').slice(0, 2).map((n) => n[0]).join('')
 }
 
 function workloadPercent(member: any) {
@@ -390,18 +462,9 @@ function workloadPercent(member: any) {
 
 function taskDotClass(item: any) {
     const s = item.status || ''
-    if (s === 'blocked') return 'bg-gray-600'
-    if (s === 'in_review') return 'bg-gray-400'
-    if (s === 'in_progress') return 'bg-gray-700'
-    if (item.is_overdue) return 'bg-gray-500'
-    return 'bg-gray-300'
-}
-
-function deadlineDotClass(task: any) {
-    if (!task.due_date) return 'bg-gray-300'
-    const diff = dayjs(task.due_date).diff(dayjs(), 'day')
-    if (diff <= 1) return 'bg-gray-700'
-    if (diff <= 3) return 'bg-gray-500'
+    if (s === 'blocked') return 'bg-danger'
+    if (s === 'in_review') return 'bg-warning'
+    if (s === 'in_progress') return 'bg-brand-primary-500'
     return 'bg-gray-300'
 }
 </script>

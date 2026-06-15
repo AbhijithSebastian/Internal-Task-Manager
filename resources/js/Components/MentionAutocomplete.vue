@@ -1,19 +1,19 @@
 <template>
-    <div v-if="visible" ref="dropdownRef" class="absolute z-50 mt-1 w-64 rounded-lg border border-gray-200 bg-white shadow-lg" :style="{ top: dropdownTop + 'px' }">
-        <div class="px-3 py-2 text-xs font-medium text-gray-400 uppercase tracking-wider border-b border-gray-100">Team Members</div>
-        <div v-if="filteredUsers.length === 0" class="px-3 py-3 text-sm text-gray-500 text-center">No matching members</div>
+    <div v-if="visible" ref="dropdownRef" class="absolute z-50 mt-1 w-64 rounded-card border border-border bg-white shadow-dropdown" :style="{ top: dropdownTop + 'px' }">
+        <div class="px-3 py-2 text-xs font-medium text-text-secondary uppercase tracking-wider border-b border-border">Team Members</div>
+        <div v-if="filteredUsers.length === 0" class="px-3 py-3 text-sm text-text-secondary text-center">No matching members</div>
         <button
             v-for="(user, idx) in filteredUsers"
             :key="user.id"
             type="button"
-            class="flex w-full items-center gap-2 px-3 py-2 text-sm text-left hover:bg-primary-50 transition-colors"
-            :class="{ 'bg-primary-50': idx === selectedIndex }"
+            class="flex w-full items-center gap-2 px-3 py-2 text-sm text-left hover:bg-brand-primary-50 transition-colors"
+            :class="{ 'bg-brand-primary-50': idx === selectedIndex }"
             @click="selectUser(user)"
             @mouseenter="selectedIndex = idx"
         >
             <img :src="user.avatar" alt="" class="h-6 w-6 rounded-full">
-            <span class="font-medium text-gray-900">{{ user.name }}</span>
-            <span v-if="user.job_title" class="text-xs text-gray-400 ml-auto">{{ user.job_title }}</span>
+            <span class="font-medium text-text-primary">{{ user.name }}</span>
+            <span v-if="user.job_title" class="text-xs text-text-secondary ml-auto">{{ user.job_title }}</span>
         </button>
     </div>
 </template>

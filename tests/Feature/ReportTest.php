@@ -116,12 +116,5 @@ class ReportTest extends TestCase
         $response->assertStatus(200);
     }
 
-    public function test_reports_can_switch_tab(): void
-    {
-        $this->actingAsProjectManager();
 
-        $response = $this->get(route('reports.index', ['tab' => 'overdue_analysis'], absolute: false));
-
-        $response->assertStatus(200);
-    }
 }

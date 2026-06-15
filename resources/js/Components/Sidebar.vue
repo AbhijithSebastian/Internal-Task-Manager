@@ -23,7 +23,7 @@
                     leave-from="translate-x-0"
                     leave-to="-translate-x-full"
                 >
-                    <DialogPanel class="w-full max-w-[240px]">
+                    <DialogPanel class="w-full max-w-[280px]">
                         <SidebarContent />
                     </DialogPanel>
                 </TransitionChild>
@@ -31,7 +31,7 @@
         </Dialog>
     </TransitionRoot>
 
-    <aside class="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-60 lg:flex-col border-r border-gray-100/80">
+    <aside class="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-[280px] lg:flex-col border-r border-border bg-white">
         <SidebarContent />
     </aside>
 </template>

@@ -1,8 +1,8 @@
 <template>
     <div>
         <div
-            class="relative flex cursor-pointer items-center justify-center rounded-lg border-2 border-dashed px-6 py-4 text-sm transition-colors"
-            :class="dragOver ? 'border-primary-400 bg-primary-50' : 'border-gray-300 hover:border-gray-400 bg-gray-50'"
+            class="relative flex cursor-pointer items-center justify-center rounded-card border-2 border-dashed px-6 py-4 text-sm transition-colors"
+            :class="dragOver ? 'border-brand-primary-500 bg-brand-primary-50' : 'border-border hover:border-border bg-page'"
             @dragover.prevent="dragOver = true"
             @dragleave.prevent="dragOver = false"
             @drop.prevent="onDrop"
@@ -10,27 +10,27 @@
         >
             <input ref="fileInput" type="file" class="hidden" :accept="accept" @change="onFileSelected">
             <div class="w-full text-center">
-                <svg v-if="!uploading" class="mx-auto h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg v-if="!uploading" class="mx-auto h-8 w-8 text-text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
                 </svg>
-                <svg v-else class="mx-auto h-8 w-8 animate-spin text-primary-500" fill="none" viewBox="0 0 24 24">
+                <svg v-else class="mx-auto h-8 w-8 animate-spin text-brand-primary-500" fill="none" viewBox="0 0 24 24">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                 </svg>
-                <p class="mt-1 text-sm text-gray-600">
-                    <span class="font-medium text-primary-600">Click to upload</span>
+                <p class="mt-1 text-sm text-text-secondary">
+                    <span class="font-medium text-brand-primary-500">Click to upload</span>
                     or drag and drop
                 </p>
-                <p class="mt-0.5 text-xs text-gray-400">Images, PDF, Documents, ZIP — up to 50MB</p>
+                <p class="mt-0.5 text-xs text-text-secondary">Images, PDF, Documents, ZIP — up to 50MB</p>
                 <div v-if="uploading" class="mt-3">
-                    <div class="h-2 w-full rounded-full bg-gray-200">
-                        <div class="h-2 rounded-full bg-primary-500 transition-all duration-300" :style="{ width: uploadProgress + '%' }"></div>
+                    <div class="h-2 w-full rounded-full bg-page">
+                        <div class="h-2 rounded-full bg-brand-primary-500 transition-all duration-300" :style="{ width: uploadProgress + '%' }"></div>
                     </div>
-                    <p class="mt-1 text-xs text-gray-500">{{ uploadProgress }}% uploaded</p>
+                    <p class="mt-1 text-xs text-text-secondary">{{ uploadProgress }}% uploaded</p>
                 </div>
             </div>
         </div>
-        <p v-if="error" class="mt-1 text-xs text-red-500">{{ error }}</p>
+        <p v-if="error" class="mt-1 text-xs text-danger">{{ error }}</p>
     </div>
 </template>
 

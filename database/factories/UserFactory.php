@@ -23,6 +23,7 @@ class UserFactory extends Factory
             'is_active' => true,
             'last_login_at' => null,
             'last_login_ip' => null,
+            'inherit_role_permissions' => true,
             'remember_token' => Str::random(10),
         ];
     }

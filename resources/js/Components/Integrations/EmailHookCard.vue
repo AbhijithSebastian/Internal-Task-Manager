@@ -1,13 +1,13 @@
 <template>
     <div class="space-y-2">
         <div>
-            <p class="text-xs text-gray-500 mb-1">Inbound Email Address</p>
+            <p class="text-xs text-text-secondary mb-1">Inbound Email Address</p>
             <div class="flex items-center gap-2">
-                <code class="text-sm bg-gray-100 px-2 py-1 rounded flex-1 truncate">
+                <code class="text-sm bg-page px-2 py-1 rounded flex-1 truncate">
                     {{ integration.display?.inbound_email ?? integration.config.inbound_email ?? '—' }}
                 </code>
                 <button
-                    class="text-xs text-primary-600 hover:text-primary-500 shrink-0"
+                    class="text-xs text-brand-primary-500 hover:text-brand-primary-600 shrink-0"
                     @click="copyEmail"
                 >
                     {{ copied ? 'Copied!' : 'Copy' }}
@@ -15,11 +15,11 @@
             </div>
         </div>
 
-        <div v-if="integration.config.forward_to" class="text-xs text-gray-500">
+        <div v-if="integration.config.forward_to" class="text-xs text-text-secondary">
             Forwarding to: {{ integration.config.forward_to }}
         </div>
 
-        <div class="flex items-center gap-2 text-xs text-gray-500">
+        <div class="flex items-center gap-2 text-xs text-text-secondary">
             <span>Auto-create tasks:</span>
             <Badge :variant="integration.config.create_tasks ? 'success' : 'neutral'">
                 {{ integration.config.create_tasks ? 'Yes' : 'No' }}

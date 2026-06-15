@@ -58,8 +58,8 @@ abstract class TestCase extends BaseTestCase
             Permission::COMMENTS_DELETE,
             Permission::REPORTS_VIEW,
             Permission::REPORTS_EXPORT,
-            Permission::FILES_UPLOAD,
-            Permission::FILES_DELETE,
+            Permission::ATTACHMENTS_UPLOAD,
+            Permission::ATTACHMENTS_DELETE,
         ];
 
         $tlPermissions = [
@@ -74,7 +74,7 @@ abstract class TestCase extends BaseTestCase
             Permission::COMMENTS_CREATE,
             Permission::COMMENTS_UPDATE,
             Permission::COMMENTS_DELETE,
-            Permission::FILES_UPLOAD,
+            Permission::ATTACHMENTS_UPLOAD,
         ];
 
         $empPermissions = [
@@ -83,7 +83,7 @@ abstract class TestCase extends BaseTestCase
             Permission::TASKS_UPDATE,
             Permission::TASKS_SUBMIT_APPROVAL,
             Permission::COMMENTS_CREATE,
-            Permission::FILES_UPLOAD,
+            Permission::ATTACHMENTS_UPLOAD,
         ];
 
         $this->syncRole(UserRole::SuperAdmin->value, Permission::cases());

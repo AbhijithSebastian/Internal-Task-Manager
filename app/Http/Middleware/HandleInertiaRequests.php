@@ -34,6 +34,7 @@ class HandleInertiaRequests extends Middleware
                     'role_label' => $user->role?->label(),
                     'avatar' => $user->avatar,
                     'is_super_admin' => $user->is_super_admin,
+                    'inherit_role_permissions' => $user->inherit_role_permissions,
                     'last_login_at' => $user->last_login_at?->diffForHumans(),
                     'permissions' => $user->getAllPermissions()->pluck('name'),
                 ] : null,

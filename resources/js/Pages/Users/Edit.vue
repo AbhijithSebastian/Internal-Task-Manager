@@ -4,45 +4,45 @@
             <Breadcrumbs :items="[{ label: 'Users', route: 'users.index' }, { label: user.name, route: 'users.show', params: { id: user.id } }, { label: 'Edit' }]" :back="{ route: 'users.show', params: { id: user.id } }" />
 
             <div>
-                <h2 class="text-2xl font-bold text-gray-900">Edit User</h2>
-                <p class="mt-1 text-sm text-gray-600">{{ user.name }}</p>
+                <h2 class="text-2xl font-bold text-text-primary">Edit User</h2>
+                <p class="mt-1 text-sm text-text-secondary">{{ user.name }}</p>
             </div>
 
             <!-- Two-column grid -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
                 <!-- Left column: Avatar card -->
                 <div class="lg:col-span-1">
-                    <div class="card p-6">
-                        <h3 class="text-base font-semibold text-gray-900 mb-4">Avatar</h3>
+                    <div class="card card-body">
+                        <h3 class="text-base font-semibold text-text-primary mb-4">Avatar</h3>
                         <div class="flex flex-col items-center text-center gap-4">
-                            <img :src="avatarPreview || user.avatar" alt="" class="h-28 w-28 rounded-full object-cover border border-gray-200/80 shadow-sm">
+                            <img :src="avatarPreview || user.avatar" alt="" class="h-28 w-28 rounded-full object-cover border border-border shadow-card">
                             <div class="space-y-2 w-full flex flex-col items-center">
                                 <label class="btn-secondary btn-sm cursor-pointer w-full text-center">
                                     Upload Photo
                                     <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" class="hidden" @change="handleAvatarUpload">
                                 </label>
-                                <button class="btn-sm text-sm text-red-600 hover:text-red-500 w-full text-center" @click="removeAvatar">Remove</button>
-                                <p class="text-xs text-gray-400 mt-1">JPEG, PNG, or WebP. Max 2MB.</p>
+                                <button class="btn-sm text-sm text-danger hover:text-danger w-full text-center" @click="removeAvatar">Remove</button>
+                                <p class="text-xs text-text-secondary mt-1">JPEG, PNG, or WebP. Max 2MB.</p>
                             </div>
                         </div>
-                        <p v-if="avatarError" class="mt-2 text-sm text-red-600 text-center">{{ avatarError }}</p>
+                        <p v-if="avatarError" class="mt-2 text-sm text-danger text-center">{{ avatarError }}</p>
                     </div>
                 </div>
 
                 <!-- Right/Main column: Profile info + Password -->
                 <div class="lg:col-span-2">
-                    <form @submit.prevent="submit" class="card p-6 space-y-6">
-                        <h3 class="text-base font-semibold text-gray-900">Profile Information</h3>
+                    <form @submit.prevent="submit" class="card card-body space-y-6">
+                        <h3 class="text-base font-semibold text-text-primary">Profile Information</h3>
                         <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
                             <div>
-                                <label class="label">Name <span class="text-red-500">*</span></label>
+                                <label class="label">Name <span class="text-danger">*</span></label>
                                 <input v-model="form.name" type="text" class="input">
-                                <p v-if="form.errors.name" class="mt-1 text-sm text-red-600">{{ form.errors.name }}</p>
+                                <p v-if="form.errors.name" class="mt-1 text-sm text-danger">{{ form.errors.name }}</p>
                             </div>
                             <div>
-                                <label class="label">Email <span class="text-red-500">*</span></label>
+                                <label class="label">Email <span class="text-danger">*</span></label>
                                 <input v-model="form.email" type="email" class="input">
-                                <p v-if="form.errors.email" class="mt-1 text-sm text-red-600">{{ form.errors.email }}</p>
+                                <p v-if="form.errors.email" class="mt-1 text-sm text-danger">{{ form.errors.email }}</p>
                             </div>
                             <div>
                                 <label class="label">Role</label>
@@ -50,7 +50,7 @@
                                     <option value="" disabled>Select role</option>
                                     <option v-for="role in roles" :key="role.value" :value="role.value">{{ role.label }}</option>
                                 </select>
-                                <p v-if="form.errors.role" class="mt-1 text-sm text-red-600">{{ form.errors.role }}</p>
+                                <p v-if="form.errors.role" class="mt-1 text-sm text-danger">{{ form.errors.role }}</p>
                             </div>
                             <div>
                                 <label class="label">Job Title</label>
@@ -69,15 +69,15 @@
                             </div>
                         </div>
 
-                        <hr class="border-gray-200">
+                        <hr class="border-border">
 
-                        <h3 class="text-base font-semibold text-gray-900">Change Password</h3>
-                        <p class="text-xs text-gray-400 -mt-4">Leave blank to keep current password.</p>
+                        <h3 class="text-base font-semibold text-text-primary">Change Password</h3>
+                        <p class="text-xs text-text-secondary -mt-4">Leave blank to keep current password.</p>
                         <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
                             <div>
                                 <label class="label">New Password</label>
                                 <input v-model="form.password" type="password" class="input" placeholder="Min 8 characters">
-                                <p v-if="form.errors.password" class="mt-1 text-sm text-red-600">{{ form.errors.password }}</p>
+                                <p v-if="form.errors.password" class="mt-1 text-sm text-danger">{{ form.errors.password }}</p>
                             </div>
                             <div>
                                 <label class="label">Confirm Password</label>
@@ -85,7 +85,7 @@
                             </div>
                         </div>
 
-                        <div class="flex items-center justify-between gap-4 pt-4 border-t border-gray-100">
+                        <div class="flex items-center justify-between gap-4 pt-4 border-t border-border">
                             <div>
                                 <button v-if="canDeactivate" type="button" class="btn-danger" @click="confirmDelete = true">
                                     Deactivate User

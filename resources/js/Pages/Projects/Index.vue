@@ -5,8 +5,8 @@
 
             <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h2 class="text-2xl font-bold tracking-tight text-gray-900">Projects</h2>
-                    <p class="mt-1 text-sm text-gray-500">Manage your team projects</p>
+                    <h2 class="text-2xl font-bold tracking-tight text-text-primary">Projects</h2>
+                    <p class="mt-1 text-sm text-text-secondary">Manage your team projects</p>
                 </div>
                 <Link v-if="can('projects.create')" :href="route('projects.create')" class="btn-primary inline-flex items-center gap-2">
                     New Project
@@ -14,7 +14,7 @@
             </div>
 
             <div class="card">
-                <div class="border-b border-gray-200 bg-gray-50 px-6 py-4">
+                <div class="card-header bg-page">
                     <div class="flex flex-wrap gap-4">
                         <input v-model="filters.search" type="search" placeholder="Search projects..." class="input max-w-xs" @input="filter">
                         <select v-model="filters.status" class="input max-w-[150px]" @change="filter">
@@ -35,31 +35,32 @@
                 </div>
 
                 <div v-if="projects.data.length > 0" class="grid grid-cols-1 gap-4 p-6 sm:grid-cols-2 xl:grid-cols-3">
-                    <div v-for="project in projects.data" :key="project.id" class="group relative rounded-2xl border border-gray-200/70 bg-white p-5 shadow-[0_1px_3px_0_rgba(0,0,0,0.04)] transition-all hover:shadow-[0_4px_12px_0_rgba(0,0,0,0.07)]">
+                    <div v-for="project in projects.data" :key="project.id" class="group relative card p-6 transition-all hover:shadow-card-hover">
                         <Link :href="route('projects.show', project.id)" class="block">
                             <div class="flex items-start justify-between gap-2">
-                                <h3 class="text-[15px] font-semibold text-gray-900 group-hover:text-gray-700">{{ project.name }}</h3>
+                                <h3 class="text-[15px] font-semibold text-text-primary group-hover:text-text-primary">{{ project.name }}</h3>
                                 <div class="flex shrink-0 gap-1">
                                     <Badge :variant="statusBadge(project.status)">{{ project.status_label ?? project.status }}</Badge>
+                                    <Badge v-if="project.health" :variant="healthBadge(project.health.status)">{{ project.health.label }}</Badge>
                                 </div>
                             </div>
-                            <p v-if="project.description" class="mt-2 text-[13px] text-gray-500 line-clamp-2">{{ project.description }}</p>
+                            <p v-if="project.description" class="mt-2 text-[13px] text-text-secondary line-clamp-2">{{ project.description }}</p>
 
                             <!-- Progress bar -->
                             <div v-if="project.completion_rate !== null && project.completion_rate !== undefined" class="mt-4">
                                 <div class="flex items-center justify-between mb-1">
-                                    <span class="text-[11px] font-medium text-gray-400">Progress</span>
-                                    <span class="text-[11px] font-semibold tabular-nums text-gray-600">{{ project.completion_rate }}%</span>
+                                    <span class="text-[11px] font-medium text-text-secondary">Progress</span>
+                                    <span class="text-[11px] font-semibold tabular-nums text-text-primary">{{ project.completion_rate }}%</span>
                                 </div>
-                                <div class="h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
+                                <div class="h-1.5 w-full overflow-hidden rounded-full bg-page">
                                     <div
-                                        class="h-1.5 rounded-full bg-gray-800 transition-all duration-500"
+                                        class="h-1.5 rounded-full bg-brand-primary-500 transition-all duration-500"
                                         :style="{ width: `${project.completion_rate}%` }"
                                     />
                                 </div>
                             </div>
 
-                            <div class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[12px] text-gray-400">
+                            <div class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[12px] text-text-secondary">
                                 <span>{{ project.members_count }} members</span>
                                 <span>{{ project.tasks_count }} tasks</span>
                                 <span v-if="project.project_manager">PM: {{ project.project_manager.name }}</span>
@@ -80,7 +81,7 @@
 
         <Modal :open="archiveModal.open" @close="archiveModal.open = false">
             <template #title>Archive Project</template>
-            <p class="text-sm text-gray-600">Are you sure you want to archive <strong>{{ archiveModal.projectName }}</strong>? Archived projects are hidden from the active list.</p>
+            <p class="text-sm text-text-secondary">Are you sure you want to archive <strong>{{ archiveModal.projectName }}</strong>? Archived projects are hidden from the active list.</p>
             <div class="mt-6 flex justify-end gap-3">
                 <button class="btn-secondary" @click="archiveModal.open = false">Cancel</button>
                 <button class="btn-danger" :disabled="archiveModal.processing" @click="archiveModal.action">Archive</button>
@@ -138,6 +139,11 @@ function confirmArchive(project: any) {
     }
 }
 
+function healthBadge(status: string): string {
+    const map: Record<string, string> = { healthy: 'success', at_risk: 'warning', delayed: 'danger', critical: 'danger' }
+    return map[status] ?? 'neutral'
+}
+
 function statusBadge(status: string): string {
     const map: Record<string, string> = { active: 'info', on_hold: 'warning', completed: 'success', archived: 'neutral' }
     return map[status] ?? 'neutral'
@@ -149,8 +155,8 @@ function priorityBadge(priority: string): string {
 }
 
 function completionColor(rate: number): string {
-    if (rate >= 80) return 'text-green-600'
-    if (rate >= 50) return 'text-yellow-600'
-    return 'text-gray-500'
+    if (rate >= 80) return 'text-success'
+    if (rate >= 50) return 'text-warning'
+    return 'text-text-secondary'
 }
 </script>

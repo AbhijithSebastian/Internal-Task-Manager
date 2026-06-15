@@ -3,7 +3,7 @@
         <div v-for="field in fields" :key="field.key" class="space-y-1">
             <label class="label">
                 {{ field.label }}
-                <span v-if="field.required" class="text-red-500">*</span>
+                <span v-if="field.required" class="text-danger">*</span>
             </label>
 
             <input
@@ -18,13 +18,13 @@
                 <input
                     type="checkbox"
                     :checked="localConfig[field.key] ?? false"
-                    class="rounded border-gray-300 text-primary-600"
+                    class="rounded border-border text-brand-primary-500"
                     @change="localConfig[field.key] = ($event.target as HTMLInputElement).checked"
                 />
                 {{ field.label }}
             </label>
 
-            <p v-if="field.help" class="text-xs text-gray-500">{{ field.help }}</p>
+            <p v-if="field.help" class="text-xs text-text-secondary">{{ field.help }}</p>
         </div>
     </div>
 </template>

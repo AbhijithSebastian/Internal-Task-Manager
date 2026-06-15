@@ -96,10 +96,10 @@ class Task extends Model implements HasMedia
     }
 
     protected $appends = [
-        'is_overdue',
         'status_label',
         'priority_label',
         'approval_status',
+        'subtask_completion_rate',
     ];
 
     public function getCommentCountAttribute(): int
@@ -128,16 +128,6 @@ class Task extends Model implements HasMedia
         return (int) round(($completed / $total) * 100);
     }
 
-    public function getIsOverdueAttribute(): bool
-    {
-        try {
-            return $this->due_date && $this->due_date->isPast()
-                && !in_array($this->status, [TaskStatus::Done, TaskStatus::Cancelled, TaskStatus::Approved]);
-        } catch (\Illuminate\Database\Eloquent\MissingAttributeException) {
-            return false;
-        }
-    }
-
     public function getStatusLabelAttribute(): ?string
     {
         try {
@@ -159,12 +149,6 @@ class Task extends Model implements HasMedia
     public function scopePending($query)
     {
         return $query->whereNotIn('status', [TaskStatus::Done, TaskStatus::Cancelled]);
-    }
-
-    public function scopeOverdue($query)
-    {
-        return $query->where('due_date', '<', now())
-            ->whereNotIn('status', [TaskStatus::Done, TaskStatus::Cancelled, TaskStatus::Approved]);
     }
 
     public function scopeByTag($query, string $tag)

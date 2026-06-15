@@ -1,12 +1,12 @@
 <template>
-    <div class="border-b border-gray-100 last:border-b-0">
-        <div class="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-gray-500 bg-gray-50/50">
+    <div class="border-b border-border last:border-b-0">
+        <div class="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-text-secondary bg-page">
             {{ label }}
         </div>
         <div v-for="(item, idx) in items" :key="getKey(item, idx)" @click="emit('select', item, type)">
             <slot :item="item" :highlighted="startIndex + idx === selectedIndex" />
         </div>
-        <a v-if="viewAllRoute" :href="viewAllHref" class="block px-4 py-2 text-xs text-primary-600 hover:text-primary-500 hover:bg-primary-50/50 text-center font-medium">
+        <a v-if="viewAllRoute" :href="viewAllHref" class="block px-4 py-2 text-xs text-brand-primary-500 hover:text-brand-primary-600 hover:bg-brand-primary-50 text-center font-medium">
             View all {{ label.toLowerCase() }} &rarr;
         </a>
     </div>

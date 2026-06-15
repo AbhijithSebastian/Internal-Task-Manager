@@ -1,35 +1,35 @@
 <template>
     <Teleport to="body">
         <Transition name="fade">
-            <div v-if="open" class="fixed inset-0 z-50 flex items-start justify-center pt-[15vh]">
-                <div class="fixed inset-0 bg-black/40" @click="close" />
+            <div v-if="open" class="fixed inset-0 z-50 flex items-start justify-center pt-[12vh]">
+                <div class="fixed inset-0 bg-black/40 backdrop-blur-sm" @click="close" />
 
-                <div class="relative w-full max-w-xl rounded-xl bg-white shadow-2xl ring-1 ring-black/5 overflow-hidden" @keydown.esc="close">
-                    <div class="flex items-center border-b border-gray-200 px-4">
-                        <MagnifyingGlassIcon class="h-5 w-5 shrink-0 text-gray-400" />
+                <div class="relative w-full max-w-2xl rounded-card bg-white shadow-modal ring-1 ring-black/5 overflow-hidden animate-slide-up" @keydown.esc="close">
+                    <div class="flex items-center border-b border-border px-4">
+                        <MagnifyingGlassIcon class="h-5 w-5 shrink-0 text-text-secondary/60" />
                         <input
                             ref="inputRef"
                             v-model="query"
                             type="text"
-                            class="flex-1 border-0 px-3 py-4 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-0"
+                            class="flex-1 border-0 px-3 py-4 text-sm text-text-primary placeholder:text-text-secondary/60 focus:outline-none focus:ring-0"
                             placeholder="Search tasks, projects, users, comments... (tag:name to filter by tag)"
                             @input="onInput"
                             @keydown.down.prevent="nextResult"
                             @keydown.up.prevent="prevResult"
                             @keydown.enter.prevent="selectCurrent"
                         />
-                        <kbd class="hidden sm:inline-flex items-center rounded border border-gray-200 px-1.5 py-0.5 text-xs text-gray-400">ESC</kbd>
+                        <kbd class="hidden sm:inline-flex items-center rounded border border-border px-1.5 py-0.5 text-[11px] font-medium text-text-secondary">ESC</kbd>
                     </div>
 
                     <div v-if="query.length > 0" class="max-h-[60vh] overflow-y-auto">
-                        <div v-if="loading" class="flex items-center justify-center py-8">
-                            <svg class="h-5 w-5 animate-spin text-gray-400" fill="none" viewBox="0 0 24 24">
+                        <div v-if="loading" class="flex items-center justify-center py-12">
+                            <svg class="h-5 w-5 animate-spin text-text-secondary/60" fill="none" viewBox="0 0 24 24">
                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
                                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                             </svg>
                         </div>
 
-                        <div v-else-if="noResults" class="px-4 py-8 text-center text-sm text-gray-500">No results found for "{{ query }}"</div>
+                        <div v-else-if="noResults" class="px-4 py-12 text-center text-sm text-text-secondary">No results found for "{{ query }}"</div>
 
                         <template v-else>
                             <SearchSection
@@ -45,11 +45,11 @@
                                 @select="navigateTo"
                             >
                                 <template #default="{ item, highlighted }">
-                                    <div :class="['flex items-center gap-3 px-4 py-2.5 cursor-pointer', highlighted ? 'bg-primary-50' : 'hover:bg-gray-50']">
-                                        <ClipboardDocumentListIcon class="h-5 w-5 shrink-0 text-gray-400" />
+                                    <div :class="['flex items-center gap-3 px-4 py-3 cursor-pointer', highlighted ? 'bg-brand-primary-50' : 'hover:bg-gray-50']">
+                                        <ClipboardDocumentListIcon class="h-5 w-5 shrink-0 text-text-secondary/60" />
                                         <div class="min-w-0 flex-1">
-                                            <p class="text-sm font-medium text-gray-900 truncate">{{ item.title }}</p>
-                                            <p class="text-xs text-gray-500">{{ item.project?.name ?? 'No project' }}</p>
+                                            <p class="text-sm font-medium text-text-primary truncate">{{ item.title }}</p>
+                                            <p class="text-xs text-text-secondary">{{ item.project?.name ?? 'No project' }}</p>
                                         </div>
                                         <Badge :variant="statusVariant(item.status)">{{ item.status_label ?? item.status }}</Badge>
                                     </div>
@@ -69,11 +69,11 @@
                                 @select="navigateTo"
                             >
                                 <template #default="{ item, highlighted }">
-                                    <div :class="['flex items-center gap-3 px-4 py-2.5 cursor-pointer', highlighted ? 'bg-primary-50' : 'hover:bg-gray-50']">
-                                        <FolderIcon class="h-5 w-5 shrink-0 text-gray-400" />
+                                    <div :class="['flex items-center gap-3 px-4 py-3 cursor-pointer', highlighted ? 'bg-brand-primary-50' : 'hover:bg-gray-50']">
+                                        <FolderIcon class="h-5 w-5 shrink-0 text-text-secondary/60" />
                                         <div class="min-w-0 flex-1">
-                                            <p class="text-sm font-medium text-gray-900">{{ item.name }}</p>
-                                            <p class="text-xs text-gray-500">{{ item.status_label ?? item.status }}</p>
+                                            <p class="text-sm font-medium text-text-primary">{{ item.name }}</p>
+                                            <p class="text-xs text-text-secondary">{{ item.status_label ?? item.status }}</p>
                                         </div>
                                         <Badge :variant="statusVariant(item.status)">{{ item.status_label ?? item.status }}</Badge>
                                     </div>
@@ -93,13 +93,13 @@
                                 @select="navigateTo"
                             >
                                 <template #default="{ item, highlighted }">
-                                    <div :class="['flex items-center gap-3 px-4 py-2.5 cursor-pointer', highlighted ? 'bg-primary-50' : 'hover:bg-gray-50']">
-                                        <div class="h-7 w-7 rounded-full bg-primary-100 flex items-center justify-center text-xs font-medium text-primary-700 shrink-0">
+                                    <div :class="['flex items-center gap-3 px-4 py-3 cursor-pointer', highlighted ? 'bg-brand-primary-50' : 'hover:bg-gray-50']">
+                                        <div class="h-8 w-8 rounded-full bg-brand-primary-50 flex items-center justify-center text-sm font-medium text-brand-primary-600 shrink-0">
                                             {{ item.name?.charAt(0)?.toUpperCase() }}
                                         </div>
                                         <div>
-                                            <p class="text-sm font-medium text-gray-900">{{ item.name }}</p>
-                                            <p v-if="item.job_title" class="text-xs text-gray-500">{{ item.job_title }}</p>
+                                            <p class="text-sm font-medium text-text-primary">{{ item.name }}</p>
+                                            <p v-if="item.job_title" class="text-xs text-text-secondary">{{ item.job_title }}</p>
                                         </div>
                                     </div>
                                 </template>
@@ -115,11 +115,11 @@
                                 @select="navigateToComment"
                             >
                                 <template #default="{ item, highlighted }">
-                                    <div :class="['flex items-center gap-3 px-4 py-2.5 cursor-pointer', highlighted ? 'bg-primary-50' : 'hover:bg-gray-50']" @click="navigateToComment(item)">
-                                        <ChatBubbleLeftIcon class="h-5 w-5 shrink-0 text-gray-400" />
+                                    <div :class="['flex items-center gap-3 px-4 py-3 cursor-pointer', highlighted ? 'bg-brand-primary-50' : 'hover:bg-gray-50']" @click="navigateToComment(item)">
+                                        <ChatBubbleLeftIcon class="h-5 w-5 shrink-0 text-text-secondary/60" />
                                         <div class="min-w-0 flex-1">
-                                            <p class="text-sm text-gray-900 truncate">{{ item.body }}</p>
-                                            <p class="text-xs text-gray-500">{{ item.author?.name }} on {{ item.task?.title }}</p>
+                                            <p class="text-sm text-text-primary truncate">{{ item.body }}</p>
+                                            <p class="text-xs text-text-secondary">{{ item.author?.name }} on {{ item.task?.title }}</p>
                                         </div>
                                     </div>
                                 </template>
@@ -127,9 +127,14 @@
                         </template>
                     </div>
 
-                    <div v-else class="px-4 py-8 text-center text-sm text-gray-400">
-                        <p>Search across tasks, projects, users, and comments</p>
-                        <p class="mt-1">Use <kbd class="rounded border border-gray-200 px-1 text-xs">tag:name</kbd> to filter by tag</p>
+                    <div v-else class="px-6 py-10 text-center">
+                        <MagnifyingGlassIcon class="mx-auto h-8 w-8 text-text-secondary/30 mb-3" />
+                        <p class="text-sm text-text-secondary">Search across tasks, projects, users, and comments</p>
+                        <div class="mt-4 flex items-center justify-center gap-2 text-xs text-text-secondary">
+                            <span>Use</span>
+                            <kbd class="rounded border border-border px-1.5 py-0.5 font-medium">tag:name</kbd>
+                            <span>to filter by tag</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -290,10 +295,6 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.fade-enter-active, .fade-leave-active {
-    transition: opacity 0.15s ease;
-}
-.fade-enter-from, .fade-leave-to {
-    opacity: 0;
-}
+.fade-enter-active, .fade-leave-active { transition: opacity 0.15s ease; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
 </style>

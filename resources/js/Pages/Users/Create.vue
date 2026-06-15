@@ -4,38 +4,38 @@
             <Breadcrumbs :items="[{ label: 'Users', route: 'users.index' }, { label: 'New User' }]" :back="{ route: 'users.index' }" />
 
             <div>
-                <h2 class="text-2xl font-bold text-gray-900">Add User</h2>
-                <p class="mt-1 text-sm text-gray-600">Create a new team member account</p>
+                <h2 class="text-2xl font-bold text-text-primary">Add User</h2>
+                <p class="mt-1 text-sm text-text-secondary">Create a new team member account</p>
             </div>
 
-            <form @submit.prevent="submit" class="card p-6 space-y-6">
+            <form @submit.prevent="submit" class="card card-body space-y-6">
                 <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
                     <div>
-                        <label class="label">Name <span class="text-red-500">*</span></label>
+                        <label class="label">Name <span class="text-danger">*</span></label>
                         <input v-model="form.name" type="text" class="input" placeholder="John Doe">
-                        <p v-if="form.errors.name" class="mt-1 text-sm text-red-600">{{ form.errors.name }}</p>
+                        <p v-if="form.errors.name" class="mt-1 text-sm text-danger">{{ form.errors.name }}</p>
                     </div>
                     <div>
-                        <label class="label">Email <span class="text-red-500">*</span></label>
+                        <label class="label">Email <span class="text-danger">*</span></label>
                         <input v-model="form.email" type="email" class="input" placeholder="john@company.com">
-                        <p v-if="form.errors.email" class="mt-1 text-sm text-red-600">{{ form.errors.email }}</p>
+                        <p v-if="form.errors.email" class="mt-1 text-sm text-danger">{{ form.errors.email }}</p>
                     </div>
                     <div>
-                        <label class="label">Password <span class="text-red-500">*</span></label>
+                        <label class="label">Password <span class="text-danger">*</span></label>
                         <input v-model="form.password" type="password" class="input" placeholder="Min 8 characters">
-                        <p v-if="form.errors.password" class="mt-1 text-sm text-red-600">{{ form.errors.password }}</p>
+                        <p v-if="form.errors.password" class="mt-1 text-sm text-danger">{{ form.errors.password }}</p>
                     </div>
                     <div>
-                        <label class="label">Confirm Password <span class="text-red-500">*</span></label>
+                        <label class="label">Confirm Password <span class="text-danger">*</span></label>
                         <input v-model="form.password_confirmation" type="password" class="input" placeholder="Repeat password">
                     </div>
                     <div>
-                        <label class="label">Role <span class="text-red-500">*</span></label>
+                        <label class="label">Role <span class="text-danger">*</span></label>
                         <select v-model="form.role" class="input">
                             <option value="" disabled>Select role</option>
                             <option v-for="role in roles" :key="role.value" :value="role.value">{{ role.label }}</option>
                         </select>
-                        <p v-if="form.errors.role" class="mt-1 text-sm text-red-600">{{ form.errors.role }}</p>
+                        <p v-if="form.errors.role" class="mt-1 text-sm text-danger">{{ form.errors.role }}</p>
                     </div>
                     <div>
                         <label class="label">Job Title</label>

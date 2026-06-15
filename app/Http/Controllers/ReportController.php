@@ -23,16 +23,13 @@ class ReportController extends Controller
 
     public function index(ReportFilterRequest $request): Response
     {
-        $this->authorize(Permission::REPORTS_VIEW->value);
+        abort_unless($request->user()->can(Permission::REPORTS_VIEW->value), 403);
 
         $filters = $this->resolveFilters($request);
 
         return Inertia::render('Reports/Index', [
             'reports' => [
                 'task_completion' => $this->reportService->taskCompletion($filters),
-                'overdue_analysis' => $this->reportService->overdueAnalysis($filters),
-                'team_productivity' => $this->reportService->teamProductivity($filters),
-                'project_health' => $this->reportService->projectHealth($filters),
                 'workload_distribution' => $this->reportService->workloadDistribution($filters),
                 'weekly_summary' => $this->reportService->weeklySummary($filters),
                 'meeting_logs' => $this->reportService->meetingLogs($filters),
@@ -45,7 +42,7 @@ class ReportController extends Controller
 
     public function export(ReportFilterRequest $request): StreamedResponse|\Illuminate\Http\Response
     {
-        $this->authorize(Permission::REPORTS_EXPORT->value);
+        abort_unless($request->user()->hasPermissionTo(Permission::REPORTS_EXPORT->value), 403);
 
         $filters = $this->resolveFilters($request);
         $type = $request->input('tab', 'task_completion');
@@ -53,9 +50,6 @@ class ReportController extends Controller
 
         $data = match ($type) {
             'task_completion' => $this->reportService->taskCompletion($filters),
-            'overdue_analysis' => $this->reportService->overdueAnalysis($filters),
-            'team_productivity' => $this->reportService->teamProductivity($filters),
-            'project_health' => $this->reportService->projectHealth($filters),
             'workload_distribution' => $this->reportService->workloadDistribution($filters),
             'weekly_summary' => $this->reportService->weeklySummary($filters),
             'meeting_logs' => $this->reportService->meetingLogs($filters),
@@ -72,7 +66,7 @@ class ReportController extends Controller
 
     public function projectPreview(Project $project): \Illuminate\Http\JsonResponse
     {
-        $this->authorize(Permission::REPORTS_VIEW->value);
+        abort_unless(request()->user()?->hasPermissionTo(Permission::REPORTS_VIEW->value), 403);
 
         $project->load(['projectManager', 'teamLead', 'members']);
 
@@ -92,11 +86,19 @@ class ReportController extends Controller
             $tasksSummary[$status->value] = $statusCounts[$status->value] ?? 0;
         }
 
+        $taskCounts = \DB::table('task_user')
+            ->join('tasks', 'tasks.id', '=', 'task_user.task_id')
+            ->where('tasks.project_id', $project->id)
+            ->whereNull('tasks.parent_id')
+            ->select('task_user.user_id', \DB::raw('count(*) as count'))
+            ->groupBy('task_user.user_id')
+            ->pluck('count', 'user_id');
+
         $teamSummary = $project->members->map(fn ($m) => [
             'name' => $m->name,
             'role' => $m->pivot->role,
             'avatar' => $m->avatar,
-            'assigned_tasks_count' => $project->tasks()->whereNull('parent_id')->whereHas('assignees', fn ($q) => $q->where('users.id', $m->id))->count(),
+            'assigned_tasks_count' => (int) ($taskCounts[$m->id] ?? 0),
         ]);
 
         $upcomingDeadlines = $project->tasks()
@@ -116,28 +118,9 @@ class ReportController extends Controller
 
         // Health Score
         $blockedTasks = $project->tasks()->whereNull('parent_id')->where('status', TaskStatus::Blocked->value)->count();
-        $overdueTasks = $project->tasks()->whereNull('parent_id')->overdue()->count();
         $inProgressTasks = $project->tasks()->whereNull('parent_id')->where('status', TaskStatus::InProgress->value)->count();
 
         $healthScore = 100;
-        if ($totalTasks > 0) {
-            $completionWeight = 0.4;
-            $blockedWeight = 0.3;
-            $overdueWeight = 0.3;
-
-            $completionScore = ($completedTasks / $totalTasks) * 100;
-            $blockedRatio = $blockedTasks / $totalTasks;
-            $overdueRatio = $overdueTasks / $totalTasks;
-
-            $blockedScore = max(0, 100 - ($blockedRatio * 100));
-            $overdueScore = max(0, 100 - ($overdueRatio * 100));
-
-            $healthScore = (int) round(
-                ($completionScore * $completionWeight) +
-                ($blockedScore * $blockedWeight) +
-                ($overdueScore * $overdueWeight)
-            );
-        }
 
         return response()->json([
             'project' => [
@@ -206,9 +189,6 @@ class ReportController extends Controller
         $headers = $this->getColumnHeaders($type);
         $title = match ($type) {
             'task_completion' => 'Task Completion Report',
-            'overdue_analysis' => 'Overdue Analysis Report',
-            'team_productivity' => 'Team Productivity Report',
-            'project_health' => 'Project Health Report',
             'workload_distribution' => 'Workload Distribution Report',
             'weekly_summary' => 'Weekly Summary Report',
             default => 'Report',
@@ -238,9 +218,6 @@ class ReportController extends Controller
             $headers = $this->getColumnHeaders($type);
             $title = match ($type) {
                 'task_completion' => 'Task Completion Report',
-                'overdue_analysis' => 'Overdue Analysis Report',
-                'team_productivity' => 'Team Productivity Report',
-                'project_health' => 'Project Health Report',
                 'workload_distribution' => 'Workload Distribution Report',
                 'weekly_summary' => 'Weekly Summary Report',
                 default => 'Report',
@@ -277,11 +254,8 @@ class ReportController extends Controller
     {
         return match ($type) {
             'task_completion' => ['Project', 'Total Tasks', 'Completed', 'Pending', 'Completion Rate (%)'],
-            'overdue_analysis' => ['Task', 'Project', 'Assignee', 'Due Date', 'Days Overdue', 'Priority'],
-            'team_productivity' => ['User', 'Completed Tasks'],
-            'project_health' => ['Project', 'Total', 'Completed', 'Blocked', 'Overdue', 'In Progress', 'Completion Rate (%)', 'Health Score'],
-            'workload_distribution' => ['User'] + collect(TaskStatus::cases())->map(fn ($s) => $s->label())->toArray() + ['Total'],
-            'weekly_summary' => ['Date From', 'Date To', 'Tasks Created', 'Tasks Completed', 'Tasks Overdue', 'Comments Added'],
+            'workload_distribution' => array_merge(['User'], collect(TaskStatus::cases())->map(fn ($s) => $s->label())->toArray(), ['Total']),
+            'weekly_summary' => ['Date From', 'Date To', 'Tasks Created', 'Tasks Completed', 'Comments Added'],
             'meeting_logs' => ['Project', 'Date', 'Title', 'Attendees', 'Summary', 'Decisions Taken', 'Blockers', 'Action Items', 'Notes'],
             default => ['Key', 'Value'],
         };

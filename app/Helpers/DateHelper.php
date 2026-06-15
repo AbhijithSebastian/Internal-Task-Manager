@@ -33,15 +33,6 @@ class DateHelper
         return Carbon::parse($date)->diffForHumans();
     }
 
-    public static function isOverdue(null|string|\DateTimeInterface $dueDate): bool
-    {
-        if (!$dueDate) {
-            return false;
-        }
-
-        return Carbon::parse($dueDate)->isPast();
-    }
-
     public static function daysUntil(null|string|\DateTimeInterface $date): ?int
     {
         if (!$date) {

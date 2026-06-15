@@ -6,10 +6,10 @@
                 :back="{ route: 'tasks.index' }"
             />
 
-            <div class="flex items-center justify-between border-b border-gray-100 pb-4">
+            <div class="flex items-center justify-between border-b border-border pb-4">
                 <div>
-                    <h2 class="text-3xl font-bold tracking-tight text-gray-900">Create Task</h2>
-                    <p class="mt-1.5 text-sm text-gray-500">
+                    <h2 class="text-3xl font-bold tracking-tight text-text-primary">Create Task</h2>
+                    <p class="mt-1.5 text-sm text-text-secondary">
                         Add a new task and specify its details, priority, and assignee.
                     </p>
                 </div>
@@ -50,48 +50,109 @@
 
             <form @submit.prevent="submit" class="grid grid-cols-1 gap-8 lg:grid-cols-3">
                 <div class="space-y-6 lg:col-span-2">
-                    <div class="overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm">
-                        <div class="space-y-6 p-6">
+                    <!-- ═══ Subtasks Section ═══ -->
+                    <div class="card">
+                        <div class="card-header flex items-center justify-between">
+                            <h3 class="text-base font-semibold">
+                                Subtasks
+                                <span v-if="subtasks.length" class="ml-2 text-sm font-normal text-text-secondary">
+                                    ({{ completedSubtaskCount }}/{{ subtasks.length }})
+                                </span>
+                            </h3>
+                            <button type="button" class="btn-secondary btn-sm" @click="addSubtaskRow">
+                                + Add Subtask
+                            </button>
+                        </div>
+                        <div class="card-body space-y-3">
+                            <div v-if="subtasks.length === 0" class="text-sm text-text-secondary">
+                                No subtasks added yet. Break this task into smaller pieces.
+                            </div>
+                            <div
+                                v-for="(st, idx) in subtasks"
+                                :key="idx"
+                                class="rounded-lg border border-border bg-page p-4 space-y-3"
+                            >
+                                <div class="flex items-start justify-between gap-2">
+                                    <input
+                                        v-model="st.title"
+                                        type="text"
+                                        class="input flex-1 text-sm font-medium"
+                                        placeholder="Subtask title"
+                                    />
+                                    <button
+                                        type="button"
+                                        class="text-danger hover:text-danger shrink-0 mt-1"
+                                        @click="subtasks.splice(idx, 1)"
+                                        title="Remove subtask"
+                                    >
+                                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                    </button>
+                                </div>
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                    <select v-model="st.priority" class="input text-sm">
+                                        <option value="medium">Medium</option>
+                                        <option value="low">Low</option>
+                                        <option value="high">High</option>
+                                        <option value="urgent">Urgent</option>
+                                    </select>
+                                    <input v-model="st.due_date" type="date" class="input text-sm" />
+                                    <select v-model="st.assignee_id" class="input text-sm">
+                                        <option :value="null">Unassigned</option>
+                                        <option v-for="m in projectMembers" :key="m.id" :value="m.id">{{ m.name }}</option>
+                                    </select>
+                                </div>
+                                <textarea
+                                    v-model="st.description"
+                                    rows="2"
+                                    class="input w-full text-sm resize-none"
+                                    placeholder="Optional description..."
+                                />
+                                <p v-if="subtaskErrors[idx]" class="text-xs text-danger">{{ subtaskErrors[idx] }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-body space-y-6">
                             <div>
-                                <label class="mb-1.5 block text-sm font-semibold text-gray-900">
-                                    Task Title <span class="text-red-500">*</span>
+                                <label class="mb-1.5 block text-sm font-semibold text-text-primary">
+                                    Task Title <span class="text-danger">*</span>
                                 </label>
 
                                 <input
                                     v-model="form.title"
                                     type="text"
-                                    class="input w-full py-2.5 text-lg font-medium placeholder-gray-400"
+                                    class="input w-full py-2.5 text-lg font-medium placeholder-text-secondary"
                                     placeholder="e.g. Design new landing page hero section"
                                     autofocus
                                 />
 
                                 <p
                                     v-if="form.errors.title"
-                                    class="mt-1.5 text-sm font-medium text-red-600"
+                                    class="mt-1.5 text-sm font-medium text-danger"
                                 >
                                     {{ form.errors.title }}
                                 </p>
                             </div>
 
                             <div>
-                                <label class="mb-1.5 block text-sm font-semibold text-gray-900">
+                                <label class="mb-1.5 block text-sm font-semibold text-text-primary">
                                     Description
                                 </label>
 
                                 <textarea
                                     v-model="form.description"
                                     rows="6"
-                                    class="input w-full resize-y placeholder-gray-400"
+                                    class="input w-full resize-y placeholder-text-secondary"
                                     placeholder="Provide details, acceptance criteria, or context..."
                                 />
                             </div>
                         </div>
                     </div>
 
-                    <div class="overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm">
-                        <div class="p-6">
+                    <div class="card">
+                        <div class="card-body">
                             <h3
-                                class="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-900"
+                                class="mb-4 text-sm font-semibold uppercase tracking-wider text-text-primary"
                             >
                                 Tags & Categorization
                             </h3>
@@ -100,13 +161,13 @@
                                 <span
                                     v-for="(tag, i) in form.tags"
                                     :key="i"
-                                    class="inline-flex items-center gap-1.5 rounded-md bg-primary-50 px-2.5 py-1 text-xs font-medium text-primary-700 ring-1 ring-inset ring-primary-600/20"
+                                    class="inline-flex items-center gap-1.5 rounded-md bg-brand-primary-50 px-2.5 py-1 text-xs font-medium text-brand-primary-700 ring-1 ring-inset ring-brand-primary-600/20"
                                 >
                                     {{ tag }}
 
                                     <button
                                         type="button"
-                                        class="text-primary-600 hover:text-primary-800"
+                                        class="text-brand-primary-500 hover:text-brand-primary-800"
                                         @click="removeTag(i)"
                                     >
                                         &times;
@@ -117,7 +178,7 @@
                             <div class="relative flex gap-2">
                                 <span class="absolute inset-y-0 left-0 flex items-center pl-3">
                                     <svg
-                                        class="h-4 w-4 text-gray-400"
+                                        class="h-4 w-4 text-text-secondary"
                                         fill="none"
                                         viewBox="0 0 24 24"
                                         stroke="currentColor"
@@ -153,13 +214,13 @@
                 </div>
 
                 <div class="space-y-6">
-                    <div class="overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm">
-                        <div class="space-y-5 p-5">
+                    <div class="card">
+                        <div class="card-body space-y-5">
                             <div>
                                 <label
-                                    class="mb-2 block text-xs font-semibold uppercase tracking-wider text-gray-500"
+                                    class="mb-2 block text-xs font-semibold uppercase tracking-wider text-text-secondary"
                                 >
-                                    Project <span class="text-red-500">*</span>
+                                    Project <span class="text-danger">*</span>
                                 </label>
 
                                 <select
@@ -178,7 +239,7 @@
 
                                 <p
                                     v-if="form.errors.project_id"
-                                    class="mt-1 text-xs text-red-600"
+                                    class="mt-1 text-xs text-danger"
                                 >
                                     {{ form.errors.project_id }}
                                 </p>
@@ -186,7 +247,7 @@
 
                             <div>
                                 <label
-                                    class="mb-2 block text-xs font-semibold uppercase tracking-wider text-gray-500"
+                                    class="mb-2 block text-xs font-semibold uppercase tracking-wider text-text-secondary"
                                 >
                                     Assignees
                                 </label>
@@ -200,7 +261,7 @@
                                         <div class="flex flex-wrap gap-1.5">
                                             <span
                                                 v-if="form.assignee_ids.length === 0"
-                                                class="text-gray-400"
+                                                class="text-text-secondary"
                                             >
                                                 Unassigned
                                             </span>
@@ -208,13 +269,13 @@
                                             <span
                                                 v-for="id in form.assignee_ids"
                                                 :key="id"
-                                                class="inline-flex items-center gap-1 rounded bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700"
+                                                class="inline-flex items-center gap-1 rounded bg-page px-2 py-0.5 text-xs font-medium text-text-primary"
                                             >
                                                 {{ getMemberName(id) }}
 
                                                 <button
                                                     type="button"
-                                                    class="ml-1 text-sm font-bold text-gray-400 hover:text-gray-600"
+                                                    class="ml-1 text-sm font-bold text-text-secondary hover:text-gray-600"
                                                     @click.stop="toggleAssignee(id)"
                                                 >
                                                     &times;
@@ -223,7 +284,7 @@
                                         </div>
 
                                         <svg
-                                            class="ml-2 h-4 w-4 flex-shrink-0 text-gray-400"
+                                            class="ml-2 h-4 w-4 flex-shrink-0 text-text-secondary"
                                             fill="none"
                                             viewBox="0 0 24 24"
                                             stroke="currentColor"
@@ -239,11 +300,11 @@
 
                                     <div
                                         v-if="isAssigneeDropdownOpen"
-                                        class="absolute z-30 mt-1 max-h-60 w-full space-y-1 overflow-y-auto rounded-md bg-white p-1 shadow-lg ring-1 ring-black ring-opacity-5"
+                                        class="absolute z-30 mt-1 max-h-60 w-full space-y-1 overflow-y-auto rounded-md bg-white p-1 shadow-dropdown ring-1 ring-black/5"
                                     >
                                         <div
                                             v-if="projectMembers.length === 0"
-                                            class="p-2 text-center text-xs text-gray-400"
+                                            class="p-2 text-center text-xs text-text-secondary"
                                         >
                                             No members available
                                         </div>
@@ -252,14 +313,14 @@
                                             v-for="m in projectMembers"
                                             :key="m.id"
                                             type="button"
-                                            class="flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-sm hover:bg-gray-50"
+                                            class="flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-sm hover:bg-page"
                                             @click="toggleAssignee(m.id)"
                                         >
                                             <span
                                                 :class="
                                                     form.assignee_ids.includes(m.id)
-                                                        ? 'font-semibold text-primary-700'
-                                                        : 'text-gray-700'
+                                                        ? 'font-semibold text-brand-primary-700'
+                                                        : 'text-text-primary'
                                                 "
                                             >
                                                 {{ m.name }}
@@ -267,7 +328,7 @@
 
                                             <svg
                                                 v-if="form.assignee_ids.includes(m.id)"
-                                                class="h-4 w-4 text-primary-600"
+                                                class="h-4 w-4 text-brand-primary-500"
                                                 fill="none"
                                                 viewBox="0 0 24 24"
                                                 stroke="currentColor"
@@ -285,17 +346,17 @@
 
                                 <p
                                     v-if="form.errors.assignee_ids"
-                                    class="mt-1 text-xs text-red-600"
+                                    class="mt-1 text-xs text-danger"
                                 >
                                     {{ form.errors.assignee_ids }}
                                 </p>
                             </div>
 
-                            <hr class="border-gray-100" />
+                            <hr class="border-border" />
 
                             <div>
                                 <label
-                                    class="mb-2 block text-xs font-semibold uppercase tracking-wider text-gray-500"
+                                    class="mb-2 block text-xs font-semibold uppercase tracking-wider text-text-secondary"
                                 >
                                     Priority
                                 </label>
@@ -310,7 +371,7 @@
 
                             <div>
                                 <label
-                                    class="mb-2 block text-xs font-semibold uppercase tracking-wider text-gray-500"
+                                    class="mb-2 block text-xs font-semibold uppercase tracking-wider text-text-secondary"
                                 >
                                     Due Date
                                 </label>
@@ -318,13 +379,13 @@
                                 <input
                                     v-model="form.due_date"
                                     type="date"
-                                    class="input w-full text-sm text-gray-700"
+                                    class="input w-full text-sm text-text-primary"
                                 />
                             </div>
 
                             <div>
                                 <label
-                                    class="mb-2 block text-xs font-semibold uppercase tracking-wider text-gray-500"
+                                    class="mb-2 block text-xs font-semibold uppercase tracking-wider text-text-secondary"
                                 >
                                     Est. Hours
                                 </label>
@@ -342,7 +403,7 @@
                     </div>
 
                     <div
-                        class="overflow-hidden rounded-xl border border-gray-200 bg-gray-50 shadow-inner"
+                        class="rounded-xl border border-border bg-page shadow-inner"
                     >
                         <div class="space-y-4 p-5">
                             <label class="flex cursor-pointer items-start gap-3">
@@ -350,15 +411,15 @@
                                     <input
                                         v-model="form.requires_approval"
                                         type="checkbox"
-                                        class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-600"
+                                        class="h-4 w-4 rounded border-border text-brand-primary-500 focus:ring-brand-primary-600"
                                     />
                                 </div>
 
                                 <div class="text-sm">
-                                    <span class="block font-medium text-gray-900">
+                                    <span class="block font-medium text-text-primary">
                                         Requires Approval
                                     </span>
-                                    <span class="text-xs text-gray-500">
+                                    <span class="text-xs text-text-secondary">
                                         Task must be approved by an assigned reviewer.
                                     </span>
                                 </div>
@@ -366,7 +427,7 @@
 
                             <div v-if="form.requires_approval" class="pt-2">
                                 <label
-                                    class="mb-2 block text-xs font-semibold uppercase tracking-wider text-gray-500"
+                                    class="mb-2 block text-xs font-semibold uppercase tracking-wider text-text-secondary"
                                 >
                                     Approver
                                 </label>
@@ -395,7 +456,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useForm, Link } from '@inertiajs/vue3'
 import { route } from 'ziggy-js'
 import AppLayout from '@/Layouts/AppLayout.vue'
@@ -408,6 +469,31 @@ const projectMembers = ref<{ id: number; name: string }[]>([])
 const isAssigneeDropdownOpen = ref(false)
 const assigneeContainer = ref<HTMLElement | null>(null)
 
+interface SubtaskRow {
+    title: string
+    description: string
+    priority: string
+    due_date: string
+    assignee_id: number | null
+    estimated_hours: string
+}
+
+const subtasks = reactive<SubtaskRow[]>([])
+const subtaskErrors = reactive<Record<number, string>>({})
+
+const completedSubtaskCount = computed(() => 0)
+
+function addSubtaskRow() {
+    subtasks.push({
+        title: '',
+        description: '',
+        priority: 'medium',
+        due_date: '',
+        assignee_id: null,
+        estimated_hours: '',
+    })
+}
+
 const form = useForm({
     project_id: props.projects[0]?.id ?? '',
     title: '',
@@ -419,6 +505,7 @@ const form = useForm({
     tags: [] as string[],
     requires_approval: false,
     approver_id: null as number | null,
+    subtasks: [] as SubtaskRow[],
 })
 
 function toggleAssignee(id: number) {
@@ -499,6 +586,20 @@ watch(
 )
 
 function submit() {
+    const invalidSubtasks = subtasks
+        .map((st, idx) => ({ st, idx }))
+        .filter(({ st }) => !st.title.trim())
+
+    Object.keys(subtaskErrors).forEach(k => delete subtaskErrors[Number(k)])
+
+    if (invalidSubtasks.length > 0) {
+        invalidSubtasks.forEach(({ idx }) => {
+            subtaskErrors[idx] = 'Title is required'
+        })
+        return
+    }
+
+    form.subtasks = subtasks.filter(st => st.title.trim())
     form.post(route('tasks.store'))
 }
 </script>

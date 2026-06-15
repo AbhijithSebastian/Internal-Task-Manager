@@ -52,6 +52,9 @@ class Project extends Model implements HasMedia
     protected $appends = [
         'status_label',
         'priority_label',
+        'health',
+        'subtask_count',
+        'completed_subtask_count',
     ];
 
     public function getMemberCountAttribute(): int
@@ -61,23 +64,39 @@ class Project extends Model implements HasMedia
 
     public function getTaskCountAttribute(): int
     {
-        return $this->tasks_count ?? $this->tasks()->count();
+        return $this->tasks_count ?? $this->parentTasks()->count();
     }
 
     public function getCompletedTaskCountAttribute(): int
     {
-        return $this->completed_tasks_count ?? $this->tasks()->where('status', 'done')->count();
+        return $this->completed_tasks_count ?? $this->parentTasks()->where('status', 'done')->count();
     }
 
     public function getCompletionRateAttribute(): ?int
     {
-        $total = $this->tasks_count ?? $this->tasks()->count();
-        if ($total === 0) {
+        $totalTasks = $this->tasks_count ?? $this->parentTasks()->count();
+        $completedTasks = $this->completed_tasks_count ?? $this->parentTasks()->where('status', 'done')->count();
+
+        $totalSubtasks = $this->subtask_count ?? $this->tasks()->whereNotNull('parent_id')->count();
+        $completedSubtasks = $this->completed_subtask_count ?? $this->tasks()->whereNotNull('parent_id')->where('status', 'done')->count();
+
+        $combined = $totalTasks + $totalSubtasks;
+        if ($combined === 0) {
             return null;
         }
 
-        $completed = $this->completed_tasks_count ?? $this->tasks()->where('status', 'done')->count();
-        return (int) round(($completed / $total) * 100);
+        $combinedCompleted = $completedTasks + $completedSubtasks;
+        return (int) round(($combinedCompleted / $combined) * 100);
+    }
+
+    public function getSubtaskCountAttribute(): int
+    {
+        return $this->subtask_count ?? $this->tasks()->whereNotNull('parent_id')->count();
+    }
+
+    public function getCompletedSubtaskCountAttribute(): int
+    {
+        return $this->completed_subtask_count ?? $this->tasks()->whereNotNull('parent_id')->where('status', 'done')->count();
     }
 
     public function getStatusLabelAttribute(): ?string
@@ -96,6 +115,54 @@ class Project extends Model implements HasMedia
         } catch (\Illuminate\Database\Eloquent\MissingAttributeException) {
             return null;
         }
+    }
+
+    public function getHealthAttribute(): array
+    {
+        $totalTasks = $this->tasks_count ?? $this->parentTasks()->count();
+        if ($totalTasks === 0) {
+            return ['status' => 'healthy', 'label' => 'Healthy', 'score' => 100, 'issues' => []];
+        }
+
+        $completedTasks = $this->completed_tasks_count ?? $this->parentTasks()->where('status', 'done')->count();
+        $blockedTasks = $this->parentTasks()->where('status', 'blocked')->count();
+        $inReviewTasks = $this->parentTasks()->where('status', 'in_review')->count();
+
+        $issues = [];
+
+        if ($blockedTasks > 0) {
+            $issues[] = $blockedTasks . ' blocked task' . ($blockedTasks > 1 ? 's' : '');
+        }
+
+        $completionRate = $totalTasks > 0 ? ($completedTasks / $totalTasks) * 100 : 0;
+        $blockedRatio = $totalTasks > 0 ? ($blockedTasks / $totalTasks) * 100 : 0;
+
+        $score = 100;
+        $score -= min(40, $blockedRatio * 5);
+        if ($completionRate < 20 && $totalTasks > 5) $score -= 10;
+
+        $score = max(0, (int) round($score));
+
+        $status = match (true) {
+            $score >= 80 => 'healthy',
+            $score >= 50 => 'at_risk',
+            $score >= 25 => 'delayed',
+            default => 'critical',
+        };
+
+        $label = match ($status) {
+            'healthy' => 'Healthy',
+            'at_risk' => 'At Risk',
+            'delayed' => 'Delayed',
+            default => 'Critical',
+        };
+
+        return [
+            'status' => $status,
+            'label' => $label,
+            'score' => $score,
+            'issues' => $issues,
+        ];
     }
 
     public function scopeActive($query)
@@ -140,6 +207,11 @@ class Project extends Model implements HasMedia
         return $this->hasMany(Task::class);
     }
 
+    public function parentTasks(): HasMany
+    {
+        return $this->hasMany(Task::class)->whereNull('parent_id');
+    }
+
     public function author(): BelongsTo
     {
         return $this->belongsTo(User::class, 'author_id');
@@ -163,6 +235,11 @@ class Project extends Model implements HasMedia
     public function meetingLogs(): HasMany
     {
         return $this->hasMany(MeetingLog::class);
+    }
+
+    public function milestones(): HasMany
+    {
+        return $this->hasMany(Milestone::class)->orderBy('due_date');
     }
 
     public function getLinks(): array

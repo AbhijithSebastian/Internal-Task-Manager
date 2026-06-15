@@ -64,6 +64,7 @@ class ProjectController extends Controller
             'projectManager',
             'teamLead',
             'tasks' => fn ($q) => $q->whereNull('parent_id')->with(['assignees', 'author'])->latest(),
+            'milestones',
         ])->loadCount([
             'members',
             'tasks',

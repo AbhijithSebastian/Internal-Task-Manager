@@ -31,6 +31,13 @@ class StoreTaskRequest extends FormRequest
             'parent_id' => ['nullable', 'exists:tasks,id'],
             'requires_approval' => ['boolean'],
             'approver_id' => ['nullable', 'required_if:requires_approval,true', 'exists:users,id'],
+            'subtasks' => ['nullable', 'array'],
+            'subtasks.*.title' => ['required', 'string', 'max:500'],
+            'subtasks.*.description' => ['nullable', 'string'],
+            'subtasks.*.priority' => ['nullable', 'string', 'in:low,medium,high,urgent'],
+            'subtasks.*.due_date' => ['nullable', 'date'],
+            'subtasks.*.assignee_id' => ['nullable', 'integer', 'exists:users,id'],
+            'subtasks.*.estimated_hours' => ['nullable', 'numeric', 'min:0', 'max:999'],
         ];
     }
 
