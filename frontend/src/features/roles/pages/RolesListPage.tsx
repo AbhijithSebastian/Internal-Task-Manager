@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { rolesService } from "@/features/roles/services/roles";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { DataTable, type Column } from "@/components/shared/DataTable";
@@ -7,7 +7,6 @@ import { Shield } from "lucide-react";
 import type { Role } from "@/types";
 
 export default function RolesListPage() {
-  const queryClient = useQueryClient();
   const [expandedRole, setExpandedRole] = useState<number | null>(null);
 
   const { data, isLoading } = useQuery({

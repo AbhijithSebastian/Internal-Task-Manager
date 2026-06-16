@@ -12,7 +12,7 @@ export default function MeetingFormPage() {
   const queryClient = useQueryClient();
 
   const [form, setForm] = useState({
-    title: "", description: "", meeting_date: "", location: "", notes: "",
+    title: "", summary: "", meeting_date: "", location: "", notes: "",
   });
   const [error, setError] = useState("");
 
@@ -26,7 +26,7 @@ export default function MeetingFormPage() {
     if (meeting) {
       setForm({
         title: meeting.title,
-        description: meeting.description || "",
+        summary: meeting.summary || "",
         meeting_date: meeting.meeting_date?.split(".")[0] || "",
         location: meeting.location || "",
         notes: meeting.notes || "",
@@ -65,7 +65,7 @@ export default function MeetingFormPage() {
           </div>
           <div>
             <label className="block text-sm font-medium">Description</label>
-            <textarea rows={3} className="mt-1 block w-full rounded-md border px-3 py-2 text-sm" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+            <textarea rows={3} className="mt-1 block w-full rounded-md border px-3 py-2 text-sm" value={form.summary} onChange={(e) => setForm({ ...form, summary: e.target.value })} />
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>

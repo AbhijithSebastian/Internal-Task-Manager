@@ -1,3 +1,4 @@
+from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, EmailStr
@@ -32,7 +33,7 @@ def login(request: LoginRequest, db: Session = Depends(get_db)):
             detail="User account is inactive",
         )
 
-    user.last_login_at = __import__("datetime").datetime.utcnow()
+    user.last_login_at = datetime.utcnow()
     db.commit()
 
     log_activity(db, "users", user.id, "authenticated", causer_id=user.id)
