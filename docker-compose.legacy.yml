@@ -1,0 +1,47 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: internal-tool-app
+    working_dir: /var/www
+    volumes:
+      - .:/var/www
+    ports:
+      - "8000:8000"
+      - "5173:5173"
+    depends_on:
+      - mysql
+      - redis
+    networks:
+      - internal-tool
+
+  mysql:
+    image: mysql:8.0
+    container_name: internal-tool-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: internal_tool
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_ALLOW_EMPTY_PASSWORD: "no"
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - internal-tool
+
+  redis:
+    image: redis:7-alpine
+    container_name: internal-tool-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      - internal-tool
+
+networks:
+  internal-tool:
+
+volumes:
+  mysql_data:

@@ -1,0 +1,355 @@
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy.orm import Session
+from pydantic import BaseModel
+from typing import Optional
+from datetime import datetime
+
+from app.core.database import get_db
+from app.core.deps import get_current_user, require_permissions
+from app.core.activity import log_activity
+from app.core.exceptions import NotFoundException, ForbiddenError
+from app.projects.models import Project, ProjectMember
+from app.users.models import User
+from app.core.enums import ProjectStatus, ProjectPriority, ProjectMemberRole, TaskStatus
+
+router = APIRouter()
+
+
+class ProjectCreate(BaseModel):
+    name: str
+    description: Optional[str] = None
+    priority: str = "medium"
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+    pm_id: Optional[int] = None
+    lead_id: Optional[int] = None
+    figma_url: Optional[str] = None
+    github_url: Optional[str] = None
+    docs_url: Optional[str] = None
+    meeting_url: Optional[str] = None
+    member_ids: Optional[list[int]] = None
+
+
+class ProjectUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    status: Optional[str] = None
+    priority: Optional[str] = None
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+    pm_id: Optional[int] = None
+    lead_id: Optional[int] = None
+    figma_url: Optional[str] = None
+    github_url: Optional[str] = None
+    docs_url: Optional[str] = None
+    meeting_url: Optional[str] = None
+
+
+@router.get("")
+def list_projects(
+    search: Optional[str] = Query(None),
+    status: Optional[str] = Query(None),
+    priority: Optional[str] = Query(None),
+    pm_id: Optional[int] = Query(None),
+    lead_id: Optional[int] = Query(None),
+    sort_by: str = Query("created_at"),
+    sort_direction: str = Query("desc"),
+    page: int = Query(1, ge=1),
+    per_page: int = Query(15, ge=1, le=100),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    query = db.query(Project).filter(Project.deleted_at.is_(None))
+
+    if not current_user.is_super_admin:
+        project_ids = db.query(ProjectMember.project_id).filter(
+            ProjectMember.user_id == current_user.id
+        ).subquery()
+        query = query.filter(
+            (Project.id.in_(project_ids)) |
+            (Project.pm_id == current_user.id) |
+            (Project.lead_id == current_user.id) |
+            (Project.author_id == current_user.id)
+        )
+
+    if search:
+        query = query.filter(Project.name.ilike(f"%{search}%") | Project.description.ilike(f"%{search}%"))
+    if status:
+        query = query.filter(Project.status == ProjectStatus(status))
+    if priority:
+        query = query.filter(Project.priority == ProjectPriority(priority))
+    if pm_id:
+        query = query.filter(Project.pm_id == pm_id)
+    if lead_id:
+        query = query.filter(Project.lead_id == lead_id)
+
+    sort_col = getattr(Project, sort_by, Project.created_at)
+    query = query.order_by(sort_col.desc() if sort_direction == "desc" else sort_col.asc())
+
+    total = query.count()
+    projects = query.offset((page - 1) * per_page).limit(per_page).all()
+
+    return {
+        "items": [format_project(p, db) for p in projects],
+        "total": total,
+        "page": page,
+        "per_page": per_page,
+        "total_pages": (total + per_page - 1) // per_page if total > 0 else 0,
+    }
+
+
+@router.get("/{project_id}")
+def get_project(project_id: int, db: Session = Depends(get_db),
+                current_user: User = Depends(get_current_user)):
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        raise NotFoundException("Project", project_id)
+
+    return format_project_detail(project, db)
+
+
+@router.post("", status_code=201)
+def create_project(data: ProjectCreate, db: Session = Depends(get_db),
+                   current_user: User = Depends(require_permissions(["projects.create"]))):
+    project = Project(
+        name=data.name,
+        description=data.description,
+        priority=ProjectPriority(data.priority) if data.priority else ProjectPriority.MEDIUM,
+        start_date=datetime.fromisoformat(data.start_date).date() if data.start_date else None,
+        end_date=datetime.fromisoformat(data.end_date).date() if data.end_date else None,
+        pm_id=data.pm_id,
+        lead_id=data.lead_id,
+        figma_url=data.figma_url,
+        github_url=data.github_url,
+        docs_url=data.docs_url,
+        meeting_url=data.meeting_url,
+        author_id=current_user.id,
+    )
+    db.add(project)
+    db.flush()
+
+    pm = ProjectMember(project_id=project.id, user_id=current_user.id, role=ProjectMemberRole.OWNER)
+    db.add(pm)
+
+    if data.member_ids:
+        for uid in data.member_ids:
+            if uid != current_user.id:
+                db.add(ProjectMember(project_id=project.id, user_id=uid, role=ProjectMemberRole.MEMBER))
+
+    db.commit()
+    db.refresh(project)
+
+    log_activity(db, "projects", project.id, "Project created", causer_id=current_user.id,
+                 properties={"name": project.name, "priority": project.priority.value})
+    return format_project(project, db)
+
+
+@router.put("/{project_id}")
+def update_project(project_id: int, data: ProjectUpdate, db: Session = Depends(get_db),
+                   current_user: User = Depends(require_permissions(["projects.update"]))):
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        raise NotFoundException("Project", project_id)
+
+    if data.name is not None:
+        project.name = data.name
+    if data.description is not None:
+        project.description = data.description
+    if data.status is not None:
+        old_status = project.status
+        project.status = ProjectStatus(data.status)
+    if data.priority is not None:
+        project.priority = ProjectPriority(data.priority)
+    if data.start_date is not None:
+        project.start_date = datetime.fromisoformat(data.start_date).date() if data.start_date else None
+    if data.end_date is not None:
+        project.end_date = datetime.fromisoformat(data.end_date).date() if data.end_date else None
+    if data.pm_id is not None:
+        project.pm_id = data.pm_id
+    if data.lead_id is not None:
+        project.lead_id = data.lead_id
+    if data.figma_url is not None:
+        project.figma_url = data.figma_url
+    if data.github_url is not None:
+        project.github_url = data.github_url
+    if data.docs_url is not None:
+        project.docs_url = data.docs_url
+    if data.meeting_url is not None:
+        project.meeting_url = data.meeting_url
+
+    db.commit()
+    db.refresh(project)
+
+    log_activity(db, "projects", project.id, "Project updated", causer_id=current_user.id)
+    return format_project(project, db)
+
+
+@router.delete("/{project_id}")
+def delete_project(project_id: int, db: Session = Depends(get_db),
+                   current_user: User = Depends(require_permissions(["projects.delete"]))):
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        raise NotFoundException("Project", project_id)
+
+    project.deleted_at = datetime.utcnow()
+    db.commit()
+
+    log_activity(db, "projects", project.id, "Project deleted", causer_id=current_user.id)
+    return {"message": "Project deleted successfully"}
+
+
+@router.patch("/{project_id}/status")
+def update_project_status(project_id: int, status: str, db: Session = Depends(get_db),
+                          current_user: User = Depends(require_permissions(["projects.update"]))):
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        raise NotFoundException("Project", project_id)
+
+    old_status = project.status
+    project.status = ProjectStatus(status)
+    db.commit()
+
+    log_activity(db, "projects", project.id, "Project status changed",
+                 causer_id=current_user.id,
+                 properties={"old": old_status.value if old_status else None, "new": status})
+    return {"message": "Status updated", "status": status}
+
+
+@router.patch("/{project_id}/archive")
+def archive_project(project_id: int, db: Session = Depends(get_db),
+                    current_user: User = Depends(require_permissions(["projects.archive"]))):
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        raise NotFoundException("Project", project_id)
+
+    project.status = ProjectStatus.ARCHIVED
+    db.commit()
+
+    log_activity(db, "projects", project.id, "Project archived", causer_id=current_user.id)
+    return {"message": "Project archived successfully"}
+
+
+@router.get("/{project_id}/members")
+def get_members(project_id: int, db: Session = Depends(get_db),
+                current_user: User = Depends(get_current_user)):
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        raise NotFoundException("Project", project_id)
+
+    members = db.query(ProjectMember).filter(ProjectMember.project_id == project_id).all()
+    return [
+        {
+            "id": m.user.id,
+            "name": m.user.name,
+            "email": m.user.email,
+            "pivot_role": m.role.value if m.role else "member",
+        }
+        for m in members
+    ]
+
+
+@router.post("/{project_id}/members")
+def add_member(project_id: int, user_id: int, role: str = "member",
+               db: Session = Depends(get_db),
+               current_user: User = Depends(require_permissions(["projects.manage-members"]))):
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        raise NotFoundException("Project", project_id)
+
+    existing = db.query(ProjectMember).filter(
+        ProjectMember.project_id == project_id, ProjectMember.user_id == user_id
+    ).first()
+    if existing:
+        raise HTTPException(422, "User is already a member")
+
+    pm = ProjectMember(project_id=project_id, user_id=user_id, role=ProjectMemberRole(role))
+    db.add(pm)
+    db.commit()
+
+    user = db.query(User).filter(User.id == user_id).first()
+    log_activity(db, "projects", project.id, "Member added", causer_id=current_user.id,
+                 properties={"member": user.name if user else str(user_id), "role": role})
+    return {"message": "Member added successfully"}
+
+
+@router.put("/{project_id}/members/{user_id}")
+def update_member_role(project_id: int, user_id: int, role: str,
+                       db: Session = Depends(get_db),
+                       current_user: User = Depends(require_permissions(["projects.manage-members"]))):
+    pm = db.query(ProjectMember).filter(
+        ProjectMember.project_id == project_id, ProjectMember.user_id == user_id
+    ).first()
+    if not pm:
+        raise NotFoundException("Project member")
+
+    pm.role = ProjectMemberRole(role)
+    db.commit()
+    return {"message": "Member role updated successfully"}
+
+
+@router.delete("/{project_id}/members/{user_id}")
+def remove_member(project_id: int, user_id: int, db: Session = Depends(get_db),
+                  current_user: User = Depends(require_permissions(["projects.manage-members"]))):
+    pm = db.query(ProjectMember).filter(
+        ProjectMember.project_id == project_id, ProjectMember.user_id == user_id
+    ).first()
+    if not pm:
+        raise NotFoundException("Project member")
+
+    db.delete(pm)
+    db.commit()
+    return {"message": "Member removed successfully"}
+
+
+def format_project(p: Project, db: Session) -> dict:
+    task_count = len([t for t in p.tasks if not t.parent_id and not t.deleted_at])
+    completed_count = len([t for t in p.tasks if not t.parent_id and t.status == TaskStatus.DONE and not t.deleted_at])
+
+    return {
+        "id": p.id,
+        "name": p.name,
+        "description": p.description,
+        "status": p.status.value if p.status else "active",
+        "status_label": p.status.label() if p.status else "Active",
+        "priority": p.priority.value if p.priority else "medium",
+        "priority_label": p.priority.label() if p.priority else "Medium",
+        "start_date": p.start_date,
+        "end_date": p.end_date,
+        "author": {"id": p.author.id, "name": p.author.name} if p.author else None,
+        "project_manager": {"id": p.project_manager.id, "name": p.project_manager.name} if p.project_manager else None,
+        "team_lead": {"id": p.team_lead.id, "name": p.team_lead.name} if p.team_lead else None,
+        "figma_url": p.figma_url,
+        "github_url": p.github_url,
+        "docs_url": p.docs_url,
+        "meeting_url": p.meeting_url,
+        "member_count": p.member_count,
+        "task_count": task_count,
+        "completed_task_count": completed_count,
+        "created_at": p.created_at,
+    }
+
+
+def format_project_detail(p: Project, db: Session) -> dict:
+    data = format_project(p, db)
+    data["members"] = [
+        {"id": m.user.id, "name": m.user.name, "email": m.user.email, "role": m.role.value if m.role else "member"}
+        for m in p.member_links
+    ]
+    data["tasks"] = [
+        {
+            "id": t.id, "title": t.title, "status": t.status.value if t.status else "backlog",
+            "priority": t.priority.value if t.priority else "medium",
+            "author": {"id": t.author.id, "name": t.author.name} if t.author else None,
+            "assignees": [{"id": a.id, "name": a.name} for a in t.assignees],
+            "due_date": t.due_date, "created_at": t.created_at,
+        }
+        for t in p.tasks if not t.parent_id and not t.deleted_at
+    ]
+    data["milestones"] = [
+        {
+            "id": m.id, "name": m.name, "status": m.status.value if m.status else "pending",
+            "due_date": m.due_date, "completed_at": m.completed_at,
+        }
+        for m in p.milestones if not m.deleted_at
+    ]
+    return data
