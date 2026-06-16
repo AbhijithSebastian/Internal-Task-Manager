@@ -110,7 +110,7 @@ def get_project(project_id: int, db: Session = Depends(get_db),
 
 @router.post("", status_code=201)
 def create_project(data: ProjectCreate, db: Session = Depends(get_db),
-                   current_user: User = Depends(require_permissions(["projects.create"]))):
+                   current_user: User = require_permissions(["projects.create"])):
     project = Project(
         name=data.name,
         description=data.description,
@@ -146,7 +146,7 @@ def create_project(data: ProjectCreate, db: Session = Depends(get_db),
 
 @router.put("/{project_id}")
 def update_project(project_id: int, data: ProjectUpdate, db: Session = Depends(get_db),
-                   current_user: User = Depends(require_permissions(["projects.update"]))):
+                   current_user: User = require_permissions(["projects.update"])):
     project = db.query(Project).filter(Project.id == project_id).first()
     if not project:
         raise NotFoundException("Project", project_id)
@@ -186,7 +186,7 @@ def update_project(project_id: int, data: ProjectUpdate, db: Session = Depends(g
 
 @router.delete("/{project_id}")
 def delete_project(project_id: int, db: Session = Depends(get_db),
-                   current_user: User = Depends(require_permissions(["projects.delete"]))):
+                   current_user: User = require_permissions(["projects.delete"])):
     project = db.query(Project).filter(Project.id == project_id).first()
     if not project:
         raise NotFoundException("Project", project_id)
@@ -200,7 +200,7 @@ def delete_project(project_id: int, db: Session = Depends(get_db),
 
 @router.patch("/{project_id}/status")
 def update_project_status(project_id: int, status: str, db: Session = Depends(get_db),
-                          current_user: User = Depends(require_permissions(["projects.update"]))):
+                          current_user: User = require_permissions(["projects.update"])):
     project = db.query(Project).filter(Project.id == project_id).first()
     if not project:
         raise NotFoundException("Project", project_id)
@@ -217,7 +217,7 @@ def update_project_status(project_id: int, status: str, db: Session = Depends(ge
 
 @router.patch("/{project_id}/archive")
 def archive_project(project_id: int, db: Session = Depends(get_db),
-                    current_user: User = Depends(require_permissions(["projects.archive"]))):
+                    current_user: User = require_permissions(["projects.archive"])):
     project = db.query(Project).filter(Project.id == project_id).first()
     if not project:
         raise NotFoundException("Project", project_id)
@@ -251,7 +251,7 @@ def get_members(project_id: int, db: Session = Depends(get_db),
 @router.post("/{project_id}/members")
 def add_member(project_id: int, user_id: int, role: str = "member",
                db: Session = Depends(get_db),
-               current_user: User = Depends(require_permissions(["projects.manage-members"]))):
+               current_user: User = require_permissions(["projects.manage-members"])):
     project = db.query(Project).filter(Project.id == project_id).first()
     if not project:
         raise NotFoundException("Project", project_id)
@@ -275,7 +275,7 @@ def add_member(project_id: int, user_id: int, role: str = "member",
 @router.put("/{project_id}/members/{user_id}")
 def update_member_role(project_id: int, user_id: int, role: str,
                        db: Session = Depends(get_db),
-                       current_user: User = Depends(require_permissions(["projects.manage-members"]))):
+                       current_user: User = require_permissions(["projects.manage-members"])):
     pm = db.query(ProjectMember).filter(
         ProjectMember.project_id == project_id, ProjectMember.user_id == user_id
     ).first()
@@ -289,7 +289,7 @@ def update_member_role(project_id: int, user_id: int, role: str,
 
 @router.delete("/{project_id}/members/{user_id}")
 def remove_member(project_id: int, user_id: int, db: Session = Depends(get_db),
-                  current_user: User = Depends(require_permissions(["projects.manage-members"]))):
+                  current_user: User = require_permissions(["projects.manage-members"])):
     pm = db.query(ProjectMember).filter(
         ProjectMember.project_id == project_id, ProjectMember.user_id == user_id
     ).first()

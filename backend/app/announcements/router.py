@@ -55,7 +55,7 @@ def list_announcements(
 
 @router.post("", status_code=201)
 def create_announcement(data: AnnouncementCreate, db: Session = Depends(get_db),
-                        current_user: User = Depends(require_permissions(["announcements.create"]))):
+                        current_user: User = require_permissions(["announcements.create"])):
     announcement = Announcement(
         title=data.title,
         content=data.content,
@@ -75,7 +75,7 @@ def create_announcement(data: AnnouncementCreate, db: Session = Depends(get_db),
 @router.put("/{announcement_id}")
 def update_announcement(announcement_id: int, data: AnnouncementUpdate,
                         db: Session = Depends(get_db),
-                        current_user: User = Depends(require_permissions(["announcements.update"]))):
+                        current_user: User = require_permissions(["announcements.update"])):
     announcement = db.query(Announcement).filter(Announcement.id == announcement_id).first()
     if not announcement:
         raise NotFoundException("Announcement", announcement_id)
@@ -100,7 +100,7 @@ def update_announcement(announcement_id: int, data: AnnouncementUpdate,
 
 @router.delete("/{announcement_id}")
 def delete_announcement(announcement_id: int, db: Session = Depends(get_db),
-                        current_user: User = Depends(require_permissions(["announcements.delete"]))):
+                        current_user: User = require_permissions(["announcements.delete"])):
     announcement = db.query(Announcement).filter(Announcement.id == announcement_id).first()
     if not announcement:
         raise NotFoundException("Announcement", announcement_id)

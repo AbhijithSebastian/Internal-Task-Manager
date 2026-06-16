@@ -26,7 +26,7 @@ class UpdateUserRole(BaseModel):
 
 @router.get("/users/{user_id}")
 def get_user_permissions(user_id: int, db: Session = Depends(get_db),
-                         current_user: User = Depends(require_permissions(["permissions.view"]))):
+                         current_user: User = require_permissions(["permissions.view"])):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise NotFoundException("User", user_id)
@@ -59,7 +59,7 @@ def get_user_permissions(user_id: int, db: Session = Depends(get_db),
 def update_user_permissions(
     user_id: int, data: UpdateUserPermissions,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permissions(["permissions.manage"])),
+    current_user: User = require_permissions(["permissions.manage"]),
 ):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
@@ -84,7 +84,7 @@ def update_user_permissions(
 def update_user_role(
     user_id: int, data: UpdateUserRole,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permissions(["permissions.manage"])),
+    current_user: User = require_permissions(["permissions.manage"]),
 ):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:

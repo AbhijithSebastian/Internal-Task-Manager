@@ -55,7 +55,7 @@ def create_comment(
     project_id: int,
     parent_id: Optional[int] = None,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permissions(["comments.create"])),
+    current_user: User = require_permissions(["comments.create"]),
 ):
     comment = Comment(
         body=body,
@@ -90,7 +90,7 @@ def update_comment(
     comment_id: int,
     body: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permissions(["comments.update"])),
+    current_user: User = require_permissions(["comments.update"]),
 ):
     comment = db.query(Comment).filter(
         Comment.id == comment_id, Comment.deleted_at.is_(None)
@@ -112,7 +112,7 @@ def update_comment(
 def delete_comment(
     comment_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permissions(["comments.delete"])),
+    current_user: User = require_permissions(["comments.delete"]),
 ):
     comment = db.query(Comment).filter(
         Comment.id == comment_id, Comment.deleted_at.is_(None)

@@ -76,7 +76,7 @@ def get_integration(
 def create_integration(
     data: IntegrationCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permissions(["projects.update"])),
+    current_user: User = require_permissions(["projects.update"]),
 ):
     integration = Integration(
         project_id=data.project_id,
@@ -124,7 +124,7 @@ def update_integration(
 def delete_integration(
     integration_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permissions(["projects.update"])),
+    current_user: User = require_permissions(["projects.update"]),
 ):
     integration = db.query(Integration).filter(Integration.id == integration_id).first()
     if not integration:

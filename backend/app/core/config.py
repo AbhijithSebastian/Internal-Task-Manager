@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     app_debug: bool = True
     app_env: str = "development"
 
-    database_url: str = "postgresql://taskmanager:taskmanager@postgres:5432/taskmanager"
+    database_url: str = "postgresql+psycopg://taskmanager:taskmanager@postgres:5432/taskmanager"
 
     jwt_secret_key: str = "change-me-to-a-long-random-string"
     jwt_algorithm: str = "HS256"
@@ -17,7 +17,7 @@ class Settings(BaseSettings):
 
     cors_origins: str = "http://localhost:5173,http://localhost:3000"
 
-    upload_dir: str = "/app/uploads"
+    upload_dir: str = "uploads"
     max_upload_size_mb: int = 50
 
     redis_url: str = ""

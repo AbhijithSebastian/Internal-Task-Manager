@@ -25,7 +25,7 @@ def list_users(
     page: int = Query(1, ge=1),
     per_page: int = Query(15, ge=1, le=100),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permissions(["users.view"])),
+    current_user: User = require_permissions(["users.view"]),
 ):
     query = db.query(User).filter(User.deleted_at.is_(None))
 
@@ -58,7 +58,7 @@ def list_users(
 
 @router.get("/{user_id}", response_model=UserResponse)
 def get_user(user_id: int, db: Session = Depends(get_db),
-             current_user: User = Depends(require_permissions(["users.view"]))):
+             current_user: User = require_permissions(["users.view"])):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise NotFoundException("User", user_id)
@@ -67,7 +67,7 @@ def get_user(user_id: int, db: Session = Depends(get_db),
 
 @router.post("", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 def create_user(data: UserCreate, db: Session = Depends(get_db),
-                current_user: User = Depends(require_permissions(["users.create"]))):
+                current_user: User = require_permissions(["users.create"])):
     if data.password != data.password_confirmation:
         raise HTTPException(status_code=422, detail="Passwords do not match")
     existing = db.query(User).filter(User.email == data.email).first()
@@ -99,7 +99,7 @@ def create_user(data: UserCreate, db: Session = Depends(get_db),
 
 @router.put("/{user_id}", response_model=UserResponse)
 def update_user(user_id: int, data: UserUpdate, db: Session = Depends(get_db),
-                current_user: User = Depends(require_permissions(["users.update"]))):
+                current_user: User = require_permissions(["users.update"])):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise NotFoundException("User", user_id)
@@ -136,7 +136,7 @@ def update_user(user_id: int, data: UserUpdate, db: Session = Depends(get_db),
 
 @router.delete("/{user_id}")
 def delete_user(user_id: int, db: Session = Depends(get_db),
-                current_user: User = Depends(require_permissions(["users.delete"]))):
+                current_user: User = require_permissions(["users.delete"])):
     if user_id == current_user.id:
         raise HTTPException(status_code=422, detail="Cannot delete yourself")
     user = db.query(User).filter(User.id == user_id).first()
@@ -155,7 +155,7 @@ def delete_user(user_id: int, db: Session = Depends(get_db),
 
 @router.post("/{user_id}/restore")
 def restore_user(user_id: int, db: Session = Depends(get_db),
-                 current_user: User = Depends(require_permissions(["users.restore"]))):
+                 current_user: User = require_permissions(["users.restore"])):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise NotFoundException("User", user_id)
@@ -169,7 +169,7 @@ def restore_user(user_id: int, db: Session = Depends(get_db),
 
 @router.post("/{user_id}/toggle-active")
 def toggle_active(user_id: int, db: Session = Depends(get_db),
-                  current_user: User = Depends(require_permissions(["users.update"]))):
+                  current_user: User = require_permissions(["users.update"])):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise NotFoundException("User", user_id)

@@ -25,3 +25,15 @@ test.php
 validate_app.php
 AGENTS.md
 e2e/debug*.cjs
+
+__pycache__/
+
+__pycache__/
+
+*.pyc
+
+.venv/
+
+frontend/dist/
+
+frontend/tsconfig.tsbuildinfo

@@ -141,7 +141,7 @@ def get_task(task_id: int, db: Session = Depends(get_db),
 
 @router.post("", status_code=201)
 def create_task(data: TaskCreate, db: Session = Depends(get_db),
-                current_user: User = Depends(require_permissions(["tasks.create"]))):
+                current_user: User = require_permissions(["tasks.create"])):
     task = Task(
         title=data.title,
         description=data.description,
@@ -192,7 +192,7 @@ def create_task(data: TaskCreate, db: Session = Depends(get_db),
 
 @router.put("/{task_id}")
 def update_task(task_id: int, data: TaskUpdate, db: Session = Depends(get_db),
-                current_user: User = Depends(require_permissions(["tasks.update"]))):
+                current_user: User = require_permissions(["tasks.update"])):
     task = db.query(Task).filter(Task.id == task_id).first()
     if not task:
         raise NotFoundException("Task", task_id)
@@ -243,7 +243,7 @@ def update_task(task_id: int, data: TaskUpdate, db: Session = Depends(get_db),
 
 @router.delete("/{task_id}")
 def delete_task(task_id: int, db: Session = Depends(get_db),
-                current_user: User = Depends(require_permissions(["tasks.delete"]))):
+                current_user: User = require_permissions(["tasks.delete"])):
     task = db.query(Task).filter(Task.id == task_id).first()
     if not task:
         raise NotFoundException("Task", task_id)
@@ -257,7 +257,7 @@ def delete_task(task_id: int, db: Session = Depends(get_db),
 
 @router.patch("/{task_id}/status")
 def update_task_status(task_id: int, status: str, db: Session = Depends(get_db),
-                       current_user: User = Depends(require_permissions(["tasks.change-status"]))):
+                       current_user: User = require_permissions(["tasks.change-status"])):
     task = db.query(Task).filter(Task.id == task_id).first()
     if not task:
         raise NotFoundException("Task", task_id)
@@ -276,7 +276,7 @@ def update_task_status(task_id: int, status: str, db: Session = Depends(get_db),
 
 @router.post("/{task_id}/assign")
 def assign_task(task_id: int, assignee_id: int, db: Session = Depends(get_db),
-                current_user: User = Depends(require_permissions(["tasks.assign"]))):
+                current_user: User = require_permissions(["tasks.assign"])):
     task = db.query(Task).filter(Task.id == task_id).first()
     if not task:
         raise NotFoundException("Task", task_id)
@@ -296,7 +296,7 @@ def assign_task(task_id: int, assignee_id: int, db: Session = Depends(get_db),
 
 @router.post("/{task_id}/dependencies")
 def add_dependency(task_id: int, dependency_id: int, db: Session = Depends(get_db),
-                   current_user: User = Depends(require_permissions(["tasks.update"]))):
+                   current_user: User = require_permissions(["tasks.update"])):
     if task_id == dependency_id:
         raise BusinessException("Task cannot depend on itself")
 
@@ -321,7 +321,7 @@ def add_dependency(task_id: int, dependency_id: int, db: Session = Depends(get_d
 
 @router.delete("/{task_id}/dependencies/{dependency_id}")
 def remove_dependency(task_id: int, dependency_id: int, db: Session = Depends(get_db),
-                      current_user: User = Depends(require_permissions(["tasks.update"]))):
+                      current_user: User = require_permissions(["tasks.update"])):
     td = db.query(TaskDependency).filter(
         TaskDependency.task_id == task_id, TaskDependency.dependency_id == dependency_id
     ).first()
@@ -335,7 +335,7 @@ def remove_dependency(task_id: int, dependency_id: int, db: Session = Depends(ge
 
 @router.post("/{task_id}/submit-for-review")
 def submit_for_review(task_id: int, db: Session = Depends(get_db),
-                      current_user: User = Depends(require_permissions(["tasks.submit-approval"]))):
+                      current_user: User = require_permissions(["tasks.submit-approval"])):
     task = db.query(Task).filter(Task.id == task_id).first()
     if not task:
         raise NotFoundException("Task", task_id)
@@ -351,7 +351,7 @@ def submit_for_review(task_id: int, db: Session = Depends(get_db),
 
 @router.post("/{task_id}/approve")
 def approve_task(task_id: int, db: Session = Depends(get_db),
-                 current_user: User = Depends(require_permissions(["tasks.approve"]))):
+                 current_user: User = require_permissions(["tasks.approve"])):
     task = db.query(Task).filter(Task.id == task_id).first()
     if not task:
         raise NotFoundException("Task", task_id)
@@ -367,7 +367,7 @@ def approve_task(task_id: int, db: Session = Depends(get_db),
 
 @router.post("/{task_id}/reject")
 def reject_task(task_id: int, reason: str, db: Session = Depends(get_db),
-                current_user: User = Depends(require_permissions(["tasks.approve"]))):
+                current_user: User = require_permissions(["tasks.approve"])):
     task = db.query(Task).filter(Task.id == task_id).first()
     if not task:
         raise NotFoundException("Task", task_id)
@@ -383,7 +383,7 @@ def reject_task(task_id: int, reason: str, db: Session = Depends(get_db),
 
 @router.post("/{task_id}/block")
 def block_task(task_id: int, reason: str, db: Session = Depends(get_db),
-               current_user: User = Depends(require_permissions(["tasks.update"]))):
+               current_user: User = require_permissions(["tasks.update"])):
     task = db.query(Task).filter(Task.id == task_id).first()
     if not task:
         raise NotFoundException("Task", task_id)
@@ -399,7 +399,7 @@ def block_task(task_id: int, reason: str, db: Session = Depends(get_db),
 
 @router.post("/{task_id}/unblock")
 def unblock_task(task_id: int, db: Session = Depends(get_db),
-                 current_user: User = Depends(require_permissions(["tasks.update"]))):
+                 current_user: User = require_permissions(["tasks.update"])):
     task = db.query(Task).filter(Task.id == task_id).first()
     if not task:
         raise NotFoundException("Task", task_id)
@@ -414,7 +414,7 @@ def unblock_task(task_id: int, db: Session = Depends(get_db),
 
 @router.post("/{task_id}/subtasks")
 def create_subtask(task_id: int, data: TaskCreate, db: Session = Depends(get_db),
-                   current_user: User = Depends(require_permissions(["tasks.update"]))):
+                   current_user: User = require_permissions(["tasks.update"])):
     parent = db.query(Task).filter(Task.id == task_id).first()
     if not parent:
         raise NotFoundException("Task", task_id)
@@ -443,7 +443,7 @@ def create_subtask(task_id: int, data: TaskCreate, db: Session = Depends(get_db)
 
 @router.delete("/{task_id}/subtasks/{subtask_id}")
 def delete_subtask(task_id: int, subtask_id: int, db: Session = Depends(get_db),
-                   current_user: User = Depends(require_permissions(["tasks.update"]))):
+                   current_user: User = require_permissions(["tasks.update"])):
     subtask = db.query(Task).filter(Task.id == subtask_id, Task.parent_id == task_id).first()
     if not subtask:
         raise NotFoundException("Subtask", subtask_id)

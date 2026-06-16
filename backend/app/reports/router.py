@@ -51,7 +51,7 @@ def get_reports(
     date_from: Optional[str] = Query(None),
     date_to: Optional[str] = Query(None),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permissions(["reports.view"])),
+    current_user: User = require_permissions(["reports.view"]),
 ):
     filters = {}
     project_ids = resolve_project_ids(current_user, db)
@@ -98,7 +98,7 @@ def export_report(
     date_from: Optional[str] = Query(None),
     date_to: Optional[str] = Query(None),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permissions(["reports.export"])),
+    current_user: User = require_permissions(["reports.export"]),
 ):
     filters = {}
     project_ids = resolve_project_ids(current_user, db)
@@ -144,7 +144,7 @@ def export_report(
 def project_preview(
     project_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permissions(["reports.view"])),
+    current_user: User = require_permissions(["reports.view"]),
 ):
     project = db.query(Project).filter(Project.id == project_id, Project.deleted_at.is_(None)).first()
     if not project:

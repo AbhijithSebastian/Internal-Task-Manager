@@ -76,7 +76,7 @@ def get_milestone(
 def create_milestone(
     data: MilestoneCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permissions(["projects.update"])),
+    current_user: User = require_permissions(["projects.update"]),
 ):
     milestone = Milestone(
         name=data.name,
@@ -129,7 +129,7 @@ def update_milestone(
 def delete_milestone(
     milestone_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permissions(["projects.update"])),
+    current_user: User = require_permissions(["projects.update"]),
 ):
     milestone = db.query(Milestone).filter(Milestone.id == milestone_id).first()
     if not milestone:

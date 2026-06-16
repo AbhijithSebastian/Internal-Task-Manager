@@ -59,7 +59,7 @@ async def upload_attachment(
     collection_name: str = "default",
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permissions(["attachments.upload"])),
+    current_user: User = require_permissions(["attachments.upload"]),
 ):
     ext = Path(file.filename).suffix if file.filename else ""
     file_uuid = str(uuid.uuid4())
@@ -100,7 +100,7 @@ async def upload_attachment(
 def download_attachment(
     attachment_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permissions(["attachments.download"])),
+    current_user: User = require_permissions(["attachments.download"]),
 ):
     attachment = db.query(Attachment).filter(Attachment.id == attachment_id).first()
     if not attachment:
@@ -122,7 +122,7 @@ def download_attachment(
 def delete_attachment(
     attachment_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permissions(["attachments.delete"])),
+    current_user: User = require_permissions(["attachments.delete"]),
 ):
     attachment = db.query(Attachment).filter(Attachment.id == attachment_id).first()
     if not attachment:

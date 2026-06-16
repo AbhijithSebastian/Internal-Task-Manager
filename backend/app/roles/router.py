@@ -21,7 +21,7 @@ class RoleUpdatePermissions(BaseModel):
 
 @router.get("")
 def list_roles(db: Session = Depends(get_db),
-               current_user: User = Depends(require_permissions(["permissions.view"]))):
+               current_user: User = require_permissions(["permissions.view"])):
     roles = db.query(Role).all()
     return [
         {
@@ -36,7 +36,7 @@ def list_roles(db: Session = Depends(get_db),
 
 @router.get("/{role_id}")
 def get_role(role_id: int, db: Session = Depends(get_db),
-             current_user: User = Depends(require_permissions(["permissions.view"]))):
+             current_user: User = require_permissions(["permissions.view"])):
     role = db.query(Role).filter(Role.id == role_id).first()
     if not role:
         raise NotFoundException("Role", role_id)
@@ -51,7 +51,7 @@ def get_role(role_id: int, db: Session = Depends(get_db),
 def update_role_permissions(
     role_id: int, data: RoleUpdatePermissions,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permissions(["permissions.manage"])),
+    current_user: User = require_permissions(["permissions.manage"]),
 ):
     role = db.query(Role).filter(Role.id == role_id).first()
     if not role:
