@@ -3,10 +3,11 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Users, Shield, FolderKanban, CheckSquare,
   Calendar, Megaphone, FileText, Bell, User, Menu, X, LogOut,
-  ChevronDown,
+  ChevronDown, Search,
 } from "lucide-react";
 import { useAuth } from "@/store/auth";
 import { cn } from "@/lib/utils";
+import SearchModal from "@/components/shared/SearchModal";
 
 const navItems = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -19,6 +20,7 @@ const navItems = [
   { label: "Announcements", href: "/announcements", icon: Megaphone },
   { label: "Reports", href: "/reports", icon: FileText },
   { label: "Notifications", href: "/notifications", icon: Bell },
+  { label: "Integrations", href: "/integrations", icon: FolderKanban },
 ];
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -83,6 +85,14 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           >
             {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
+          <button
+            className="mr-2 hidden items-center gap-2 rounded-lg border bg-muted/50 px-3 py-1.5 text-sm text-muted-foreground hover:bg-muted sm:flex"
+            onClick={() => window.dispatchEvent(new Event("opensearch"))}
+          >
+            <Search className="h-4 w-4" />
+            <span>Search...</span>
+            <kbd className="ml-4 rounded border bg-background px-1.5 py-0.5 text-[11px] font-medium">⌘K</kbd>
+          </button>
           <div className="flex-1" />
           <div className="relative group">
             <button className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-muted">
@@ -111,6 +121,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         </header>
         <main className="flex-1 overflow-y-auto p-6">{children}</main>
       </div>
+      <SearchModal />
     </div>
   );
 }

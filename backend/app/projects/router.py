@@ -15,6 +15,25 @@ from app.core.enums import ProjectStatus, ProjectPriority, ProjectMemberRole, Ta
 router = APIRouter()
 
 
+@router.get("/search")
+def search_projects(
+    q: str = Query(..., min_length=1, max_length=200),
+    limit: int = Query(5, ge=1, le=20),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    term = f"%{q}%"
+    projects = db.query(Project).filter(
+        Project.deleted_at.is_(None),
+        Project.name.ilike(term),
+    ).limit(limit).all()
+    return [
+        {"id": p.id, "name": p.name, "status": p.status.value if p.status else "active",
+         "priority": p.priority.value if p.priority else "medium"}
+        for p in projects
+    ]
+
+
 class ProjectCreate(BaseModel):
     name: str
     description: Optional[str] = None

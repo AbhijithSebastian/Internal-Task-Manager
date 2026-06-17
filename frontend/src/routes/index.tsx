@@ -5,6 +5,8 @@ import { DashboardLayout } from "@/layouts/DashboardLayout";
 
 import LoginPage from "@/features/auth/pages/LoginPage";
 import RegisterPage from "@/features/auth/pages/RegisterPage";
+import ForgotPasswordPage from "@/features/auth/pages/ForgotPasswordPage";
+import ResetPasswordPage from "@/features/auth/pages/ResetPasswordPage";
 import DashboardPage from "@/features/dashboard/pages/DashboardPage";
 import UsersListPage from "@/features/users/pages/UsersListPage";
 import UserFormPage from "@/features/users/pages/UserFormPage";
@@ -19,11 +21,16 @@ import TaskDetailPage from "@/features/tasks/pages/TaskDetailPage";
 import TaskFormPage from "@/features/tasks/pages/TaskFormPage";
 import MeetingListPage from "@/features/meetings/pages/MeetingListPage";
 import MeetingFormPage from "@/features/meetings/pages/MeetingFormPage";
+import MeetingDetailPage from "@/features/meetings/pages/MeetingDetailPage";
 import AnnouncementListPage from "@/features/announcements/pages/AnnouncementListPage";
 import AnnouncementFormPage from "@/features/announcements/pages/AnnouncementFormPage";
+import AnnouncementDetailPage from "@/features/announcements/pages/AnnouncementDetailPage";
 import ReportsPage from "@/features/reports/pages/ReportsPage";
 import NotificationPage from "@/features/notifications/pages/NotificationPage";
 import ProfilePage from "@/features/profile/pages/ProfilePage";
+import IntegrationListPage from "@/features/integrations/pages/IntegrationListPage";
+import IntegrationFormPage from "@/features/integrations/pages/IntegrationFormPage";
+import IntegrationDetailPage from "@/features/integrations/pages/IntegrationDetailPage";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -44,6 +51,8 @@ export function AppRoutes() {
     <Routes>
       <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
       <Route path="/register" element={<PublicRoute><RegisterPage /></PublicRoute>} />
+      <Route path="/forgot-password" element={<PublicRoute><ForgotPasswordPage /></PublicRoute>} />
+      <Route path="/reset-password" element={<PublicRoute><ResetPasswordPage /></PublicRoute>} />
       <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
       <Route path="/users" element={<ProtectedRoute><UsersListPage /></ProtectedRoute>} />
       <Route path="/users/new" element={<ProtectedRoute><UserFormPage /></ProtectedRoute>} />
@@ -61,10 +70,16 @@ export function AppRoutes() {
       <Route path="/tasks/:id/edit" element={<ProtectedRoute><TaskFormPage /></ProtectedRoute>} />
       <Route path="/meetings" element={<ProtectedRoute><MeetingListPage /></ProtectedRoute>} />
       <Route path="/meetings/new" element={<ProtectedRoute><MeetingFormPage /></ProtectedRoute>} />
+      <Route path="/meetings/:id" element={<ProtectedRoute><MeetingDetailPage /></ProtectedRoute>} />
       <Route path="/meetings/:id/edit" element={<ProtectedRoute><MeetingFormPage /></ProtectedRoute>} />
       <Route path="/announcements" element={<ProtectedRoute><AnnouncementListPage /></ProtectedRoute>} />
       <Route path="/announcements/new" element={<ProtectedRoute><AnnouncementFormPage /></ProtectedRoute>} />
+      <Route path="/announcements/:id" element={<ProtectedRoute><AnnouncementDetailPage /></ProtectedRoute>} />
       <Route path="/announcements/:id/edit" element={<ProtectedRoute><AnnouncementFormPage /></ProtectedRoute>} />
+      <Route path="/integrations" element={<ProtectedRoute><IntegrationListPage /></ProtectedRoute>} />
+      <Route path="/integrations/new" element={<ProtectedRoute><IntegrationFormPage /></ProtectedRoute>} />
+      <Route path="/integrations/:id" element={<ProtectedRoute><IntegrationDetailPage /></ProtectedRoute>} />
+      <Route path="/integrations/:id/edit" element={<ProtectedRoute><IntegrationFormPage /></ProtectedRoute>} />
       <Route path="/reports" element={<ProtectedRoute><ReportsPage /></ProtectedRoute>} />
       <Route path="/notifications" element={<ProtectedRoute><NotificationPage /></ProtectedRoute>} />
       <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />

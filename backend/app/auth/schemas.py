@@ -1,5 +1,6 @@
 from pydantic import BaseModel, EmailStr, field_validator
 from typing import Optional
+from app.core.enums import UserRole
 
 
 class LoginRequest(BaseModel):
@@ -69,7 +70,7 @@ class LoginResponse(BaseModel):
                 "name": user.name,
                 "email": user.email,
                 "role": user.role.name if user.role else None,
-                "role_label": user.role.label() if user.role else None,
+                "role_label": UserRole(user.role.name).label() if user.role else None,
                 "avatar": user.avatar_url or "",
                 "is_super_admin": user.is_super_admin,
                 "inherit_role_permissions": user.inherit_role_permissions,

@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
 from typing import Optional
 from datetime import datetime
 
@@ -11,8 +12,27 @@ from app.core.exceptions import NotFoundException
 from app.users.models import User
 from app.users.schemas import UserCreate, UserUpdate, UserResponse, UserBrief
 from app.roles.models import Role
+from app.core.enums import UserRole
 
 router = APIRouter()
+
+
+@router.get("/search")
+def search_users(
+    q: str = Query(..., min_length=1, max_length=200),
+    limit: int = Query(5, ge=1, le=20),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    term = f"%{q}%"
+    users = db.query(User).filter(
+        User.deleted_at.is_(None),
+        or_(User.name.ilike(term), User.email.ilike(term)),
+    ).limit(limit).all()
+    return [
+        {"id": u.id, "name": u.name, "email": u.email, "job_title": u.job_title, "avatar_url": u.avatar_url}
+        for u in users
+    ]
 
 
 @router.get("", response_model=dict)
@@ -195,7 +215,7 @@ def format_user_response(user: User) -> dict:
         "created_at": user.created_at,
         "deleted_at": user.deleted_at,
         "role": user.role.name if user.role else None,
-        "role_label": user.role.label() if user.role else None,
+        "role_label": UserRole(user.role.name).label() if user.role else None,
         "is_super_admin": user.is_super_admin,
         "permissions": user.get_all_permissions(),
     }

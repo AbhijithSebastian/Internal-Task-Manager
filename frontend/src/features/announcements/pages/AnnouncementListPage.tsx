@@ -23,7 +23,7 @@ export default function AnnouncementListPage() {
 
   const columns: Column<Announcement>[] = [
     { key: "title", label: "Title",
-      render: (a) => <span className="font-medium">{a.title}</span>,
+      render: (a) => <Link to={`/announcements/${a.id}`} className="font-medium hover:underline">{a.title}</Link>,
     },
     { key: "status", label: "Status",
       render: (a) => (

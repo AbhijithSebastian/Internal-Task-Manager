@@ -11,6 +11,7 @@ from app.core.exceptions import NotFoundException
 from app.integrations.models import Integration
 from app.users.models import User
 from app.core.enums import IntegrationType
+from app.services.integration_sync import sync_integration, IntegrationSyncError
 
 router = APIRouter()
 
@@ -135,6 +136,25 @@ def delete_integration(
 
     log_activity(db, "integrations", integration_id, "Integration deleted", causer_id=current_user.id)
     return {"message": "Integration deleted successfully"}
+
+
+@router.post("/{integration_id}/sync")
+def trigger_sync(
+    integration_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    integration = db.query(Integration).filter(Integration.id == integration_id).first()
+    if not integration:
+        raise NotFoundException("Integration", integration_id)
+    if not integration.is_active:
+        raise NotFoundException("Active integration", integration_id)
+
+    try:
+        result = sync_integration(integration, db, causer_id=current_user.id)
+        return {"message": "Sync completed", "result": result}
+    except IntegrationSyncError as e:
+        return {"message": "Sync failed", "error": str(e)}
 
 
 def format_integration(i: Integration) -> dict:

@@ -37,3 +37,4 @@ __pycache__/
 frontend/dist/
 
 frontend/tsconfig.tsbuildinfo
+frontend/node_modules/

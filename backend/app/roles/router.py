@@ -47,6 +47,21 @@ def get_role(role_id: int, db: Session = Depends(get_db),
     }
 
 
+@router.get("/{role_id}/permissions")
+def get_role_permissions(
+    role_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = require_permissions(["permissions.view"]),
+):
+    role = db.query(Role).filter(Role.id == role_id).first()
+    if not role:
+        raise NotFoundException("Role", role_id)
+    return [
+        {"id": p.id, "name": p.name, "guard_name": p.guard_name}
+        for p in role.permissions
+    ]
+
+
 @router.put("/{role_id}/permissions")
 def update_role_permissions(
     role_id: int, data: RoleUpdatePermissions,

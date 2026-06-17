@@ -7,10 +7,12 @@ import { PageLoading } from "@/components/shared/LoadingSpinner";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { PriorityBadge } from "@/components/shared/PriorityBadge";
 import { DataTable, type Column } from "@/components/shared/DataTable";
-import { Pencil, ArrowLeft } from "lucide-react";
+import { Pencil, Trash2, ArrowLeft } from "lucide-react";
 import { formatDate } from "@/utils/formatters";
 import { useAuth } from "@/store/auth";
 import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import type { Task } from "@/types";
 
 export default function ProjectDetailPage() {
@@ -32,6 +34,18 @@ export default function ProjectDetailPage() {
   });
 
   const canEdit = hasPermission("project-edit");
+  const canDelete = hasPermission("project-delete");
+  const [showDelete, setShowDelete] = useState(false);
+
+  const queryClient = useQueryClient();
+
+  const deleteMutation = useMutation({
+    mutationFn: () => projectsService.delete(Number(id)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+      navigate("/projects");
+    },
+  });
 
   const taskColumns: Column<Task>[] = [
     { key: "title", label: "Task",
@@ -63,6 +77,11 @@ export default function ProjectDetailPage() {
               <Link to={`/projects/${project.id}/edit`} className="inline-flex items-center gap-1 rounded-md border px-3 py-2 text-sm font-medium hover:bg-muted">
                 <Pencil className="h-4 w-4" /> Edit
               </Link>
+            )}
+            {canDelete && (
+              <button onClick={() => setShowDelete(true)} className="inline-flex items-center gap-1 rounded-md border border-red-200 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50">
+                <Trash2 className="h-4 w-4" /> Delete
+              </button>
             )}
           </div>
         }
@@ -124,6 +143,16 @@ export default function ProjectDetailPage() {
           )}
         </div>
       </div>
+      <ConfirmDialog
+        open={showDelete}
+        title="Delete Project"
+        message={`Are you sure you want to delete "${project.name}"? This action cannot be undone.`}
+        confirmLabel="Delete"
+        variant="danger"
+        loading={deleteMutation.isPending}
+        onConfirm={() => deleteMutation.mutate()}
+        onCancel={() => setShowDelete(false)}
+      />
     </div>
   );
 }

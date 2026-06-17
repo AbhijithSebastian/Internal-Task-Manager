@@ -23,7 +23,7 @@ export default function MeetingListPage() {
 
   const columns: Column<Meeting>[] = [
     { key: "title", label: "Title",
-      render: (m) => <Link to={`/meetings`} className="font-medium hover:underline">{m.title}</Link>,
+      render: (m) => <Link to={`/meetings/${m.id}`} className="font-medium hover:underline">{m.title}</Link>,
     },
     { key: "meeting_date", label: "Date",
       render: (m) => m.meeting_date ? formatDateTime(m.meeting_date) : "-",

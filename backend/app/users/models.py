@@ -4,6 +4,18 @@ from sqlalchemy.orm import relationship
 from app.core.database import Base
 
 
+class PasswordResetToken(Base):
+    __tablename__ = "password_reset_tokens"
+
+    email = Column(String(255), primary_key=True, index=True)
+    token = Column(String(255), nullable=False, index=True)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
+
+    def is_expired(self, expire_minutes: int = 60) -> bool:
+        from datetime import timedelta
+        return datetime.utcnow() > self.created_at.replace(tzinfo=None) + timedelta(minutes=expire_minutes)
+
+
 user_roles = Table(
     "user_roles",
     Base.metadata,

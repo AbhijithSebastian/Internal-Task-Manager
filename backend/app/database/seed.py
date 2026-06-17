@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 from app.core.security import get_password_hash
+import app.database.models  # noqa: ensure all models are registered
 from app.users.models import User
 from app.roles.models import Role, role_permissions
 from app.permissions.models import Permission

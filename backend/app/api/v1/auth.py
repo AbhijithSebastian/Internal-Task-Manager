@@ -1,7 +1,7 @@
+import secrets
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from pydantic import BaseModel, EmailStr
 
 from app.core.database import get_db
 from app.core.security import (
@@ -9,11 +9,14 @@ from app.core.security import (
     create_refresh_token, decode_token
 )
 from app.core.deps import get_current_user
-from app.users.models import User
+from app.core.config import settings
+from app.core.email import send_password_reset_email
+from app.users.models import User, PasswordResetToken
 from app.auth.schemas import (
     LoginRequest, LoginResponse, RegisterRequest, RefreshTokenRequest,
     ForgotPasswordRequest, ResetPasswordRequest
 )
+from app.users.schemas import UserResponse
 from app.core.activity import log_activity
 
 router = APIRouter()
@@ -41,11 +44,8 @@ def login(request: LoginRequest, db: Session = Depends(get_db)):
     access_token = create_access_token({"sub": str(user.id)})
     refresh_token = create_refresh_token({"sub": str(user.id)})
 
-    return LoginResponse(
-        access_token=access_token,
-        refresh_token=refresh_token,
-        token_type="bearer",
-        user=user,
+    return LoginResponse.from_orm_user(
+        user, access_token, refresh_token
     )
 
 
@@ -79,11 +79,8 @@ def register(request: RegisterRequest, db: Session = Depends(get_db)):
     access_token = create_access_token({"sub": str(user.id)})
     refresh_token = create_refresh_token({"sub": str(user.id)})
 
-    return LoginResponse(
-        access_token=access_token,
-        refresh_token=refresh_token,
-        token_type="bearer",
-        user=user,
+    return LoginResponse.from_orm_user(
+        user, access_token, refresh_token
     )
 
 
@@ -109,12 +106,64 @@ def refresh_token(request: RefreshTokenRequest, db: Session = Depends(get_db)):
     access_token = create_access_token({"sub": str(user.id)})
     refresh_token = create_refresh_token({"sub": str(user.id)})
 
-    return LoginResponse(
-        access_token=access_token,
-        refresh_token=refresh_token,
-        token_type="bearer",
-        user=user,
+    return LoginResponse.from_orm_user(
+        user, access_token, refresh_token
     )
+
+
+@router.post("/forgot-password")
+def forgot_password(request: ForgotPasswordRequest, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == request.email).first()
+    if not user or not user.is_active:
+        return {"message": "If that email exists, a reset link has been sent"}
+
+    token = secrets.token_urlsafe(32)
+    existing = db.query(PasswordResetToken).filter(PasswordResetToken.email == request.email).first()
+    if existing:
+        db.delete(existing)
+        db.flush()
+
+    reset = PasswordResetToken(email=request.email, token=token)
+    db.add(reset)
+    db.commit()
+
+    sent = send_password_reset_email(request.email, token, user.name)
+    if not sent:
+        return {
+            "message": "Password reset email queued",
+            "debug_token": token if settings.app_debug else None,
+        }
+
+    return {"message": "If that email exists, a reset link has been sent"}
+
+
+@router.post("/reset-password")
+def reset_password(request: ResetPasswordRequest, db: Session = Depends(get_db)):
+    if request.password != request.password_confirmation:
+        raise HTTPException(status_code=422, detail="Passwords do not match")
+
+    reset = db.query(PasswordResetToken).filter(
+        PasswordResetToken.email == request.email,
+        PasswordResetToken.token == request.token,
+    ).first()
+    if not reset:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset token")
+
+    if reset.is_expired(settings.password_reset_token_expire_minutes):
+        db.delete(reset)
+        db.commit()
+        raise HTTPException(status_code=400, detail="Reset token has expired")
+
+    user = db.query(User).filter(User.email == request.email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    user.password = get_password_hash(request.password)
+    db.delete(reset)
+    db.commit()
+
+    log_activity(db, "users", user.id, "password_reset", causer_id=user.id)
+    return {"message": "Password has been reset successfully"}
 
 
 @router.post("/logout")
@@ -123,6 +172,6 @@ def logout(user: User = Depends(get_current_user), db: Session = Depends(get_db)
     return {"message": "Logged out successfully"}
 
 
-@router.get("/me")
+@router.get("/me", response_model=UserResponse)
 def get_me(user: User = Depends(get_current_user)):
-    return user
+    return UserResponse.from_orm_user(user)
