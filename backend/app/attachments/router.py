@@ -11,10 +11,11 @@ from app.core.deps import get_current_user, require_permissions
 from app.core.activity import log_activity
 from app.attachments.models import Attachment
 from app.users.models import User
+from app.core.config import settings
 
 router = APIRouter()
 
-UPLOAD_DIR = Path("storage/uploads")
+UPLOAD_DIR = Path(settings.upload_dir)
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 
@@ -61,12 +62,30 @@ async def upload_attachment(
     db: Session = Depends(get_db),
     current_user: User = require_permissions(["attachments.upload"]),
 ):
-    ext = Path(file.filename).suffix if file.filename else ""
+    original_filename = file.filename or "file"
+    safe_filename = os.path.basename(original_filename)
+    
+    ext = Path(safe_filename).suffix if safe_filename else ""
+    ext_stripped = ext.lstrip(".").lower()
+    
+    if ext_stripped not in settings.allowed_upload_extension_set:
+        raise HTTPException(
+            status_code=400,
+            detail=f"File extension '.{ext_stripped}' is not allowed"
+        )
+        
+    content = await file.read()
+    max_size_bytes = settings.max_upload_size_mb * 1024 * 1024
+    if len(content) > max_size_bytes:
+        raise HTTPException(
+            status_code=413,
+            detail=f"File size exceeds maximum allowed limit of {settings.max_upload_size_mb}MB"
+        )
+
     file_uuid = str(uuid.uuid4())
     stored_name = f"{file_uuid}{ext}"
     file_path = UPLOAD_DIR / stored_name
 
-    content = await file.read()
     with open(file_path, "wb") as f:
         f.write(content)
 
@@ -75,7 +94,7 @@ async def upload_attachment(
         model_type=model_type,
         model_id=model_id,
         collection_name=collection_name,
-        name=file.filename or stored_name,
+        name=safe_filename,
         file_name=stored_name,
         mime_type=file.content_type,
         disk="local",
@@ -92,8 +111,9 @@ async def upload_attachment(
     log_activity(db, "attachments", attachment.id, "Attachment uploaded",
                  causer_id=current_user.id,
                  properties={"model_type": model_type, "model_id": model_id,
-                            "file_name": file.filename})
+                             "file_name": safe_filename})
     return format_attachment(attachment)
+
 
 
 @router.get("/download/{attachment_id}")

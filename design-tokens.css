@@ -1,0 +1,206 @@
+/* ═══════════════════════════════════════════════════════════════════
+   Enterprise Design Tokens — Internal Task Manager
+   Philosophy: 85% Neutral · 10% Primary · 5% Semantic
+   Typography-driven hierarchy · Calm · Premium · Accessible
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ─── 1. Neutral Palette ─────────────────────────────────────────────
+   85% of visible color. Creates calm, professional foundation.
+   App bg is soft neutral, not pure white. Cards are elevated white. */
+
+:root {
+  /* Backgrounds — layered depth */
+  --bg-app:          #f5f6f8;    /* Soft neutral — app foundation */
+  --bg-subtle:       #f0f1f3;    /* Hover areas, secondary sections */
+  --bg-surface:      #ffffff;    /* Cards, drawers, modals, dropdowns */
+  --bg-elevated:     #ffffff;    /* Floating elements, tooltips */
+  --bg-inset:        #eaecef;    /* Input backgrounds, code blocks */
+
+  /* Interactive backgrounds */
+  --bg-hover:        #f3f4f6;    /* Row hover, card hover */
+  --bg-active:       #eef1fe;    /* Selected row, active nav item */
+  --bg-selected:     #eef1fe;    /* Multi-select highlight */
+
+  /* Borders — minimal, refined */
+  --border-default:  #e2e5ea;    /* Cards, containers */
+  --border-subtle:   #eef0f2;    /* Light dividers, table lines */
+  --border-hover:    #d0d5dd;    /* Hovered card/input border */
+  --border-divider:  #eef0f2;    /* Section dividers */
+
+  /* Text — maximum contrast, premium readability */
+  --text-primary:    #101216;    /* Headings, body, high-importance */
+  --text-secondary:  #5a5f6b;    /* Supporting text, metadata */
+  --text-tertiary:   #8b909e;    /* Placeholders, disabled text */
+  --text-inverse:    #ffffff;    /* On primary/dark backgrounds */
+  --text-link:       #4f6cf7;    /* Links, interactive text */
+
+  /* Shadows — extremely subtle, no heavy drops */
+  --shadow-card:     0 1px 2px rgba(0,0,0,0.04), 0 1px 1px rgba(0,0,0,0.02);
+  --shadow-elevated: 0 4px 12px rgba(0,0,0,0.06), 0 2px 4px rgba(0,0,0,0.03);
+  --shadow-dropdown: 0 8px 24px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.04);
+  --shadow-modal:    0 20px 48px rgba(0,0,0,0.12), 0 8px 16px rgba(0,0,0,0.06);
+  --shadow-drawer:   -6px 0 32px rgba(0,0,0,0.08), -2px 0 8px rgba(0,0,0,0.04);
+
+/* ─── 2. Primary Palette ────────────────────────────────────────────
+    10% of visible color. Only for interactive elements,
+    active states, and primary CTAs. Never decorative. */
+
+  --primary:         #4f6cf7;    /* Primary buttons, links, focus */
+  --primary-hover:   #3b5ae8;    /* Button hover, link hover */
+  --primary-active:  #2f4ad4;    /* Button pressed */
+  --primary-soft:    #eef1fe;    /* Active nav, selected items, badges */
+  --primary-soft-hover:#e0e5fd;  /* Soft hover */
+  --primary-ring:    rgba(79, 108, 247, 0.3);  /* Focus ring 3px */
+
+/* ─── 3. Semantic Palette ───────────────────────────────────────────
+    5% of visible color. Status indicators only.
+    Never used for primary actions. Always paired with text label. */
+
+  --success:         #16a34a;    /* Completed, approved, healthy */
+  --success-soft:    #e8faf0;    /* Success badges, toast bg */
+  --warning:         #d97706;    /* In progress, pending, attention */
+  --warning-soft:    #fef7e8;    /* Warning badges, toast bg */
+  --danger:          #dc2626;    /* Overdue, rejected, errors */
+  --danger-soft:     #fde8e8;    /* Error badges, toast bg */
+  --info:            #2563eb;    /* Neutral information */
+  --info-soft:       #e8f0fe;    /* Info badges, toast bg */
+
+/* ─── 4. Typography ─────────────────────────────────────────────────
+    Inter only. Typography creates hierarchy, not colors. */
+
+  --font-sans:  'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono:  'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+
+  /* Size scale */
+  --text-display:    2.75rem;    /* 44px — Page title h1 */
+  --text-hero:       2.25rem;    /* 36px — Dashboard welcome */
+  --text-xxl:        1.75rem;    /* 28px — Section heading h2 */
+  --text-xl:         1.375rem;   /* 22px — Card heading h3 */
+  --text-lg:         1.125rem;   /* 18px — Large body */
+  --text-base:       1rem;       /* 16px — Body text */
+  --text-sm:         0.875rem;   /* 14px — Body small, table cells */
+  --text-xs:         0.75rem;    /* 12px — Labels, captions */
+
+  /* Weight */
+  --weight-bold:     700;        /* Page titles, display */
+  --weight-semibold: 600;        /* Section headings, card titles */
+  --weight-medium:   500;        /* Navigation, buttons, table headers */
+  --weight-normal:   400;        /* Body, descriptions */
+
+  /* Line height */
+  --leading-tight:   1.15;      /* Headings */
+  --leading-normal:  1.5;       /* Body */
+  --leading-relaxed: 1.7;       /* Long-form */
+
+  /* Letter spacing */
+  --tracking-tight:  -0.02em;   /* Page titles */
+  --tracking-normal: 0;          /* Body */
+  --tracking-wide:   0.02em;     /* Labels, badges */
+
+/* ─── 5. Spacing ────────────────────────────────────────────────────
+    4px grid system. Vertical rhythm is sacred. */
+
+  --space-0:   0px;
+  --space-1:   4px;
+  --space-2:   8px;
+  --space-3:   12px;
+  --space-4:   16px;
+  --space-5:   20px;
+  --space-6:   24px;
+  --space-8:   32px;
+  --space-10:  40px;
+  --space-12:  48px;
+  --space-14:  56px;
+  --space-16:  64px;
+  --space-20:  80px;
+  --space-24:  96px;
+
+/* ─── 6. Border Radius ───────────────────────────────────────────── */
+
+  --radius-sm:   4px;      /* Inputs, badges */
+  --radius-md:   8px;      /* Buttons, cards */
+  --radius-lg:   12px;     /* Modals, drawers */
+  --radius-xl:   16px;     /* Large containers, cards */
+  --radius-2xl:  20px;     /* Hero sections */
+  --radius-full: 9999px;   /* Pills, avatars */
+
+/* ─── 7. Elevation ────────────────────────────────────────────────── */
+
+  --z-dropdown:       100;
+  --z-sticky:         200;
+  --z-drawer-bg:      300;
+  --z-drawer:         310;
+  --z-modal-bg:       400;
+  --z-modal:          410;
+  --z-toast:          500;
+  --z-tooltip:        600;
+
+/* ─── 8. Motion ───────────────────────────────────────────────────── */
+
+  --duration-fast:    150ms;
+  --duration-normal:  200ms;
+  --duration-slow:    300ms;
+  --ease-default:     cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-spring:      cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Dark Theme
+   ═══════════════════════════════════════════════════════════════════ */
+
+[data-theme="dark"] {
+  --bg-app:          #0d0f14;
+  --bg-subtle:       #14171f;
+  --bg-surface:      #1a1d28;
+  --bg-elevated:     #1e2130;
+  --bg-inset:        #11131a;
+
+  --bg-hover:        #232738;
+  --bg-active:       #1f2340;
+  --bg-selected:     #1f2340;
+
+  --border-default:  #2d3140;
+  --border-subtle:   #262a3c;
+  --border-hover:    #3a3f52;
+  --border-divider:  #262a3c;
+
+  --text-primary:    #e8eaed;
+  --text-secondary:  #9ca0ab;
+  --text-tertiary:   #6b7084;
+  --text-inverse:    #0d0f14;
+  --text-link:       #6b86f7;
+
+  --primary:         #5b76f7;
+  --primary-hover:   #6b86f7;
+  --primary-soft:    #1f2340;
+  --primary-soft-hover:#262a50;
+  --primary-ring:    rgba(91, 118, 247, 0.4);
+
+  --shadow-card:     0 1px 2px rgba(0,0,0,0.3);
+  --shadow-elevated: 0 4px 12px rgba(0,0,0,0.4);
+  --shadow-dropdown: 0 8px 24px rgba(0,0,0,0.5);
+  --shadow-modal:    0 20px 48px rgba(0,0,0,0.6);
+  --shadow-drawer:   -6px 0 32px rgba(0,0,0,0.5);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Reduced Motion
+   ═══════════════════════════════════════════════════════════════════ */
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast:   0ms;
+    --duration-normal: 0ms;
+    --duration-slow:   0ms;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Breakpoints (for reference — used in component specs)
+   ═══════════════════════════════════════════════════════════════════
+
+   --bp-mobile:  768px
+   --bp-tablet:  1024px
+   --bp-desktop: 1280px
+   --bp-wide:    1536px
+*/

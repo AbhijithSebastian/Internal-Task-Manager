@@ -1,88 +1,111 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "@/store/auth";
-import { PageLoading } from "@/components/shared/LoadingSpinner";
-import { DashboardLayout } from "@/layouts/DashboardLayout";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { AppShell } from "@/layouts/AppShell";
 
 import LoginPage from "@/features/auth/pages/LoginPage";
 import RegisterPage from "@/features/auth/pages/RegisterPage";
 import ForgotPasswordPage from "@/features/auth/pages/ForgotPasswordPage";
 import ResetPasswordPage from "@/features/auth/pages/ResetPasswordPage";
 import DashboardPage from "@/features/dashboard/pages/DashboardPage";
-import UsersListPage from "@/features/users/pages/UsersListPage";
-import UserFormPage from "@/features/users/pages/UserFormPage";
-import UserDetailPage from "@/features/users/pages/UserDetailPage";
-import RolesListPage from "@/features/roles/pages/RolesListPage";
-import PermissionsPage from "@/features/permissions/pages/PermissionsPage";
-import ProjectListPage from "@/features/projects/pages/ProjectListPage";
-import ProjectDetailPage from "@/features/projects/pages/ProjectDetailPage";
-import ProjectFormPage from "@/features/projects/pages/ProjectFormPage";
 import TaskListPage from "@/features/tasks/pages/TaskListPage";
-import TaskDetailPage from "@/features/tasks/pages/TaskDetailPage";
 import TaskFormPage from "@/features/tasks/pages/TaskFormPage";
+import ProjectListPage from "@/features/projects/pages/ProjectListPage";
+import ProjectWorkspacePage from "@/features/projects/pages/ProjectWorkspacePage";
+import ProjectFormPage from "@/features/projects/pages/ProjectFormPage";
 import MeetingListPage from "@/features/meetings/pages/MeetingListPage";
 import MeetingFormPage from "@/features/meetings/pages/MeetingFormPage";
-import MeetingDetailPage from "@/features/meetings/pages/MeetingDetailPage";
+import PeopleListPage from "@/features/people/pages/PeopleListPage";
+import InviteUserPage from "@/features/people/pages/InviteUserPage";
 import AnnouncementListPage from "@/features/announcements/pages/AnnouncementListPage";
 import AnnouncementFormPage from "@/features/announcements/pages/AnnouncementFormPage";
-import AnnouncementDetailPage from "@/features/announcements/pages/AnnouncementDetailPage";
-import ReportsPage from "@/features/reports/pages/ReportsPage";
-import NotificationPage from "@/features/notifications/pages/NotificationPage";
-import ProfilePage from "@/features/profile/pages/ProfilePage";
-import IntegrationListPage from "@/features/integrations/pages/IntegrationListPage";
-import IntegrationFormPage from "@/features/integrations/pages/IntegrationFormPage";
-import IntegrationDetailPage from "@/features/integrations/pages/IntegrationDetailPage";
+import NotificationListPage from "@/features/notifications/pages/NotificationListPage";
+import AnalyticsPage from "@/features/analytics/pages/AnalyticsPage";
+import RoleListPage from "@/features/roles/pages/RoleListPage";
+import PermissionMatrixPage from "@/features/admin/pages/PermissionMatrixPage";
+import AdminSettingsPage from "@/features/admin/pages/AdminSettingsPage";
 
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
+function ProtectedLayout() {
   const { user, loading } = useAuth();
-  if (loading) return <PageLoading />;
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-app">
+        <div className="space-y-4 w-80">
+          <Skeleton variant="rect" className="h-8 w-48 mx-auto" />
+          <Skeleton variant="rect" className="h-4 w-64 mx-auto" />
+        </div>
+      </div>
+    );
+  }
   if (!user) return <Navigate to="/login" replace />;
-  return <DashboardLayout>{children}</DashboardLayout>;
+  return <AppShell />;
 }
 
-function PublicRoute({ children }: { children: React.ReactNode }) {
+function PublicLayout() {
   const { user, loading } = useAuth();
-  if (loading) return <PageLoading />;
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-app">
+        <Skeleton variant="circle" className="h-12 w-12" />
+      </div>
+    );
+  }
   if (user) return <Navigate to="/dashboard" replace />;
-  return <>{children}</>;
+  return <Outlet />;
 }
 
 export function AppRoutes() {
   return (
     <Routes>
-      <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
-      <Route path="/register" element={<PublicRoute><RegisterPage /></PublicRoute>} />
-      <Route path="/forgot-password" element={<PublicRoute><ForgotPasswordPage /></PublicRoute>} />
-      <Route path="/reset-password" element={<PublicRoute><ResetPasswordPage /></PublicRoute>} />
-      <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
-      <Route path="/users" element={<ProtectedRoute><UsersListPage /></ProtectedRoute>} />
-      <Route path="/users/new" element={<ProtectedRoute><UserFormPage /></ProtectedRoute>} />
-      <Route path="/users/:id/edit" element={<ProtectedRoute><UserFormPage /></ProtectedRoute>} />
-      <Route path="/users/:id" element={<ProtectedRoute><UserDetailPage /></ProtectedRoute>} />
-      <Route path="/roles" element={<ProtectedRoute><RolesListPage /></ProtectedRoute>} />
-      <Route path="/permissions" element={<ProtectedRoute><PermissionsPage /></ProtectedRoute>} />
-      <Route path="/projects" element={<ProtectedRoute><ProjectListPage /></ProtectedRoute>} />
-      <Route path="/projects/new" element={<ProtectedRoute><ProjectFormPage /></ProtectedRoute>} />
-      <Route path="/projects/:id" element={<ProtectedRoute><ProjectDetailPage /></ProtectedRoute>} />
-      <Route path="/projects/:id/edit" element={<ProtectedRoute><ProjectFormPage /></ProtectedRoute>} />
-      <Route path="/tasks" element={<ProtectedRoute><TaskListPage /></ProtectedRoute>} />
-      <Route path="/tasks/new" element={<ProtectedRoute><TaskFormPage /></ProtectedRoute>} />
-      <Route path="/tasks/:id" element={<ProtectedRoute><TaskDetailPage /></ProtectedRoute>} />
-      <Route path="/tasks/:id/edit" element={<ProtectedRoute><TaskFormPage /></ProtectedRoute>} />
-      <Route path="/meetings" element={<ProtectedRoute><MeetingListPage /></ProtectedRoute>} />
-      <Route path="/meetings/new" element={<ProtectedRoute><MeetingFormPage /></ProtectedRoute>} />
-      <Route path="/meetings/:id" element={<ProtectedRoute><MeetingDetailPage /></ProtectedRoute>} />
-      <Route path="/meetings/:id/edit" element={<ProtectedRoute><MeetingFormPage /></ProtectedRoute>} />
-      <Route path="/announcements" element={<ProtectedRoute><AnnouncementListPage /></ProtectedRoute>} />
-      <Route path="/announcements/new" element={<ProtectedRoute><AnnouncementFormPage /></ProtectedRoute>} />
-      <Route path="/announcements/:id" element={<ProtectedRoute><AnnouncementDetailPage /></ProtectedRoute>} />
-      <Route path="/announcements/:id/edit" element={<ProtectedRoute><AnnouncementFormPage /></ProtectedRoute>} />
-      <Route path="/integrations" element={<ProtectedRoute><IntegrationListPage /></ProtectedRoute>} />
-      <Route path="/integrations/new" element={<ProtectedRoute><IntegrationFormPage /></ProtectedRoute>} />
-      <Route path="/integrations/:id" element={<ProtectedRoute><IntegrationDetailPage /></ProtectedRoute>} />
-      <Route path="/integrations/:id/edit" element={<ProtectedRoute><IntegrationFormPage /></ProtectedRoute>} />
-      <Route path="/reports" element={<ProtectedRoute><ReportsPage /></ProtectedRoute>} />
-      <Route path="/notifications" element={<ProtectedRoute><NotificationPage /></ProtectedRoute>} />
-      <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+      {/* Auth — public routes */}
+      <Route element={<PublicLayout />}>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
+      </Route>
+
+      {/* Protected routes wrapped in AppShell */}
+      <Route element={<ProtectedLayout />}>
+        <Route path="/dashboard" element={<DashboardPage />} />
+
+        {/* Tasks */}
+        <Route path="/work/tasks" element={<TaskListPage />} />
+        <Route path="/work/tasks/new" element={<TaskFormPage />} />
+        <Route path="/work/tasks/:id/edit" element={<TaskFormPage />} />
+
+        {/* Projects */}
+        <Route path="/work/projects" element={<ProjectListPage />} />
+        <Route path="/work/projects/new" element={<ProjectFormPage />} />
+        <Route path="/work/projects/:id" element={<ProjectWorkspacePage />} />
+        <Route path="/work/projects/:id/edit" element={<ProjectFormPage />} />
+
+        {/* Meetings */}
+        <Route path="/work/meetings" element={<MeetingListPage />} />
+        <Route path="/work/meetings/new" element={<MeetingFormPage />} />
+
+        {/* People */}
+        <Route path="/work/people" element={<PeopleListPage />} />
+        <Route path="/work/people/invite" element={<InviteUserPage />} />
+
+        {/* Announcements */}
+        <Route path="/work/announcements" element={<AnnouncementListPage />} />
+        <Route path="/work/announcements/new" element={<AnnouncementFormPage />} />
+        <Route path="/work/announcements/:id/edit" element={<AnnouncementFormPage />} />
+
+        {/* Notifications */}
+        <Route path="/work/notifications" element={<NotificationListPage />} />
+
+        {/* Analytics */}
+        <Route path="/work/analytics" element={<AnalyticsPage />} />
+
+        {/* Administration */}
+        <Route path="/work/admin/roles" element={<RoleListPage />} />
+        <Route path="/work/admin/permissions" element={<PermissionMatrixPage />} />
+        <Route path="/work/admin/settings" element={<AdminSettingsPage />} />
+      </Route>
+
+      {/* Redirects */}
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>

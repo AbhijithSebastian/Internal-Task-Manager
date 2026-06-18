@@ -140,7 +140,7 @@ def seed(db: Session):
     additional_users = [
         ("Cincy", "employee"),
         ("Tojin", "employee"),
-        ("Geo", "employee"),
+        ("Geo", "team-lead"),
         ("Divya", "employee"),
         ("Abhijith", "super-admin"),
         ("Rojan", "employee"),

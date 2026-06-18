@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/store/auth";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -16,70 +18,60 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await login(email, password);
-      navigate("/dashboard");
+      navigate("/dashboard", { replace: true });
     } catch (err: any) {
-      setError(err?.response?.data?.detail || "Login failed");
+      setError(err?.response?.data?.detail || "Invalid email or password");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/30 px-4">
-      <div className="w-full max-w-sm space-y-6 rounded-lg border bg-card p-8 shadow-sm">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold">Task Manager</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Sign in to your account</p>
-        </div>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {error && (
-            <div className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-              {error}
-            </div>
-          )}
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium">
-              Email
-            </label>
-            <input
-              id="email"
+    <div className="flex min-h-screen items-center justify-center bg-app px-4">
+      <div className="w-full max-w-sm">
+        <div className="bg-surface border border-default shadow-card rounded-xl p-8 space-y-6">
+          <div className="text-center space-y-1">
+            <h1 className="text-xxl font-bold text-primary">Welcome Back</h1>
+            <p className="text-sm text-secondary">Sign in to your account to continue.</p>
+          </div>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {error && (
+              <div className="rounded-md bg-semantic-danger-soft px-3 py-2 text-sm text-semantic-danger">
+                {error}
+              </div>
+            )}
+            <Input
+              label="Email"
               type="email"
               required
-              className="mt-1 block w-full rounded-md border px-3 py-2 text-sm shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
             />
-          </div>
-          <div>
-            <div className="flex items-center justify-between">
-              <label htmlFor="password" className="block text-sm font-medium">Password</label>
-              <Link to="/forgot-password" className="text-xs text-muted-foreground hover:text-primary hover:underline">Forgot?</Link>
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label htmlFor="password" className="block text-sm font-medium text-primary">Password</label>
+                <Link to="/forgot-password" className="text-xs text-link hover:underline">Forgot?</Link>
+              </div>
+              <input
+                id="password"
+                type="password"
+                required
+                className="w-full h-9 px-3 rounded-md bg-surface border border-default text-sm text-primary placeholder:text-tertiary hover:border-hover focus:outline-none focus:ring-2 focus:ring-primary-ring focus:border-primary transition-colors duration-fast"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+              />
             </div>
-            <input
-              id="password"
-              type="password"
-              required
-              className="mt-1 block w-full rounded-md border px-3 py-2 text-sm shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-          >
-            {loading ? "Signing in..." : "Sign in"}
-          </button>
-        </form>
-        <p className="text-center text-sm text-muted-foreground">
-          Don&apos;t have an account?{" "}
-          <Link to="/register" className="font-medium text-primary hover:underline">
-            Register
-          </Link>
-        </p>
+            <Button type="submit" loading={loading} className="w-full">
+              Sign In
+            </Button>
+          </form>
+          <p className="text-center text-sm text-secondary">
+            Don&apos;t have an account?{" "}
+            <Link to="/register" className="font-medium text-link hover:underline">Register</Link>
+          </p>
+        </div>
       </div>
     </div>
   );

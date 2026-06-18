@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { authService } from "@/services/auth";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 
 export default function ResetPasswordPage() {
   const [searchParams] = useSearchParams();
@@ -26,7 +28,7 @@ export default function ResetPasswordPage() {
     setLoading(true);
     try {
       const res = await authService.resetPassword(email, token, password, confirmPassword);
-      setMessage(res.message);
+      setMessage(res.message || "Password reset successful.");
       setTimeout(() => navigate("/login"), 2000);
     } catch (err: any) {
       setError(err?.response?.data?.detail || "Reset failed");
@@ -36,56 +38,28 @@ export default function ResetPasswordPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/30 px-4">
-      <div className="w-full max-w-sm space-y-6 rounded-lg border bg-card p-8 shadow-sm">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold">Set New Password</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Enter your new password</p>
+    <div className="flex min-h-screen items-center justify-center bg-app px-4">
+      <div className="w-full max-w-sm">
+        <div className="bg-surface border border-default shadow-card rounded-xl p-8 space-y-6">
+          <div className="text-center space-y-1">
+            <h1 className="text-xxl font-bold text-primary">Set New Password</h1>
+            <p className="text-sm text-secondary">Enter your new password below.</p>
+          </div>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {error && (
+              <div className="rounded-md bg-semantic-danger-soft px-3 py-2 text-sm text-semantic-danger">{error}</div>
+            )}
+            {message && (
+              <div className="rounded-md bg-semantic-success-soft px-3 py-2 text-sm text-semantic-success">{message}</div>
+            )}
+            <Input label="New Password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
+            <Input label="Confirm Password" type="password" required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="••••••••" />
+            <Button type="submit" loading={loading} className="w-full">Reset Password</Button>
+          </form>
+          <p className="text-center text-sm text-secondary">
+            <Link to="/login" className="font-medium text-link hover:underline">Back to login</Link>
+          </p>
         </div>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {error && (
-            <div className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</div>
-          )}
-          {message && (
-            <div className="rounded-md bg-green-50 px-3 py-2 text-sm text-green-700">{message}</div>
-          )}
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium">New Password</label>
-            <input
-              id="password"
-              type="password"
-              required
-              minLength={8}
-              className="mt-1 block w-full rounded-md border px-3 py-2 text-sm shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-            />
-          </div>
-          <div>
-            <label htmlFor="confirmPassword" className="block text-sm font-medium">Confirm Password</label>
-            <input
-              id="confirmPassword"
-              type="password"
-              required
-              minLength={8}
-              className="mt-1 block w-full rounded-md border px-3 py-2 text-sm shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="••••••••"
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-          >
-            {loading ? "Resetting..." : "Reset Password"}
-          </button>
-        </form>
-        <p className="text-center text-sm text-muted-foreground">
-          <Link to="/login" className="font-medium text-primary hover:underline">Back to login</Link>
-        </p>
       </div>
     </div>
   );

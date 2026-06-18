@@ -11,7 +11,7 @@ from main import app
 settings.rate_limit_per_minute = 0
 
 engine = create_engine(
-    "postgresql+psycopg://taskmanager:taskmanager@postgres:5432/taskmanager",
+    settings.database_url,
     pool_pre_ping=True,
 )
 
@@ -43,34 +43,68 @@ def db():
         db.close()
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="session", autouse=True)
 def _clean_test_data():
-    from sqlalchemy import text
     from app.core.database import SessionLocal
+    from app.users.models import User
+    from app.roles.models import Role
+    from app.core.security import get_password_hash
+
     db = SessionLocal()
-    db.execute(text("DELETE FROM user_roles"))
-    db.execute(text("DELETE FROM users WHERE email IN ('abhijith@tool.com', 'test_employee@example.com')"))
-    db.commit()
-    db.close()
+    try:
+        # Clean up existing test users and their relationships via raw SQL cascade
+        from sqlalchemy import text
+        db.execute(text("DELETE FROM user_roles WHERE user_id IN (SELECT id FROM users WHERE email IN ('abhijith@tool.com', 'test_employee@example.com'))"))
+        db.execute(text("DELETE FROM users WHERE email IN ('abhijith@tool.com', 'test_employee@example.com')"))
+        db.commit()
+
+        # Seed admin user for tests (using newpassword123 as expected by auth tests)
+        admin = User(
+            name="Super Admin",
+            email="abhijith@tool.com",
+            password=get_password_hash("newpassword123"),
+            is_active=True,
+        )
+        db.add(admin)
+        db.flush()
+        
+        admin_role = db.query(Role).filter(Role.name == "super-admin").first()
+        if admin_role:
+            admin.roles.append(admin_role)
+
+        # Seed employee user for tests
+        employee = User(
+            name="Test Employee",
+            email="test_employee@example.com",
+            password=get_password_hash("Test123!"),
+            is_active=True,
+            job_title="Tester",
+        )
+        db.add(employee)
+        db.flush()
+
+        employee_role = db.query(Role).filter(Role.name == "employee").first()
+        if employee_role:
+            employee.roles.append(employee_role)
+
+        db.commit()
+    finally:
+        db.close()
 
 
 @pytest.fixture
 def admin_token(client, _clean_test_data):
     resp = client.post(
         "/api/v1/auth/login",
-        json={"email": "abhijith@tool.com", "password": "password"},
+        json={"email": "abhijith@tool.com", "password": "newpassword123"},
     )
+    # If the reset password test modified it, try falling back to the reset password
     if resp.status_code != 200:
         resp = client.post(
-            "/api/v1/auth/register",
-            json={
-                "name": "Super Admin",
-                "email": "abhijith@tool.com",
-                "password": "password",
-                "password_confirmation": "password",
-            },
+            "/api/v1/auth/login",
+            json={"email": "abhijith@tool.com", "password": "resetpass123!"},
         )
-    assert resp.status_code == 200, f"Admin setup failed: {resp.text}"
+    assert resp.status_code == 200, f"Admin login failed: {resp.text}"
     return resp.json()["access_token"]
 
 
@@ -85,19 +119,7 @@ def employee_token(client, _clean_test_data):
         "/api/v1/auth/login",
         json={"email": "test_employee@example.com", "password": "Test123!"},
     )
-    if resp.status_code == 200:
-        return resp.json()["access_token"]
-    resp = client.post(
-        "/api/v1/auth/register",
-        json={
-            "name": "Test Employee",
-            "email": "test_employee@example.com",
-            "password": "Test123!",
-            "password_confirmation": "Test123!",
-            "job_title": "Tester",
-        },
-    )
-    assert resp.status_code == 200, f"Registration failed: {resp.text}"
+    assert resp.status_code == 200, f"Employee login failed: {resp.text}"
     return resp.json()["access_token"]
 
 

@@ -1,118 +1,162 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { projectsService } from "@/features/projects/services/projects";
-import { PageHeader } from "@/components/shared/PageHeader";
-import { PageLoading } from "@/components/shared/LoadingSpinner";
+import { api } from "@/services/api";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { Select } from "@/components/ui/Select";
+import { Card } from "@/components/ui/Card";
+import { SkeletonForm } from "@/components/ui/Skeleton";
+import { ArrowLeft } from "lucide-react";
 
 export default function ProjectFormPage() {
-  const { id } = useParams();
-  const isEdit = Boolean(id);
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-
+  const isEdit = !!id;
   const [form, setForm] = useState({
     name: "", description: "", status: "active", priority: "medium",
-    deadline: "", start_date: "", budget: "" as any,
+    start_date: "", deadline: "", budget: "", figma_url: "", github_url: "", docs_url: "", pm_id: "",
   });
-  const [error, setError] = useState("");
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const { data: project, isLoading } = useQuery({
     queryKey: ["project", id],
-    queryFn: () => projectsService.get(Number(id)),
+    queryFn: () => api.get(`/projects/${id}`).then((r) => r.data?.data || r.data),
     enabled: isEdit,
   });
 
+  const { data: usersData } = useQuery({
+    queryKey: ["users-minimal"],
+    queryFn: () => api.get("/users", { params: { per_page: 200 } }).then((r) => r.data?.items || r.data?.data || []),
+  });
+
   useEffect(() => {
-    if (project) {
-      setForm({
-        name: project.name,
-        description: project.description || "",
-        status: project.status,
-        priority: project.priority,
-        deadline: project.deadline?.split("T")[0] || "",
-        start_date: project.start_date?.split("T")[0] || "",
-        budget: project.budget?.toString() || "",
-      });
-    }
+    if (!project) return;
+    const p = project as Record<string, unknown>;
+    setForm({
+      name: (p.name as string) || "",
+      description: (p.description as string) || "",
+      status: (p.status as string) || "active",
+      priority: (p.priority as string) || "medium",
+      start_date: ((p.start_date as string) || "").split("T")[0] || "",
+      deadline: ((p.deadline as string) || "").split("T")[0] || "",
+      budget: p.budget ? String(p.budget) : "",
+      figma_url: (p.figma_url as string) || "",
+      github_url: (p.github_url as string) || "",
+      docs_url: (p.docs_url as string) || "",
+      pm_id: p.pm_id ? String(p.pm_id) : "",
+    });
   }, [project]);
 
-  const mutation = useMutation({
-    mutationFn: (data: any) => isEdit ? projectsService.update(Number(id), data) : projectsService.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["projects"] });
-      navigate(isEdit ? `/projects/${id}` : "/projects");
+  const createMutation = useMutation({
+    mutationFn: (data: Record<string, unknown>) => api.post("/projects", data),
+    onSuccess: (res) => { queryClient.invalidateQueries({ queryKey: ["projects"] }); navigate(`/work/projects/${res.data?.data?.id || res.data?.id}`); },
+    onError: (err: { response?: { data?: { errors?: Record<string, string[]> } } }) => {
+      const serverErrors = err.response?.data?.errors;
+      if (serverErrors) {
+        const flat: Record<string, string> = {};
+        for (const [k, v] of Object.entries(serverErrors)) flat[k] = (v as string[])[0];
+        setErrors(flat);
+      }
     },
-    onError: (err: any) => setError(err?.response?.data?.detail || "Failed to save"),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: (data: Record<string, unknown>) => api.put(`/projects/${id}`, data),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["projects"] }); queryClient.invalidateQueries({ queryKey: ["project", id] }); navigate(`/work/projects/${id}`); },
+    onError: (err: { response?: { data?: { errors?: Record<string, string[]> } } }) => {
+      const serverErrors = err.response?.data?.errors;
+      if (serverErrors) {
+        const flat: Record<string, string> = {};
+        for (const [k, v] of Object.entries(serverErrors)) flat[k] = (v as string[])[0];
+        setErrors(flat);
+      }
+    },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
-    const payload: Record<string, unknown> = { ...form };
-    if (!payload.deadline) delete payload.deadline;
+    setErrors({});
+    const payload: Record<string, unknown> = {
+      ...form,
+      budget: form.budget ? Number(form.budget) : undefined,
+      pm_id: form.pm_id ? Number(form.pm_id) : undefined,
+    };
     if (!payload.start_date) delete payload.start_date;
-    if (!payload.budget) delete payload.budget;
-    else payload.budget = Number(payload.budget);
-    mutation.mutate(payload);
+    if (!payload.deadline) delete payload.deadline;
+    if (isEdit) updateMutation.mutate(payload);
+    else createMutation.mutate(payload);
   };
 
-  if (isEdit && isLoading) return <PageLoading />;
+  const set = (key: string, value: string) => setForm((f) => ({ ...f, [key]: value }));
+
+  if (isEdit && isLoading) return <div className="page-container py-8"><SkeletonForm fields={6} /></div>;
+
+  const users = Array.isArray(usersData) ? usersData as Array<{ id: number; name: string }> : [];
 
   return (
-    <div>
-      <PageHeader title={isEdit ? "Edit Project" : "Create Project"} />
-      <div className="max-w-2xl rounded-lg border bg-card p-6">
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {error && <div className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</div>}
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="sm:col-span-2">
-              <label className="block text-sm font-medium">Name</label>
-              <input type="text" required className="mt-1 block w-full rounded-md border px-3 py-2 text-sm" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-            </div>
-            <div className="sm:col-span-2">
-              <label className="block text-sm font-medium">Description</label>
-              <textarea rows={4} className="mt-1 block w-full rounded-md border px-3 py-2 text-sm" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
-            </div>
-            <div>
-              <label className="block text-sm font-medium">Status</label>
-              <select className="mt-1 block w-full rounded-md border px-3 py-2 text-sm" value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
-                <option value="active">Active</option>
-                <option value="completed">Completed</option>
-                <option value="on_hold">On Hold</option>
-                <option value="archived">Archived</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium">Priority</label>
-              <select className="mt-1 block w-full rounded-md border px-3 py-2 text-sm" value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })}>
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-                <option value="critical">Critical</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium">Start Date</label>
-              <input type="date" className="mt-1 block w-full rounded-md border px-3 py-2 text-sm" value={form.start_date} onChange={(e) => setForm({ ...form, start_date: e.target.value })} />
-            </div>
-            <div>
-              <label className="block text-sm font-medium">Deadline</label>
-              <input type="date" className="mt-1 block w-full rounded-md border px-3 py-2 text-sm" value={form.deadline} onChange={(e) => setForm({ ...form, deadline: e.target.value })} />
-            </div>
-            <div>
-              <label className="block text-sm font-medium">Budget</label>
-              <input type="number" step="0.01" className="mt-1 block w-full rounded-md border px-3 py-2 text-sm" value={form.budget} onChange={(e) => setForm({ ...form, budget: e.target.value })} />
-            </div>
-          </div>
-          <div className="flex gap-3">
-            <button type="submit" disabled={mutation.isPending} className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50">
-              {mutation.isPending ? "Saving..." : isEdit ? "Update Project" : "Create Project"}
-            </button>
-            <button type="button" onClick={() => navigate(-1)} className="rounded-md border px-4 py-2 text-sm font-medium hover:bg-muted">Cancel</button>
-          </div>
-        </form>
+    <div className="page-container max-w-2xl py-6">
+      <div className="flex items-center gap-3 mb-5">
+        <button onClick={() => navigate(isEdit ? `/work/projects/${id}` : "/work/projects")} className="p-1 rounded-md text-tertiary hover:text-primary hover:bg-hover transition-colors">
+          <ArrowLeft className="h-4 w-4" />
+        </button>
+        <h1 className="text-xl font-bold text-primary">{isEdit ? "Edit Project" : "New Project"}</h1>
       </div>
+
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <Card>
+          <div className="space-y-4">
+            <Input label="Project name" value={form.name} onChange={(e) => set("name", e.target.value)} error={errors.name} required />
+            <div>
+              <label className="block text-sm font-medium text-primary mb-1">Description</label>
+              <textarea
+                value={form.description}
+                onChange={(e) => set("description", e.target.value)}
+                rows={3}
+                className="w-full rounded-md bg-surface border border-default px-3 py-2 text-sm text-primary placeholder:text-tertiary hover:border-hover focus:outline-none focus:ring-2 focus:ring-primary-ring focus:border-primary transition-colors duration-fast resize-y"
+                placeholder="Describe the project..."
+              />
+              {errors.description && <p className="text-xs text-danger mt-1">{errors.description}</p>}
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <Select label="Status" value={form.status} onChange={(e) => set("status", e.target.value)} options={[
+                { value: "active", label: "Active" }, { value: "on_hold", label: "On Hold" },
+                { value: "completed", label: "Completed" }, { value: "archived", label: "Archived" },
+              ]} />
+              <Select label="Priority" value={form.priority} onChange={(e) => set("priority", e.target.value)} options={[
+                { value: "low", label: "Low" }, { value: "medium", label: "Medium" },
+                { value: "high", label: "High" }, { value: "urgent", label: "Urgent" },
+              ]} />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <Input label="Start date" type="date" value={form.start_date} onChange={(e) => set("start_date", e.target.value)} />
+              <Input label="Deadline" type="date" value={form.deadline} onChange={(e) => set("deadline", e.target.value)} />
+            </div>
+            <Input label="Budget" type="number" value={form.budget} onChange={(e) => set("budget", e.target.value)} placeholder="Enter amount" />
+            <Select label="Project Manager" value={form.pm_id} onChange={(e) => set("pm_id", e.target.value)} options={[
+              { value: "", label: "None" },
+              ...users.map((u: { id: number; name: string }) => ({ value: String(u.id), label: u.name })),
+            ]} />
+          </div>
+        </Card>
+
+        <Card>
+          <h3 className="text-sm font-semibold text-primary mb-4">Links</h3>
+          <div className="space-y-4">
+            <Input label="Figma URL" value={form.figma_url} onChange={(e) => set("figma_url", e.target.value)} placeholder="https://figma.com/file/..." />
+            <Input label="GitHub URL" value={form.github_url} onChange={(e) => set("github_url", e.target.value)} placeholder="https://github.com/..." />
+            <Input label="Docs URL" value={form.docs_url} onChange={(e) => set("docs_url", e.target.value)} placeholder="https://..." />
+          </div>
+        </Card>
+
+        <div className="flex items-center gap-3">
+          <Button type="submit" loading={createMutation.isPending || updateMutation.isPending}>
+            {isEdit ? "Save Changes" : "Create Project"}
+          </Button>
+          <Button variant="secondary" onClick={() => navigate(isEdit ? `/work/projects/${id}` : "/work/projects")}>Cancel</Button>
+        </div>
+      </form>
     </div>
   );
 }

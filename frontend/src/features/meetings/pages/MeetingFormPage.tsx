@@ -1,94 +1,123 @@
-import { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { meetingsService } from "@/features/meetings/services/meetings";
-import { PageHeader } from "@/components/shared/PageHeader";
-import { PageLoading } from "@/components/shared/LoadingSpinner";
+import { api } from "@/services/api";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { Select } from "@/components/ui/Select";
+import { Card } from "@/components/ui/Card";
+import { ArrowLeft } from "lucide-react";
 
 export default function MeetingFormPage() {
-  const { id } = useParams();
-  const isEdit = Boolean(id);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-
   const [form, setForm] = useState({
-    title: "", summary: "", meeting_date: "", location: "", notes: "",
+    title: "", meeting_date: "", location: "virtual",
+    summary: "", decisions_taken: "", blockers: "", action_items: "", notes: "",
+    project_id: "", attendees: "",
   });
-  const [error, setError] = useState("");
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const { data: meeting, isLoading } = useQuery({
-    queryKey: ["meeting", id],
-    queryFn: () => meetingsService.get(Number(id)),
-    enabled: isEdit,
+  const { data: projectsData } = useQuery({
+    queryKey: ["projects-minimal"],
+    queryFn: () => api.get("/projects", { params: { per_page: 200 } }).then((r) => r.data?.items || r.data?.data || []),
   });
 
-  useEffect(() => {
-    if (meeting) {
-      setForm({
-        title: meeting.title,
-        summary: meeting.summary || "",
-        meeting_date: meeting.meeting_date?.split(".")[0] || "",
-        location: meeting.location || "",
-        notes: meeting.notes || "",
-      });
-    }
-  }, [meeting]);
+  const projects = Array.isArray(projectsData) ? projectsData as Array<{ id: number; name: string }> : [];
 
   const mutation = useMutation({
-    mutationFn: (data: any) => isEdit ? meetingsService.update(Number(id), data) : meetingsService.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["meetings"] });
-      navigate("/meetings");
+    mutationFn: (data: Record<string, unknown>) => api.post("/meetings", data),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["meetings"] }); navigate("/work/meetings"); },
+    onError: (err: { response?: { data?: { errors?: Record<string, string[]> } } }) => {
+      const es = err.response?.data?.errors;
+      if (es) {
+        const flat: Record<string, string> = {};
+        for (const [k, v] of Object.entries(es)) flat[k] = (v as string[])[0];
+        setErrors(flat);
+      }
     },
-    onError: (err: any) => setError(err?.response?.data?.detail || "Failed to save"),
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
-    const payload: Record<string, unknown> = { ...form };
-    if (!payload.meeting_date) delete payload.meeting_date;
+    setErrors({});
+    const payload: Record<string, unknown> = {
+      ...form,
+      project_id: form.project_id ? Number(form.project_id) : undefined,
+      attendees: form.attendees ? form.attendees.split(",").map((s) => s.trim()) : [],
+    };
+    if (!payload.project_id) delete payload.project_id;
     mutation.mutate(payload);
   };
 
-  if (isEdit && isLoading) return <PageLoading />;
+  const update = (key: string, value: string) => setForm((f) => ({ ...f, [key]: value }));
 
   return (
-    <div>
-      <PageHeader title={isEdit ? "Edit Meeting" : "Create Meeting"} />
-      <div className="max-w-2xl rounded-lg border bg-card p-6">
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {error && <div className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</div>}
-          <div>
-            <label className="block text-sm font-medium">Title</label>
-            <input type="text" required className="mt-1 block w-full rounded-md border px-3 py-2 text-sm" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
-          </div>
-          <div>
-            <label className="block text-sm font-medium">Description</label>
-            <textarea rows={3} className="mt-1 block w-full rounded-md border px-3 py-2 text-sm" value={form.summary} onChange={(e) => setForm({ ...form, summary: e.target.value })} />
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label className="block text-sm font-medium">Meeting Date</label>
-              <input type="datetime-local" className="mt-1 block w-full rounded-md border px-3 py-2 text-sm" value={form.meeting_date} onChange={(e) => setForm({ ...form, meeting_date: e.target.value })} />
-            </div>
-            <div>
-              <label className="block text-sm font-medium">Location</label>
-              <input type="text" className="mt-1 block w-full rounded-md border px-3 py-2 text-sm" value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} placeholder="Room, link, etc." />
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium">Notes</label>
-            <textarea rows={4} className="mt-1 block w-full rounded-md border px-3 py-2 text-sm" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
-          </div>
-          <div className="flex gap-3">
-            <button type="submit" disabled={mutation.isPending} className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50">
-              {mutation.isPending ? "Saving..." : isEdit ? "Update Meeting" : "Create Meeting"}
-            </button>
-            <button type="button" onClick={() => navigate(-1)} className="rounded-md border px-4 py-2 text-sm font-medium hover:bg-muted">Cancel</button>
-          </div>
-        </form>
+    <div className="page-container max-w-2xl py-6">
+      <div className="flex items-center gap-3 mb-5">
+        <button onClick={() => navigate("/work/meetings")} className="p-1 rounded-md text-tertiary hover:text-primary hover:bg-hover transition-colors">
+          <ArrowLeft className="h-4 w-4" />
+        </button>
+        <h1 className="text-xl font-bold text-primary">Schedule Meeting</h1>
       </div>
+
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <Card>
+          <div className="space-y-4">
+            <Input label="Title" value={form.title} onChange={(e) => update("title", e.target.value)} error={errors.title} required placeholder="Weekly sync..." />
+            <Input label="Meeting date & time" type="datetime-local" value={form.meeting_date} onChange={(e) => update("meeting_date", e.target.value)} error={errors.meeting_date} required />
+            <div className="grid grid-cols-2 gap-4">
+              <Select label="Location" value={form.location} onChange={(e) => update("location", e.target.value)} options={[
+                { value: "virtual", label: "Virtual" },
+                { value: "office", label: "Office" },
+                { value: "client-site", label: "Client Site" },
+              ]} />
+              <Select label="Project" value={form.project_id} onChange={(e) => update("project_id", e.target.value)} options={[
+                { value: "", label: "None" },
+                ...projects.map((p: { id: number; name: string }) => ({ value: String(p.id), label: p.name })),
+              ]} />
+            </div>
+            <Input label="Attendees (comma-separated emails)" value={form.attendees} onChange={(e) => update("attendees", e.target.value)} placeholder="user@example.com, user2@..." />
+          </div>
+        </Card>
+
+        <Card>
+          <h3 className="text-sm font-semibold text-primary mb-4">Meeting Notes</h3>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-primary mb-1">Summary</label>
+              <textarea value={form.summary} onChange={(e) => update("summary", e.target.value)} rows={3}
+                className="w-full rounded-md bg-surface border border-default px-3 py-2 text-sm text-primary placeholder:text-tertiary hover:border-hover focus:outline-none focus:ring-2 focus:ring-primary-ring focus:border-primary transition-colors duration-fast resize-y"
+                placeholder="Meeting summary..." />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-primary mb-1">Decisions Taken</label>
+              <textarea value={form.decisions_taken} onChange={(e) => update("decisions_taken", e.target.value)} rows={2}
+                className="w-full rounded-md bg-surface border border-default px-3 py-2 text-sm text-primary placeholder:text-tertiary hover:border-hover focus:outline-none focus:ring-2 focus:ring-primary-ring focus:border-primary transition-colors duration-fast resize-y" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-primary mb-1">Blockers</label>
+              <textarea value={form.blockers} onChange={(e) => update("blockers", e.target.value)} rows={2}
+                className="w-full rounded-md bg-surface border border-default px-3 py-2 text-sm text-primary placeholder:text-tertiary hover:border-hover focus:outline-none focus:ring-2 focus:ring-primary-ring focus:border-primary transition-colors duration-fast resize-y" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-primary mb-1">Action Items</label>
+              <textarea value={form.action_items} onChange={(e) => update("action_items", e.target.value)} rows={2}
+                className="w-full rounded-md bg-surface border border-default px-3 py-2 text-sm text-primary placeholder:text-tertiary hover:border-hover focus:outline-none focus:ring-2 focus:ring-primary-ring focus:border-primary transition-colors duration-fast resize-y" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-primary mb-1">Additional Notes</label>
+              <textarea value={form.notes} onChange={(e) => update("notes", e.target.value)} rows={2}
+                className="w-full rounded-md bg-surface border border-default px-3 py-2 text-sm text-primary placeholder:text-tertiary hover:border-hover focus:outline-none focus:ring-2 focus:ring-primary-ring focus:border-primary transition-colors duration-fast resize-y" />
+            </div>
+          </div>
+        </Card>
+
+        <div className="flex items-center gap-3">
+          <Button type="submit" loading={mutation.isPending}>Schedule Meeting</Button>
+          <Button variant="secondary" onClick={() => navigate("/work/meetings")}>Cancel</Button>
+        </div>
+      </form>
     </div>
   );
 }

@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { authService } from "@/services/auth";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 
 export default function RegisterPage() {
   const navigate = useNavigate();
@@ -20,8 +22,12 @@ export default function RegisterPage() {
     }
     setLoading(true);
     try {
-      await authService.register({ name, email, password, password_confirmation: passwordConfirm });
-      navigate("/login");
+      const res = await authService.register({ name, email, password, password_confirmation: passwordConfirm });
+      if (res.access_token) {
+        localStorage.setItem("access_token", res.access_token);
+        localStorage.setItem("refresh_token", res.refresh_token);
+      }
+      navigate("/dashboard", { replace: true });
     } catch (err: any) {
       setError(err?.response?.data?.detail || "Registration failed");
     } finally {
@@ -30,42 +36,30 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/30 px-4">
-      <div className="w-full max-w-sm space-y-6 rounded-lg border bg-card p-8 shadow-sm">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold">Task Manager</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Create a new account</p>
+    <div className="flex min-h-screen items-center justify-center bg-app px-4">
+      <div className="w-full max-w-sm">
+        <div className="bg-surface border border-default shadow-card rounded-xl p-8 space-y-6">
+          <div className="text-center space-y-1">
+            <h1 className="text-xxl font-bold text-primary">Create Account</h1>
+            <p className="text-sm text-secondary">Register to get started.</p>
+          </div>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {error && (
+              <div className="rounded-md bg-semantic-danger-soft px-3 py-2 text-sm text-semantic-danger">
+                {error}
+              </div>
+            )}
+            <Input label="Name" type="text" required value={name} onChange={(e) => setName(e.target.value)} placeholder="Your full name" />
+            <Input label="Email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
+            <Input label="Password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" helperText="Minimum 8 characters" />
+            <Input label="Confirm Password" type="password" required value={passwordConfirm} onChange={(e) => setPasswordConfirm(e.target.value)} placeholder="••••••••" />
+            <Button type="submit" loading={loading} className="w-full">Register</Button>
+          </form>
+          <p className="text-center text-sm text-secondary">
+            Already have an account?{" "}
+            <Link to="/login" className="font-medium text-link hover:underline">Sign in</Link>
+          </p>
         </div>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {error && (
-            <div className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-              {error}
-            </div>
-          )}
-          <div>
-            <label htmlFor="name" className="block text-sm font-medium">Name</label>
-            <input id="name" type="text" required className="mt-1 block w-full rounded-md border px-3 py-2 text-sm shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" value={name} onChange={(e) => setName(e.target.value)} />
-          </div>
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium">Email</label>
-            <input id="email" type="email" required className="mt-1 block w-full rounded-md border px-3 py-2 text-sm shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" value={email} onChange={(e) => setEmail(e.target.value)} />
-          </div>
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium">Password</label>
-            <input id="password" type="password" required className="mt-1 block w-full rounded-md border px-3 py-2 text-sm shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" value={password} onChange={(e) => setPassword(e.target.value)} />
-          </div>
-          <div>
-            <label htmlFor="passwordConfirm" className="block text-sm font-medium">Confirm Password</label>
-            <input id="passwordConfirm" type="password" required className="mt-1 block w-full rounded-md border px-3 py-2 text-sm shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" value={passwordConfirm} onChange={(e) => setPasswordConfirm(e.target.value)} />
-          </div>
-          <button type="submit" disabled={loading} className="w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50">
-            {loading ? "Creating account..." : "Register"}
-          </button>
-        </form>
-        <p className="text-center text-sm text-muted-foreground">
-          Already have an account?{" "}
-          <Link to="/login" className="font-medium text-primary hover:underline">Sign in</Link>
-        </p>
       </div>
     </div>
   );

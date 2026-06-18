@@ -11,7 +11,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.core.cache import close_redis
 from app.core.config import settings, ensure_validated
 from app.core.logging import setup_logging
-from app.core.middleware import RequestLogMiddleware, RateLimitMiddleware
+from app.core.middleware import RequestLogMiddleware, RateLimitMiddleware, SecurityHeadersMiddleware
 from app.core.exception_handlers import (
     global_exception_handler,
     http_exception_handler,
@@ -49,6 +49,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origin_list,
