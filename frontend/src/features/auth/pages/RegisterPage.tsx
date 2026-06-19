@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { authService } from "@/services/auth";
+import { useAuth } from "@/store/auth";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 
 export default function RegisterPage() {
+  const { register } = useAuth();
   const navigate = useNavigate();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -22,11 +23,7 @@ export default function RegisterPage() {
     }
     setLoading(true);
     try {
-      const res = await authService.register({ name, email, password, password_confirmation: passwordConfirm });
-      if (res.access_token) {
-        localStorage.setItem("access_token", res.access_token);
-        localStorage.setItem("refresh_token", res.refresh_token);
-      }
+      await register({ name, email, password, password_confirmation: passwordConfirm });
       navigate("/dashboard", { replace: true });
     } catch (err: any) {
       setError(err?.response?.data?.detail || "Registration failed");
@@ -40,7 +37,7 @@ export default function RegisterPage() {
       <div className="w-full max-w-sm">
         <div className="bg-surface border border-default shadow-card rounded-xl p-8 space-y-6">
           <div className="text-center space-y-1">
-            <h1 className="text-xxl font-bold text-primary">Create Account</h1>
+            <h1 className="text-2xl font-bold text-primary">Create Account</h1>
             <p className="text-sm text-secondary">Register to get started.</p>
           </div>
           <form onSubmit={handleSubmit} className="space-y-4">

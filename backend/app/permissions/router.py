@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import Optional
 from pydantic import BaseModel
@@ -43,7 +43,7 @@ def get_user_permissions(user_id: int, db: Session = Depends(get_db),
             "name": user.name,
             "email": user.email,
             "role": user.role.name if user.role else None,
-            "role_label": user.role.label() if user.role else None,
+            "role_label": UserRole(user.role.name).label() if user.role else None,
             "is_active": user.is_active,
             "is_super_admin": user.is_super_admin,
             "inherit_role_permissions": user.inherit_role_permissions,

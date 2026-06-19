@@ -154,7 +154,7 @@ def format_announcement(a: Announcement) -> dict:
         "priority": a.priority.value if a.priority else "medium",
         "priority_label": a.priority.label() if a.priority else "Medium",
         "status": a.status.value if a.status else "published",
-        "status_label": "Published" if (a.status and a.status.value == "published") else "Draft",
+        "status_label": a.status.label() if a.status else "Draft",
         "author": {"id": a.author.id, "name": a.author.name} if a.author else None,
         "published_at": a.published_at,
         "created_at": a.created_at,

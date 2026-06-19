@@ -15,7 +15,7 @@ class UserCreate(BaseModel):
     designation: Optional[str] = None
     employee_id: Optional[str] = None
     reporting_manager_id: Optional[int] = None
-    role: str
+    role: Optional[str] = None
 
 
 class UserUpdate(BaseModel):

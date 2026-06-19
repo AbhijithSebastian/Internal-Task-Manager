@@ -31,7 +31,7 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         <div className="bg-surface border border-default shadow-card rounded-xl p-8 space-y-6">
           <div className="text-center space-y-1">
-            <h1 className="text-xxl font-bold text-primary">Welcome Back</h1>
+            <h1 className="text-2xl font-bold text-primary">Welcome Back</h1>
             <p className="text-sm text-secondary">Sign in to your account to continue.</p>
           </div>
           <form onSubmit={handleSubmit} className="space-y-4">

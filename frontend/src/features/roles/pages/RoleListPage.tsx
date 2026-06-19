@@ -165,13 +165,13 @@ export default function RoleListPage() {
   const assignRoleMutation = useMutation({
     mutationFn: ({
       userId,
-      roleId,
+      roleName,
     }: {
       userId: number;
-      roleId: number;
+      roleName: string;
     }) =>
       api
-        .put(`/permissions/users/${userId}/role`, { role_id: roleId })
+        .put(`/permissions/users/${userId}/role`, { role: roleName })
         .then((r) => r.data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
@@ -214,11 +214,9 @@ export default function RoleListPage() {
     if (!selectedRole || assignUserIds.size === 0) return;
     Promise.all(
       Array.from(assignUserIds).map((userId) =>
-        api
-          .put(`/permissions/users/${userId}/role`, {
-            role_id: selectedRole.id,
-          })
-          .then((r) => r.data)
+        api.put(`/permissions/users/${userId}/role`, {
+          role: selectedRole.name,
+        })
       )
     ).then(() => {
       queryClient.invalidateQueries({ queryKey: ["users"] });

@@ -84,7 +84,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
         </nav>
         <div className="p-3 border-t border-subtle">
           <Link
-            to="/settings/profile"
+            to="/work/admin/settings"
             className={cn(
               "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-fast",
               isActive("/settings")

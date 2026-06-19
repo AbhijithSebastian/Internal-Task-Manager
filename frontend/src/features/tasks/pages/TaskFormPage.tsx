@@ -84,7 +84,7 @@ export default function TaskFormPage() {
       isEdit ? tasksService.update(Number(id), data) : tasksService.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
-      navigate(isEdit ? `/work/tasks/${id}` : "/work/tasks");
+      navigate("/work/tasks");
     },
     onError: (err: any) => setError(err?.response?.data?.detail || "Failed to save"),
   });

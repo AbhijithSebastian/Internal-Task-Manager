@@ -98,6 +98,10 @@ class ProjectMemberRole(str, Enum):
     DEVELOPER = "developer"
     MEMBER = "member"
 
+    def label(self) -> str:
+        labels = {"owner": "Owner", "manager": "Manager", "lead": "Lead", "developer": "Developer", "member": "Member"}
+        return labels[self.value]
+
 
 class AnnouncementPriority(str, Enum):
     LOW = "low"
@@ -105,10 +109,16 @@ class AnnouncementPriority(str, Enum):
     HIGH = "high"
     URGENT = "urgent"
 
+    def label(self) -> str:
+        return self.value.capitalize()
+
 
 class AnnouncementStatus(str, Enum):
     DRAFT = "draft"
     PUBLISHED = "published"
+
+    def label(self) -> str:
+        return self.value.capitalize()
 
 
 class MilestoneStatus(str, Enum):
