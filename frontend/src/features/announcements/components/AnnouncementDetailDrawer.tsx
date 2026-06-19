@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
+import { api } from "@/services/api";
 import { announcementsService } from "@/features/announcements/services/announcements";
 import { useAuth } from "@/store/auth";
 import { Drawer } from "@/components/ui/Drawer";
@@ -8,7 +9,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Avatar } from "@/components/ui/Avatar";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { formatDateTime, formatRelative } from "@/utils/formatters";
-import { Megaphone, Pin, Calendar, Edit3, Trash2 } from "lucide-react";
+import { Megaphone, Pin, PinOff, Calendar, Edit3, Trash2, Target } from "lucide-react";
 import type { Announcement } from "@/types";
 import { useState } from "react";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
@@ -40,6 +41,11 @@ export function AnnouncementDetailDrawer({ announcementId, onClose }: Announceme
   const changeStatusMutation = useMutation({
     mutationFn: ({ id, status }: { id: number; status: string }) =>
       announcementsService.changeStatus(id, status),
+    onSuccess: invalidate,
+  });
+
+  const togglePinMutation = useMutation({
+    mutationFn: () => api.patch(`/announcements/${a?.id}/pin`, { is_pinned: !(a as unknown as Record<string, unknown>).is_pinned }),
     onSuccess: invalidate,
   });
 
@@ -154,6 +160,13 @@ export function AnnouncementDetailDrawer({ announcementId, onClose }: Announceme
             </p>
           </div>
 
+          {(a.target_type || a.target_id) && (
+            <div className="flex items-center gap-2 text-sm text-secondary">
+              <Target className="h-3.5 w-3.5 text-tertiary" />
+              <span>Target: {a.target_type || "—"} {a.target_id ? `#${a.target_id}` : ""}</span>
+            </div>
+          )}
+
           {hasPermission("announcement-edit") && (
             <div className="flex items-center gap-2 pt-2">
               {showTransitionButton("published")}
@@ -173,6 +186,14 @@ export function AnnouncementDetailDrawer({ announcementId, onClose }: Announceme
                 }}
               >
                 <Edit3 className="h-3.5 w-3.5" /> Edit
+              </Button>
+              <Button
+                size="sm"
+                variant={Boolean((a as unknown as Record<string, unknown>).is_pinned) ? "primary" : "ghost"}
+                onClick={() => togglePinMutation.mutate()}
+                loading={togglePinMutation.isPending}
+              >
+                {(a as unknown as Record<string, unknown>).is_pinned ? <><PinOff className="h-3.5 w-3.5" /> Unpin</> : <><Pin className="h-3.5 w-3.5" /> Pin</>}
               </Button>
               {hasPermission("announcement-delete") && (
                 <Button

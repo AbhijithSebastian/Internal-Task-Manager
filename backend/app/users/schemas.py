@@ -11,6 +11,10 @@ class UserCreate(BaseModel):
     password_confirmation: str
     job_title: Optional[str] = None
     phone: Optional[str] = None
+    department: Optional[str] = None
+    designation: Optional[str] = None
+    employee_id: Optional[str] = None
+    reporting_manager_id: Optional[int] = None
     role: str
 
 
@@ -21,6 +25,10 @@ class UserUpdate(BaseModel):
     password_confirmation: Optional[str] = None
     job_title: Optional[str] = None
     phone: Optional[str] = None
+    department: Optional[str] = None
+    designation: Optional[str] = None
+    employee_id: Optional[str] = None
+    reporting_manager_id: Optional[int] = None
     role: Optional[str] = None
     is_active: Optional[bool] = None
 
@@ -51,6 +59,10 @@ class UserResponse(BaseModel):
     job_title: Optional[str] = None
     phone: Optional[str] = None
     avatar_url: Optional[str] = None
+    department: Optional[str] = None
+    designation: Optional[str] = None
+    employee_id: Optional[str] = None
+    reporting_manager_id: Optional[int] = None
     is_active: bool
     inherit_role_permissions: bool = False
     email_verified_at: Optional[datetime] = None
@@ -67,6 +79,9 @@ class UserResponse(BaseModel):
     @classmethod
     def from_orm_user(cls, user) -> "UserResponse":
         role_obj = user.role if hasattr(user, "role") and user.role else None
+        reporting_manager_name = None
+        if user.reporting_manager:
+            reporting_manager_name = user.reporting_manager.name
         return cls(
             id=user.id,
             name=user.name,
@@ -74,6 +89,10 @@ class UserResponse(BaseModel):
             job_title=getattr(user, "job_title", None),
             phone=getattr(user, "phone", None),
             avatar_url=getattr(user, "avatar_url", None),
+            department=getattr(user, "department", None),
+            designation=getattr(user, "designation", None),
+            employee_id=getattr(user, "employee_id", None),
+            reporting_manager_id=getattr(user, "reporting_manager_id", None),
             is_active=getattr(user, "is_active", True),
             inherit_role_permissions=getattr(user, "inherit_role_permissions", False),
             email_verified_at=getattr(user, "email_verified_at", None),

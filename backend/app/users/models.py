@@ -41,6 +41,10 @@ class User(Base):
     job_title = Column(String(255), nullable=True)
     phone = Column(String(20), nullable=True)
     avatar_url = Column(String(500), nullable=True)
+    department = Column(String(255), nullable=True, index=True)
+    designation = Column(String(255), nullable=True)
+    employee_id = Column(String(50), nullable=True, index=True)
+    reporting_manager_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     is_active = Column(Boolean, default=True, nullable=False)
     inherit_role_permissions = Column(Boolean, default=True, nullable=False)
     email_verified_at = Column(DateTime(timezone=True), nullable=True)
@@ -52,6 +56,9 @@ class User(Base):
 
     roles = relationship("Role", secondary=user_roles, back_populates="users", lazy="selectin")
     direct_permissions = relationship("Permission", secondary=user_permissions, back_populates="users", lazy="selectin")
+
+    reporting_manager = relationship("User", remote_side="User.id", back_populates="direct_reports", foreign_keys=[reporting_manager_id])
+    direct_reports = relationship("User", back_populates="reporting_manager", foreign_keys=[reporting_manager_id])
 
     projects = relationship("ProjectMember", back_populates="user", lazy="selectin")
     assigned_tasks = relationship("Task", secondary="task_assignees", back_populates="assignees", lazy="selectin")

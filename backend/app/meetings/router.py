@@ -18,23 +18,31 @@ class MeetingCreate(BaseModel):
     project_id: int
     title: str
     meeting_date: str
+    location: Optional[str] = None
     attendees: Optional[list[str]] = None
     summary: str
     decisions_taken: Optional[str] = None
     blockers: Optional[str] = None
     action_items: Optional[str] = None
     notes: Optional[str] = None
+    recording_link: Optional[str] = None
+    next_meeting_date: Optional[str] = None
+    related_task_id: Optional[int] = None
 
 
 class MeetingUpdate(BaseModel):
     title: Optional[str] = None
     meeting_date: Optional[str] = None
+    location: Optional[str] = None
     attendees: Optional[list[str]] = None
     summary: Optional[str] = None
     decisions_taken: Optional[str] = None
     blockers: Optional[str] = None
     action_items: Optional[str] = None
     notes: Optional[str] = None
+    recording_link: Optional[str] = None
+    next_meeting_date: Optional[str] = None
+    related_task_id: Optional[int] = None
 
 
 @router.get("")
@@ -86,12 +94,16 @@ def create_meeting(
         author_id=current_user.id,
         title=data.title,
         meeting_date=datetime.strptime(data.meeting_date, "%Y-%m-%d").date(),
+        location=data.location,
         attendees=data.attendees,
         summary=data.summary,
         decisions_taken=data.decisions_taken,
         blockers=data.blockers,
         action_items=data.action_items,
         notes=data.notes,
+        recording_link=data.recording_link,
+        next_meeting_date=datetime.fromisoformat(data.next_meeting_date) if data.next_meeting_date else None,
+        related_task_id=data.related_task_id,
     )
     db.add(meeting)
     db.commit()
@@ -118,6 +130,8 @@ def update_meeting(
         meeting.title = data.title
     if data.meeting_date is not None:
         meeting.meeting_date = datetime.strptime(data.meeting_date, "%Y-%m-%d").date()
+    if data.location is not None:
+        meeting.location = data.location
     if data.attendees is not None:
         meeting.attendees = data.attendees
     if data.summary is not None:
@@ -130,6 +144,12 @@ def update_meeting(
         meeting.action_items = data.action_items
     if data.notes is not None:
         meeting.notes = data.notes
+    if data.recording_link is not None:
+        meeting.recording_link = data.recording_link
+    if data.next_meeting_date is not None:
+        meeting.next_meeting_date = datetime.fromisoformat(data.next_meeting_date)
+    if data.related_task_id is not None:
+        meeting.related_task_id = data.related_task_id
 
     db.commit()
     db.refresh(meeting)
@@ -163,12 +183,17 @@ def format_meeting(m: MeetingLog) -> dict:
         "author": {"id": m.author.id, "name": m.author.name} if m.author else None,
         "title": m.title,
         "meeting_date": m.meeting_date.isoformat() if m.meeting_date else None,
+        "location": m.location,
         "attendees": m.attendees,
         "summary": m.summary,
         "decisions_taken": m.decisions_taken,
         "blockers": m.blockers,
         "action_items": m.action_items,
         "notes": m.notes,
+        "recording_link": m.recording_link,
+        "next_meeting_date": m.next_meeting_date.isoformat() if m.next_meeting_date else None,
+        "related_task_id": m.related_task_id,
+        "organizer": {"id": m.author.id, "name": m.author.name} if m.author else None,
         "created_at": m.created_at.isoformat() if m.created_at else None,
         "updated_at": m.updated_at.isoformat() if m.updated_at else None,
     }

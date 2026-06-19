@@ -100,6 +100,10 @@ def create_user(data: UserCreate, db: Session = Depends(get_db),
         password=get_password_hash(data.password),
         job_title=data.job_title,
         phone=data.phone,
+        department=data.department,
+        designation=data.designation,
+        employee_id=data.employee_id,
+        reporting_manager_id=data.reporting_manager_id,
     )
     db.add(user)
     db.flush()
@@ -139,6 +143,14 @@ def update_user(user_id: int, data: UserUpdate, db: Session = Depends(get_db),
         user.job_title = data.job_title
     if data.phone is not None:
         user.phone = data.phone
+    if data.department is not None:
+        user.department = data.department
+    if data.designation is not None:
+        user.designation = data.designation
+    if data.employee_id is not None:
+        user.employee_id = data.employee_id
+    if data.reporting_manager_id is not None:
+        user.reporting_manager_id = data.reporting_manager_id
     if data.is_active is not None:
         user.is_active = data.is_active
     if data.role is not None:
@@ -209,6 +221,10 @@ def format_user_response(user: User) -> dict:
         "job_title": user.job_title,
         "phone": user.phone,
         "avatar_url": user.avatar_url,
+        "department": user.department,
+        "designation": user.designation,
+        "employee_id": user.employee_id,
+        "reporting_manager_id": user.reporting_manager_id,
         "is_active": user.is_active,
         "inherit_role_permissions": user.inherit_role_permissions,
         "last_login_at": user.last_login_at,

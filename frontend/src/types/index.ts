@@ -18,6 +18,10 @@ export interface User {
   is_super_admin: boolean;
   permissions?: string[];
   roles?: Role[];
+  department?: string;
+  designation?: string;
+  employee_id?: string;
+  reporting_manager_id?: number;
 }
 
 export interface Role {
@@ -151,6 +155,9 @@ export interface Meeting {
   title: string;
   meeting_date: string;
   location?: string;
+  recording_link?: string;
+  next_meeting_date?: string;
+  related_task_id?: number;
   attendees?: string[];
   summary: string;
   decisions_taken?: string;
@@ -171,6 +178,9 @@ export interface Announcement {
   published_at?: string;
   created_at: string;
   updated_at?: string;
+  target_type?: string;
+  target_id?: number;
+  is_pinned?: boolean;
 }
 
 export interface Notification {

@@ -16,7 +16,7 @@ export default function ProjectFormPage() {
   const isEdit = !!id;
   const [form, setForm] = useState({
     name: "", description: "", status: "active", priority: "medium",
-    start_date: "", deadline: "", budget: "", figma_url: "", github_url: "", docs_url: "", pm_id: "",
+    start_date: "", deadline: "", figma_url: "", github_url: "", docs_url: "", pm_id: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -41,7 +41,6 @@ export default function ProjectFormPage() {
       priority: (p.priority as string) || "medium",
       start_date: ((p.start_date as string) || "").split("T")[0] || "",
       deadline: ((p.deadline as string) || "").split("T")[0] || "",
-      budget: p.budget ? String(p.budget) : "",
       figma_url: (p.figma_url as string) || "",
       github_url: (p.github_url as string) || "",
       docs_url: (p.docs_url as string) || "",
@@ -80,7 +79,6 @@ export default function ProjectFormPage() {
     setErrors({});
     const payload: Record<string, unknown> = {
       ...form,
-      budget: form.budget ? Number(form.budget) : undefined,
       pm_id: form.pm_id ? Number(form.pm_id) : undefined,
     };
     if (!payload.start_date) delete payload.start_date;
@@ -133,7 +131,6 @@ export default function ProjectFormPage() {
               <Input label="Start date" type="date" value={form.start_date} onChange={(e) => set("start_date", e.target.value)} />
               <Input label="Deadline" type="date" value={form.deadline} onChange={(e) => set("deadline", e.target.value)} />
             </div>
-            <Input label="Budget" type="number" value={form.budget} onChange={(e) => set("budget", e.target.value)} placeholder="Enter amount" />
             <Select label="Project Manager" value={form.pm_id} onChange={(e) => set("pm_id", e.target.value)} options={[
               { value: "", label: "None" },
               ...users.map((u: { id: number; name: string }) => ({ value: String(u.id), label: u.name })),

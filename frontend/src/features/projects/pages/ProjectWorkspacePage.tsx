@@ -237,7 +237,6 @@ function OverviewTab({ project }: { project: Project }) {
             <Row label="Priority" value={<PriorityBadge priority={p.priority} />} />
             <Row label="Start" value={p.start_date ? formatDate(p.start_date) : "—"} />
             <Row label="Deadline" value={p.deadline ? formatDate(p.deadline) : "—"} />
-            <Row label="Budget" value={p.budget ? `$${p.budget.toLocaleString()}` : "—"} />
             <Row label="Members" value={String(p.members_count || p.member_count || 0)} />
           </div>
         </Card>

@@ -21,6 +21,9 @@ class AnnouncementCreate(BaseModel):
     priority: str = "medium"
     status: str = "published"
     published_at: Optional[datetime] = None
+    target_type: Optional[str] = None
+    target_id: Optional[int] = None
+    is_pinned: bool = False
 
 
 class AnnouncementUpdate(BaseModel):
@@ -29,6 +32,9 @@ class AnnouncementUpdate(BaseModel):
     priority: Optional[str] = None
     status: Optional[str] = None
     published_at: Optional[datetime] = None
+    target_type: Optional[str] = None
+    target_id: Optional[int] = None
+    is_pinned: Optional[bool] = None
 
 
 @router.get("")
@@ -63,6 +69,9 @@ def create_announcement(data: AnnouncementCreate, db: Session = Depends(get_db),
         status=AnnouncementStatus(data.status) if data.status else AnnouncementStatus.PUBLISHED,
         author_id=current_user.id,
         published_at=data.published_at or (datetime.utcnow() if data.status == "published" else None),
+        target_type=data.target_type,
+        target_id=data.target_id,
+        is_pinned=data.is_pinned,
     )
     db.add(announcement)
     db.commit()
@@ -92,7 +101,32 @@ def update_announcement(announcement_id: int, data: AnnouncementUpdate,
         announcement.status = AnnouncementStatus(data.status)
     if data.published_at is not None or data.status == "published":
         announcement.published_at = data.published_at or datetime.utcnow()
+    if data.target_type is not None:
+        announcement.target_type = data.target_type
+    if data.target_id is not None:
+        announcement.target_id = data.target_id
+    if data.is_pinned is not None:
+        announcement.is_pinned = data.is_pinned
 
+    db.commit()
+    db.refresh(announcement)
+    return format_announcement(announcement)
+
+
+@router.patch("/{announcement_id}/status")
+def update_announcement_status(
+    announcement_id: int, data: AnnouncementUpdate, db: Session = Depends(get_db),
+    current_user: User = require_permissions(["announcements.update"]),
+):
+    announcement = db.query(Announcement).filter(Announcement.id == announcement_id).first()
+    if not announcement:
+        raise NotFoundException("Announcement", announcement_id)
+    if data.status is not None:
+        announcement.status = AnnouncementStatus(data.status)
+        if data.status == "published":
+            announcement.published_at = datetime.utcnow()
+    if data.is_pinned is not None:
+        announcement.is_pinned = data.is_pinned
     db.commit()
     db.refresh(announcement)
     return format_announcement(announcement)
@@ -124,4 +158,7 @@ def format_announcement(a: Announcement) -> dict:
         "author": {"id": a.author.id, "name": a.author.name} if a.author else None,
         "published_at": a.published_at,
         "created_at": a.created_at,
+        "target_type": a.target_type,
+        "target_id": a.target_id,
+        "is_pinned": a.is_pinned,
     }

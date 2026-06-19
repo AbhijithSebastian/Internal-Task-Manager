@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Card } from "@/components/ui/Card";
 import { SkeletonForm } from "@/components/ui/Skeleton";
-import { ArrowLeft } from "lucide-react";
+import { Avatar } from "@/components/ui/Avatar";
+import { ArrowLeft, X } from "lucide-react";
 
 const statusOptions = [
   { value: "backlog", label: "Backlog" },
@@ -41,7 +42,7 @@ export default function TaskFormPage() {
     status: "todo",
     priority: "medium",
     due_date: "",
-    assignee_id: "",
+    assignee_ids: [] as number[],
     project_id: searchParams.get("project_id") || "",
     estimated_hours: "",
   });
@@ -71,7 +72,7 @@ export default function TaskFormPage() {
         status: task.status,
         priority: task.priority,
         due_date: task.due_date?.split("T")[0] || "",
-        assignee_id: task.assignee_id?.toString() || "",
+        assignee_ids: (task.assignees || []).map((a) => a.id),
         project_id: task.project_id?.toString() || "",
         estimated_hours: task.estimated_hours?.toString() || "",
       });
@@ -93,7 +94,7 @@ export default function TaskFormPage() {
     setError("");
     const payload: Record<string, unknown> = {
       ...form,
-      assignee_id: form.assignee_id ? Number(form.assignee_id) : undefined,
+      assignee_ids: form.assignee_ids.length > 0 ? form.assignee_ids : undefined,
       project_id: form.project_id ? Number(form.project_id) : undefined,
       estimated_hours: form.estimated_hours ? Number(form.estimated_hours) : undefined,
     };
@@ -170,13 +171,36 @@ export default function TaskFormPage() {
               placeholder="No project"
               options={projects.map((p: any) => ({ value: String(p.id), label: p.name }))}
             />
-            <Select
-              label="Assignee"
-              value={form.assignee_id}
-              onChange={(e) => update("assignee_id", e.target.value)}
-              placeholder="Unassigned"
-              options={users.map((u: any) => ({ value: String(u.id), label: u.name }))}
-            />
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-primary">Assignees</label>
+              <div className="max-h-40 overflow-y-auto border border-default rounded-md divide-y divide-subtle">
+                {(users as Array<{ id: number; name: string }>).map((u) => {
+                  const checked = form.assignee_ids.includes(u.id);
+                  return (
+                    <label key={u.id} className={`flex items-center gap-2 px-3 py-2 text-sm cursor-pointer transition-colors ${checked ? "bg-primary-soft text-primary" : "text-secondary hover:bg-hover"}`}>
+                      <input type="checkbox" checked={checked} onChange={() => setForm((prev) => ({ ...prev, assignee_ids: checked ? prev.assignee_ids.filter((id) => id !== u.id) : [...prev.assignee_ids, u.id] }))} className="rounded border-default text-primary focus:ring-primary-ring" />
+                      <Avatar name={u.name} size="sm" />
+                      <span>{u.name}</span>
+                    </label>
+                  );
+                })}
+              </div>
+              {form.assignee_ids.length > 0 && (
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {form.assignee_ids.map((id) => {
+                    const u = (users as Array<{ id: number; name: string }>).find((x) => x.id === id);
+                    if (!u) return null;
+                    return (
+                      <span key={id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary-soft text-primary text-xs">
+                        <Avatar name={u.name} size="sm" />
+                        {u.name}
+                        <button type="button" onClick={() => setForm((prev) => ({ ...prev, assignee_ids: prev.assignee_ids.filter((a) => a !== id) }))} className="hover:text-primary-hover"><X className="h-3 w-3" /></button>
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
             <Input
               label="Due Date"
               type="date"

@@ -10,7 +10,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { FilterBar } from "@/components/ui/FilterBar";
 import { Table, type TableColumn } from "@/components/ui/Table";
 import { SkeletonKpiRow } from "@/components/ui/Skeleton";
-import { Plus, CalendarDays, UserCheck, FileText, Video } from "lucide-react";
+import { Plus, CalendarDays, UserCheck, FileText, Video, Edit3 } from "lucide-react";
 import { formatDateTime } from "@/utils/formatters";
 import type { Meeting } from "@/types";
 
@@ -45,6 +45,11 @@ export default function MeetingListPage() {
     { key: "attendees", label: "Attendees", render: (m) => <span className="text-sm text-secondary">{m.attendees?.length || 0}</span> },
     { key: "location", label: "Location", render: (m) => (
       <span className="flex items-center gap-1 text-sm text-secondary">{m.location === "virtual" ? <Video className="h-3.5 w-3.5" /> : null}{m.location || "—"}</span>
+    )},
+    { key: "actions", label: "", width: "60px", render: (m) => (
+      <button onClick={(e) => { e.stopPropagation(); navigate(`/work/meetings/${m.id}/edit`); }} className="p-1.5 rounded text-tertiary hover:text-primary hover:bg-hover transition-colors" title="Edit">
+        <Edit3 className="h-3.5 w-3.5" />
+      </button>
     )},
   ];
 

@@ -82,10 +82,12 @@ export function AppRoutes() {
         {/* Meetings */}
         <Route path="/work/meetings" element={<MeetingListPage />} />
         <Route path="/work/meetings/new" element={<MeetingFormPage />} />
+        <Route path="/work/meetings/:id/edit" element={<MeetingFormPage />} />
 
         {/* Users */}
         <Route path="/work/users" element={<UsersListPage />} />
         <Route path="/work/users/invite" element={<InviteUserPage />} />
+        <Route path="/work/users/:userId/edit" element={<InviteUserPage />} />
 
         {/* Announcements */}
         <Route path="/work/announcements" element={<AnnouncementListPage />} />

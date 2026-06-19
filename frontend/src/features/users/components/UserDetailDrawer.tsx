@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { api } from "@/services/api";
 import { useAuth } from "@/store/auth";
 import { openDrawer } from "@/hooks/useDrawer";
@@ -9,7 +10,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { Card } from "@/components/ui/Card";
 import { formatDate, formatRelative } from "@/utils/formatters";
-import { Mail, Shield, Calendar, Clock, CheckCircle2, XCircle, Briefcase, Building2, UserCircle, Activity } from "lucide-react";
+import { Mail, Shield, Calendar, Clock, CheckCircle2, XCircle, Briefcase, Building2, UserCircle, Activity, Edit3 } from "lucide-react";
 import type { User, Project, Task, ActivityLog } from "@/types";
 
 interface UserDetailDrawerProps {
@@ -18,6 +19,7 @@ interface UserDetailDrawerProps {
 }
 
 export function UserDetailDrawer({ userId, onClose }: UserDetailDrawerProps) {
+  const navigate = useNavigate();
   const { hasPermission } = useAuth();
   const queryClient = useQueryClient();
 
@@ -92,6 +94,14 @@ export function UserDetailDrawer({ userId, onClose }: UserDetailDrawerProps) {
             </div>
           </div>
 
+          {hasPermission("user-edit") && (
+            <div className="flex justify-center">
+              <Button size="sm" variant="secondary" onClick={() => { onClose(); navigate(`/work/users/${u.id}/edit`); }}>
+                <Edit3 className="h-3.5 w-3.5" /> Edit Profile
+              </Button>
+            </div>
+          )}
+
           <Card className="p-4">
             <div className="space-y-3 text-sm">
               <div className="flex items-center gap-2">
@@ -107,17 +117,17 @@ export function UserDetailDrawer({ userId, onClose }: UserDetailDrawerProps) {
               <div className="flex items-center gap-2">
                 <UserCircle className="h-4 w-4 text-tertiary shrink-0" />
                 <span className="text-tertiary">Employee ID:</span>
-                <span className="text-primary">—</span>
+                <span className="text-primary">{u.employee_id || "—"}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Briefcase className="h-4 w-4 text-tertiary shrink-0" />
                 <span className="text-tertiary">Designation:</span>
-                <span className="text-primary">{u.job_title || "—"}</span>
+                <span className="text-primary">{u.designation || u.job_title || "—"}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Building2 className="h-4 w-4 text-tertiary shrink-0" />
                 <span className="text-tertiary">Department:</span>
-                <span className="text-primary">—</span>
+                <span className="text-primary">{u.department || "—"}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Shield className="h-4 w-4 text-tertiary shrink-0" />
@@ -133,7 +143,7 @@ export function UserDetailDrawer({ userId, onClose }: UserDetailDrawerProps) {
               <div className="space-y-3 text-sm">
                 <div className="flex items-center justify-between">
                   <span className="text-tertiary">Reporting Manager</span>
-                  <span className="text-primary">—</span>
+                  <span className="text-primary">{u.reporting_manager_id ? `#${u.reporting_manager_id}` : "—"}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-tertiary">Timezone</span>
