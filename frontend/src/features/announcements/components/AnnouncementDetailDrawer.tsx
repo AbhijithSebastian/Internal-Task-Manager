@@ -1,12 +1,17 @@
-import { useQuery } from "@tanstack/react-query";
-import { api } from "@/services/api";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
+import { announcementsService } from "@/features/announcements/services/announcements";
+import { useAuth } from "@/store/auth";
 import { Drawer } from "@/components/ui/Drawer";
+import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Avatar } from "@/components/ui/Avatar";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { formatRelative } from "@/utils/formatters";
-import { Megaphone, Calendar } from "lucide-react";
+import { formatDateTime, formatRelative } from "@/utils/formatters";
+import { Megaphone, Pin, Calendar, Edit3, Trash2 } from "lucide-react";
 import type { Announcement } from "@/types";
+import { useState } from "react";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 
 interface AnnouncementDetailDrawerProps {
   announcementId: number | null;
@@ -14,18 +19,85 @@ interface AnnouncementDetailDrawerProps {
 }
 
 export function AnnouncementDetailDrawer({ announcementId, onClose }: AnnouncementDetailDrawerProps) {
+  const navigate = useNavigate();
+  const { hasPermission } = useAuth();
+  const queryClient = useQueryClient();
+  const [showDelete, setShowDelete] = useState(false);
+
   const { data: announcement, isLoading } = useQuery({
     queryKey: ["announcement", announcementId],
-    queryFn: () => api.get(`/announcements/${announcementId}`).then((r) => r.data?.data || r.data),
+    queryFn: () => announcementsService.get(Number(announcementId)),
     enabled: Boolean(announcementId),
   });
 
   const a = announcement as Announcement | undefined;
 
+  const invalidate = () => {
+    queryClient.invalidateQueries({ queryKey: ["announcements"] });
+    queryClient.invalidateQueries({ queryKey: ["announcement", announcementId] });
+  };
+
+  const changeStatusMutation = useMutation({
+    mutationFn: ({ id, status }: { id: number; status: string }) =>
+      announcementsService.changeStatus(id, status),
+    onSuccess: invalidate,
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => announcementsService.delete(id),
+    onSuccess: () => {
+      setShowDelete(false);
+      invalidate();
+      onClose();
+    },
+  });
+
+  const statusBadgeVariant = (status: string) => {
+    switch (status) {
+      case "published": return "success";
+      case "draft": return "warning";
+      case "archived": return "neutral";
+      default: return "default";
+    }
+  };
+
+  const priorityBadgeVariant = (priority: string) => {
+    switch (priority) {
+      case "urgent": case "high": return "danger";
+      case "low": return "neutral";
+      default: return "info";
+    }
+  };
+
+  const showTransitionButton = (toStatus: string) => {
+    if (!a) return null;
+    const transitions: Record<string, { label: string; variant: "primary" | "secondary" | "ghost" | "danger" }> = {
+      "published": { label: "Publish", variant: "primary" },
+      "draft": { label: "Move to Draft", variant: "secondary" },
+      "archived": { label: "Archive", variant: "secondary" },
+    };
+    const t = transitions[toStatus];
+    if (!t) return null;
+    if (a.status === toStatus) return null;
+    if (a.status === "archived" && toStatus !== "draft") return null;
+    return (
+      <Button
+        key={toStatus}
+        size="sm"
+        variant={t.variant}
+        onClick={() => changeStatusMutation.mutate({ id: a.id, status: toStatus })}
+        loading={changeStatusMutation.isPending}
+        className="flex-1"
+      >
+        {t.label}
+      </Button>
+    );
+  };
+
   return (
     <Drawer open={Boolean(announcementId)} onClose={onClose} title={a?.title || "Announcement"}>
       {isLoading ? (
-        <div className="space-y-4">
+        <div className="space-y-6">
           <Skeleton variant="rect" className="h-6 w-3/4" />
           <Skeleton variant="rect" className="h-4 w-1/3" />
           <Skeleton variant="rect" className="h-64 w-full" />
@@ -36,34 +108,102 @@ export function AnnouncementDetailDrawer({ announcementId, onClose }: Announceme
           <p className="text-sm text-secondary">Announcement not found</p>
         </div>
       ) : (
-        <div className="space-y-6">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-primary-soft text-primary flex items-center justify-center">
-              <Megaphone className="h-5 w-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <Badge variant={a.status === "published" ? "success" : "warning"} size="sm" dot>{a.status}</Badge>
-                {a.priority && <Badge variant={a.priority === "high" || a.priority === "urgent" ? "danger" : "neutral"} size="sm">{a.priority}</Badge>}
+        <div className="space-y-5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="h-10 w-10 rounded-lg bg-primary-soft text-primary flex items-center justify-center">
+                <Megaphone className="h-5 w-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <Badge variant={statusBadgeVariant(a.status)} size="sm" dot>
+                    {a.status}
+                  </Badge>
+                  {a.priority && (
+                    <Badge variant={priorityBadgeVariant(a.priority)} size="sm">
+                      {a.priority}
+                    </Badge>
+                  )}
+                  {Boolean((a as unknown as Record<string, unknown>).is_pinned) && (
+                    <Pin className="h-3.5 w-3.5 text-semantic-warning" />
+                  )}
+                </div>
               </div>
             </div>
           </div>
 
-          <div className="prose prose-sm max-w-none text-secondary whitespace-pre-wrap leading-relaxed">
-            {a.content}
+          <div className="flex items-center gap-3 text-sm text-tertiary">
+            {a.author && (
+              <>
+                <Avatar name={a.author.name} size="sm" />
+                <span>{a.author.name}</span>
+              </>
+            )}
+            {a.published_at && (
+              <>
+                <span className="text-tertiary">·</span>
+                <Calendar className="h-3.5 w-3.5" />
+                <span>{formatDateTime(a.published_at)}</span>
+              </>
+            )}
           </div>
 
-          <div className="flex items-center justify-between pt-4 border-t border-subtle text-xs text-tertiary">
-            <div className="flex items-center gap-2">
-              {a.author && <><Avatar name={a.author.name} size="sm" /><span>{a.author.name}</span></>}
+          <div className="bg-subtle rounded-lg p-4">
+            <p className="text-sm text-primary whitespace-pre-wrap leading-relaxed">
+              {a.content}
+            </p>
+          </div>
+
+          {hasPermission("announcement-edit") && (
+            <div className="flex items-center gap-2 pt-2">
+              {showTransitionButton("published")}
+              {showTransitionButton("draft")}
+              {showTransitionButton("archived")}
             </div>
-            <div className="flex items-center gap-1.5">
-              <Calendar className="h-3.5 w-3.5" />
-              <span>{a.published_at ? formatRelative(a.published_at) : formatRelative(a.created_at)}</span>
+          )}
+
+          {hasPermission("announcement-edit") && (
+            <div className="flex items-center gap-2 pt-2 border-t border-subtle">
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => {
+                  onClose();
+                  navigate(`/work/announcements/${a.id}/edit`);
+                }}
+              >
+                <Edit3 className="h-3.5 w-3.5" /> Edit
+              </Button>
+              {hasPermission("announcement-delete") && (
+                <Button
+                  size="sm"
+                  variant="danger"
+                  onClick={() => setShowDelete(true)}
+                >
+                  <Trash2 className="h-3.5 w-3.5" /> Delete
+                </Button>
+              )}
             </div>
+          )}
+
+          <div className="space-y-1 text-xs text-tertiary pt-2 border-t border-subtle">
+            <p>ID: #{a.id}</p>
+            <p>Created: {formatRelative(a.created_at)}</p>
+            {a.updated_at && <p>Updated: {formatRelative(a.updated_at)}</p>}
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={showDelete}
+        title="Delete Announcement"
+        message={`Are you sure you want to delete "${a?.title}"? This action cannot be undone.`}
+        confirmLabel="Delete"
+        variant="danger"
+        loading={deleteMutation.isPending}
+        onConfirm={() => a && deleteMutation.mutate(a.id)}
+        onCancel={() => setShowDelete(false)}
+      />
     </Drawer>
   );
 }

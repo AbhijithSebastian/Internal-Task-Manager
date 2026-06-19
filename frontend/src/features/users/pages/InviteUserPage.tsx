@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/services/api";
+import { usersService } from "@/features/users/services/users";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
@@ -17,8 +17,9 @@ export default function InviteUserPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const mutation = useMutation({
-    mutationFn: (data: Record<string, unknown>) => api.post("/users", { ...data, password: Math.random().toString(36).slice(2, 10), password_confirmation: "" }),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["users"] }); navigate("/work/people"); },
+    mutationFn: (data: Record<string, unknown>) =>
+      usersService.create({ ...data, password: Math.random().toString(36).slice(2, 10) } as any).then((r) => r),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["users"] }); navigate("/work/users"); },
     onError: (err: { response?: { data?: { errors?: Record<string, string[]> } } }) => {
       const es = err.response?.data?.errors;
       if (es) {
@@ -44,10 +45,10 @@ export default function InviteUserPage() {
   return (
     <div className="page-container max-w-xl py-6">
       <div className="flex items-center gap-3 mb-5">
-        <button onClick={() => navigate("/work/people")} className="p-1 rounded-md text-tertiary hover:text-primary hover:bg-hover transition-colors">
+        <button onClick={() => navigate("/work/users")} className="p-1 rounded-md text-tertiary hover:text-primary hover:bg-hover transition-colors">
           <ArrowLeft className="h-4 w-4" />
         </button>
-        <h1 className="text-xl font-bold text-primary">Invite Team Member</h1>
+        <h1 className="text-xl font-bold text-primary">Invite User</h1>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-5">
@@ -73,7 +74,7 @@ export default function InviteUserPage() {
 
         <div className="flex items-center gap-3">
           <Button type="submit" loading={mutation.isPending}>Send Invitation</Button>
-          <Button variant="secondary" onClick={() => navigate("/work/people")}>Cancel</Button>
+          <Button variant="secondary" onClick={() => navigate("/work/users")}>Cancel</Button>
         </div>
       </form>
     </div>

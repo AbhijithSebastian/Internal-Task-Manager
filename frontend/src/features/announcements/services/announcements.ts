@@ -1,28 +1,17 @@
 import { api } from "@/services/api";
-import type { Announcement } from "@/types";
-
-export interface AnnouncementsResponse {
-  items: Announcement[];
-  total: number;
-  page: number;
-  per_page: number;
-  total_pages: number;
-}
+import type { Announcement, PaginatedResponse } from "@/types";
 
 export const announcementsService = {
-  list(params?: Record<string, unknown>) {
-    return api.get<AnnouncementsResponse>("/announcements", { params }).then((r) => r.data);
-  },
-  get(id: number) {
-    return api.get<Announcement>(`/announcements/${id}`).then((r) => r.data);
-  },
-  create(data: Partial<Announcement>) {
-    return api.post<Announcement>("/announcements", data).then((r) => r.data);
-  },
-  update(id: number, data: Partial<Announcement>) {
-    return api.put<Announcement>(`/announcements/${id}`, data).then((r) => r.data);
-  },
-  delete(id: number) {
-    return api.delete(`/announcements/${id}`);
-  },
+  list: (params?: Record<string, unknown>) =>
+    api.get<PaginatedResponse<Announcement>>("/announcements", { params }).then((r) => r.data),
+  get: (id: number) =>
+    api.get(`/announcements/${id}`).then((r) => (r.data as Record<string, unknown>)?.data || r.data) as Promise<Announcement>,
+  create: (data: Partial<Announcement>) =>
+    api.post("/announcements", data).then((r) => (r.data as Record<string, unknown>)?.data || r.data) as Promise<Announcement>,
+  update: (id: number, data: Partial<Announcement>) =>
+    api.put(`/announcements/${id}`, data).then((r) => (r.data as Record<string, unknown>)?.data || r.data) as Promise<Announcement>,
+  delete: (id: number) =>
+    api.delete(`/announcements/${id}`),
+  changeStatus: (id: number, status: string) =>
+    api.patch(`/announcements/${id}/status`, { status }),
 };

@@ -43,7 +43,7 @@ export const navSections: NavSection[] = [
   {
     label: "Team",
     items: [
-      { label: "People", href: "/work/people", icon: Users },
+      { label: "Users", href: "/work/users", icon: Users },
       { label: "Announcements", href: "/work/announcements", icon: Megaphone },
     ],
   },
@@ -54,16 +54,15 @@ export const navSections: NavSection[] = [
     ],
   },
   {
-    label: "Analytics",
+    label: "Reports",
     items: [
-      { label: "Analytics", href: "/work/analytics", icon: BarChart3 },
+      { label: "Reports", href: "/work/reports", icon: BarChart3 },
     ],
   },
   {
     label: "Administration",
     items: [
-      { label: "Roles", href: "/work/admin/roles", icon: Shield },
-      { label: "Permissions", href: "/work/admin/permissions", icon: Shield },
+      { label: "Roles & Permissions", href: "/work/admin/roles", icon: Shield },
       { label: "Settings", href: "/work/admin/settings", icon: Settings },
     ],
   },

@@ -15,14 +15,13 @@ import ProjectWorkspacePage from "@/features/projects/pages/ProjectWorkspacePage
 import ProjectFormPage from "@/features/projects/pages/ProjectFormPage";
 import MeetingListPage from "@/features/meetings/pages/MeetingListPage";
 import MeetingFormPage from "@/features/meetings/pages/MeetingFormPage";
-import PeopleListPage from "@/features/people/pages/PeopleListPage";
-import InviteUserPage from "@/features/people/pages/InviteUserPage";
+import UsersListPage from "@/features/users/pages/UsersListPage";
+import InviteUserPage from "@/features/users/pages/InviteUserPage";
 import AnnouncementListPage from "@/features/announcements/pages/AnnouncementListPage";
 import AnnouncementFormPage from "@/features/announcements/pages/AnnouncementFormPage";
 import NotificationListPage from "@/features/notifications/pages/NotificationListPage";
-import AnalyticsPage from "@/features/analytics/pages/AnalyticsPage";
+import ReportsPage from "@/features/reports/pages/ReportsPage";
 import RoleListPage from "@/features/roles/pages/RoleListPage";
-import PermissionMatrixPage from "@/features/admin/pages/PermissionMatrixPage";
 import AdminSettingsPage from "@/features/admin/pages/AdminSettingsPage";
 
 function ProtectedLayout() {
@@ -84,9 +83,9 @@ export function AppRoutes() {
         <Route path="/work/meetings" element={<MeetingListPage />} />
         <Route path="/work/meetings/new" element={<MeetingFormPage />} />
 
-        {/* People */}
-        <Route path="/work/people" element={<PeopleListPage />} />
-        <Route path="/work/people/invite" element={<InviteUserPage />} />
+        {/* Users */}
+        <Route path="/work/users" element={<UsersListPage />} />
+        <Route path="/work/users/invite" element={<InviteUserPage />} />
 
         {/* Announcements */}
         <Route path="/work/announcements" element={<AnnouncementListPage />} />
@@ -96,12 +95,12 @@ export function AppRoutes() {
         {/* Notifications */}
         <Route path="/work/notifications" element={<NotificationListPage />} />
 
-        {/* Analytics */}
-        <Route path="/work/analytics" element={<AnalyticsPage />} />
+        {/* Reports */}
+        <Route path="/work/reports" element={<ReportsPage />} />
 
         {/* Administration */}
         <Route path="/work/admin/roles" element={<RoleListPage />} />
-        <Route path="/work/admin/permissions" element={<PermissionMatrixPage />} />
+        <Route path="/work/admin/permissions" element={<Navigate to="/work/admin/roles" replace />} />
         <Route path="/work/admin/settings" element={<AdminSettingsPage />} />
       </Route>
 

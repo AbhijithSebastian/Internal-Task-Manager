@@ -1,31 +1,12 @@
 import { api } from "@/services/api";
 import type { User } from "@/types";
 
-export interface UsersResponse {
-  items: User[];
-  total: number;
-  page: number;
-  per_page: number;
-  total_pages: number;
-}
-
 export const usersService = {
-  list(params?: Record<string, unknown>) {
-    return api.get<UsersResponse>("/users", { params }).then((r) => r.data);
-  },
-  get(id: number) {
-    return api.get<User>(`/users/${id}`).then((r) => r.data);
-  },
-  create(data: Partial<User> & { password: string; role_id?: number }) {
-    return api.post<User>("/users", data).then((r) => r.data);
-  },
-  update(id: number, data: Partial<User> & { password?: string; role_id?: number }) {
-    return api.put<User>(`/users/${id}`, data).then((r) => r.data);
-  },
-  delete(id: number) {
-    return api.delete(`/users/${id}`);
-  },
-  toggleActive(id: number) {
-    return api.post(`/users/${id}/toggle-active`);
-  },
+  list: (params?: Record<string, unknown>) => api.get("/users", { params }).then((r) => r.data),
+  get: (id: number) => api.get(`/users/${id}`).then((r) => r.data?.data || r.data),
+  create: (data: Partial<User>) => api.post("/users", data).then((r) => r.data?.data || r.data),
+  update: (id: number, data: Partial<User>) => api.put(`/users/${id}`, data).then((r) => r.data?.data || r.data),
+  delete: (id: number) => api.delete(`/users/${id}`),
+  toggleActive: (id: number) => api.post(`/users/${id}/toggle-active`),
+  search: (q: string) => api.get("/users/search", { params: { q } }).then((r) => r.data?.items || r.data?.data || []),
 };

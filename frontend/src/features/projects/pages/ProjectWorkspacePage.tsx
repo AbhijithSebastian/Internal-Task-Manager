@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/services/api";
@@ -15,10 +15,12 @@ import { Table, type TableColumn } from "@/components/ui/Table";
 import {
   ArrowLeft, Edit3, Trash2, Plus, Users,
   CalendarDays, Link2, FileText, Activity, Settings,
-  CheckCircle2,
+  CheckCircle2, Upload, Download, X, Search,
+  File as FileIcon, Image, FileSpreadsheet,
+  FileArchive,
 } from "lucide-react";
-import { formatDate, formatDateTime, formatRelative } from "@/utils/formatters";
-import type { Project, Task, ProjectMember, Meeting, ActivityLog } from "@/types";
+import { formatDate, formatDateTime, formatRelative, formatFileSize } from "@/utils/formatters";
+import type { Project, Task, ProjectMember, Meeting, ActivityLog, Attachment, UserBrief } from "@/types";
 
 const tabs = [
   { id: "overview", label: "Overview", icon: FileText },
@@ -74,7 +76,7 @@ export default function ProjectWorkspacePage() {
 
   const switchTab = (tabId: string) => { setActiveTab(tabId); setSearchParams({ tab: tabId }); };
 
-  const { data: project, isLoading } = useQuery({
+  const { data: project, isLoading, isError } = useQuery({
     queryKey: ["project", id],
     queryFn: () => api.get(`/projects/${id}`).then((r) => r.data?.data || r.data),
     enabled: !!id,
@@ -126,7 +128,7 @@ export default function ProjectWorkspacePage() {
     );
   }
 
-  if (!p) return (
+  if (isError || !p) return (
     <div className="page-container py-16 text-center">
       <p className="text-sm text-secondary">Project not found</p>
       <Button size="sm" className="mt-3" onClick={() => navigate("/work/projects")}>Back to Projects</Button>
@@ -147,7 +149,7 @@ export default function ProjectWorkspacePage() {
           </button>
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-lg font-bold text-primary truncate">{p.name}</h1>
+              <h1 className="text-xl font-bold text-primary truncate">{p.name}</h1>
               <StatusBadge status={p.status} />
               <PriorityBadge priority={p.priority} />
             </div>
@@ -225,6 +227,7 @@ function OverviewTab({ project }: { project: Project }) {
             {!p.figma_url && !p.github_url && !p.docs_url && <p className="text-sm text-tertiary italic">No links configured.</p>}
           </div>
         </Card>
+        <ResourcesSection projectId={p.id} />
       </div>
       <div className="space-y-3">
         <Card>
@@ -262,6 +265,129 @@ function OverviewTab({ project }: { project: Project }) {
   );
 }
 
+/* ---------- Resources Section ---------- */
+function ResourcesSection({ projectId }: { projectId: number }) {
+  const [uploading, setUploading] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const queryClient = useQueryClient();
+
+  const { data: attachmentsData, isLoading: attachmentsLoading } = useQuery({
+    queryKey: ["project-attachments", projectId],
+    queryFn: () => api.get("/attachments", { params: { model_type: "project", model_id: projectId } }).then((r) => r.data?.items || r.data?.data || r.data || []),
+    enabled: !!projectId,
+  });
+
+  const deleteAttachmentMutation = useMutation({
+    mutationFn: (attachmentId: number) => api.delete(`/attachments/${attachmentId}`),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["project-attachments", projectId] }),
+  });
+
+  const attachments = (attachmentsData || []) as Attachment[];
+
+  const handleUpload = async (files: FileList | File[] | null) => {
+    if (!files || files.length === 0) return;
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", files[0]);
+      formData.append("model_type", "project");
+      formData.append("model_id", String(projectId));
+      formData.append("collection_name", "files");
+      await api.post("/attachments/upload", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      queryClient.invalidateQueries({ queryKey: ["project-attachments", projectId] });
+    } catch {
+      // error handled silently
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    handleUpload(e.dataTransfer.files);
+  }, [projectId]);
+
+  const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); setDragOver(true); };
+  const handleDragLeave = () => setDragOver(false);
+
+  const getFileIcon = (mimeType?: string) => {
+    if (!mimeType) return <FileIcon className="h-5 w-5 text-tertiary" />;
+    if (mimeType.startsWith("image/")) return <Image className="h-5 w-5 text-semantic-info" />;
+    if (mimeType.includes("spreadsheet") || mimeType.includes("excel") || mimeType.includes("csv")) return <FileSpreadsheet className="h-5 w-5 text-semantic-success" />;
+    if (mimeType.includes("zip") || mimeType.includes("rar") || mimeType.includes("tar") || mimeType.includes("7z")) return <FileArchive className="h-5 w-5 text-semantic-warning" />;
+    if (mimeType.includes("pdf")) return <FileText className="h-5 w-5 text-semantic-danger" />;
+    return <FileIcon className="h-5 w-5 text-tertiary" />;
+  };
+
+  return (
+    <Card>
+      <h3 className="text-xs font-semibold uppercase tracking-wider text-tertiary mb-3">Resources</h3>
+
+      {/* Upload area */}
+      <div
+        onDrop={handleDrop}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onClick={() => fileInputRef.current?.click()}
+        className={`relative flex flex-col items-center justify-center p-6 rounded-lg border-2 border-dashed cursor-pointer transition-colors duration-fast ${
+          dragOver ? "border-primary bg-primary-soft" : "border-default hover:border-hover bg-subtle/30"
+        }`}
+      >
+        <input
+          ref={fileInputRef}
+          type="file"
+          className="hidden"
+          onChange={(e) => handleUpload(e.target.files)}
+          disabled={uploading}
+        />
+        {uploading ? (
+          <div className="flex items-center gap-2">
+            <div className="h-4 w-4 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+            <span className="text-sm text-secondary">Uploading...</span>
+          </div>
+        ) : (
+          <>
+            <Upload className="h-6 w-6 text-tertiary mb-2" />
+            <p className="text-sm text-secondary">Drop files here or click to upload</p>
+            <p className="text-xs text-tertiary mt-1">PDF, DOCX, XLSX, PPTX, images, ZIP, and more</p>
+          </>
+        )}
+      </div>
+
+      {/* File list */}
+      {attachmentsLoading ? (
+        <div className="space-y-2 mt-3">{Array.from({ length: 2 }).map((_, i) => <Skeleton key={i} variant="rect" className="h-12 w-full" />)}</div>
+      ) : attachments.length === 0 ? (
+        <p className="text-sm text-tertiary italic mt-3">No files uploaded yet.</p>
+      ) : (
+        <div className="space-y-1.5 mt-3">
+          {attachments.map((file) => (
+            <div key={file.id} className="flex items-center gap-3 p-2.5 rounded-lg border border-default bg-surface hover:bg-hover transition-colors duration-fast group">
+              {getFileIcon(file.mime_type)}
+              <div className="flex-1 min-w-0">
+                <p className="text-sm text-primary truncate">{file.name || file.file_name}</p>
+                <p className="text-xs text-tertiary">{formatFileSize(file.size)} &middot; {formatRelative(file.created_at)}</p>
+              </div>
+              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-fast">
+                <button onClick={() => window.open(file.url, "_blank")} className="p-1.5 rounded text-tertiary hover:text-primary hover:bg-hover" title="Download">
+                  <Download className="h-3.5 w-3.5" />
+                </button>
+                <button onClick={() => deleteAttachmentMutation.mutate(file.id)} className="p-1.5 rounded text-tertiary hover:text-danger hover:bg-hover" title="Delete">
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </Card>
+  );
+}
+
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="flex items-center justify-between">
@@ -272,7 +398,8 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
 }
 
 /* ---------- Tasks Tab ---------- */
-function TasksTab({ projectId: _pid, tasksData, loading }: { projectId: number; tasksData?: Task[]; loading: boolean }) {
+function TasksTab({ projectId, tasksData, loading }: { projectId: number; tasksData?: Task[]; loading: boolean }) {
+  const navigate = useNavigate();
   const [statusFilter, setStatusFilter] = useState("");
   const [search, setSearch] = useState("");
 
@@ -308,14 +435,19 @@ function TasksTab({ projectId: _pid, tasksData, loading }: { projectId: number; 
         <div className="space-y-2">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} variant="rect" className="h-10 w-full" />)}</div>
       ) : tasks.length === 0 ? (
         <div className="flex flex-col items-center py-10 text-center bg-surface border border-default rounded-lg">
-          <FileText className="h-8 w-8 text-tertiary mb-2" />
+          <CheckCircle2 className="h-8 w-8 text-tertiary mb-2" />
           <p className="text-sm text-tertiary">No tasks yet</p>
-          <Button size="sm" variant="secondary" className="mt-3" onClick={() => openDrawer("task-new", _pid)}>Add Task</Button>
+          <Button size="sm" variant="secondary" className="mt-3" onClick={() => navigate(`/work/tasks/new?project_id=${projectId}`)}>Add Task</Button>
         </div>
       ) : (
         <Table columns={columns} data={tasks} loading={false} keyExtractor={(t) => t.id}
           onRowClick={(t) => openDrawer("task", t.id)} />
       )}
+      <div className="flex justify-end">
+        <Button size="sm" variant="secondary" onClick={() => navigate(`/work/tasks/new?project_id=${projectId}`)}>
+          <Plus className="h-3.5 w-3.5" /> Add Task
+        </Button>
+      </div>
     </div>
   );
 }
@@ -323,22 +455,93 @@ function TasksTab({ projectId: _pid, tasksData, loading }: { projectId: number; 
 /* ---------- Members Tab ---------- */
 function MembersTab({ projectId, membersData, loading }: { projectId: number; membersData: ProjectMember[]; loading: boolean }) {
   const { hasPermission } = useAuth();
+  const canEdit = hasPermission("project-edit");
   const queryClient = useQueryClient();
+  const [showAddMember, setShowAddMember] = useState(false);
+  const [userSearch, setUserSearch] = useState("");
+  const [selectedUsers, setSelectedUsers] = useState<UserBrief[]>([]);
+  const [selectedRole, setSelectedRole] = useState("member");
+  const [removeConfirm, setRemoveConfirm] = useState<{ show: boolean; member: ProjectMember | null }>({ show: false, member: null });
+  const [roleChange, setRoleChange] = useState<{ userId: number; role: string } | null>(null);
+
+  const { data: searchResults, isLoading: searchLoading } = useQuery({
+    queryKey: ["user-search", userSearch],
+    queryFn: () => api.get("/users/search", { params: { q: userSearch } }).then((r) => r.data?.items || r.data?.data || r.data || []),
+    enabled: showAddMember && userSearch.length >= 2,
+  });
+
+  const addMemberMutation = useMutation({
+    mutationFn: (data: { user_id: number; role: string }) => api.post(`/projects/${projectId}/members`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["project-members", projectId] });
+      queryClient.invalidateQueries({ queryKey: ["project", projectId] });
+    },
+  });
+
   const removeMutation = useMutation({
     mutationFn: (userId: number) => api.delete(`/projects/${projectId}/members/${userId}`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["project-members", projectId] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["project-members", projectId] });
+      queryClient.invalidateQueries({ queryKey: ["project", projectId] });
+    },
   });
+
+  const updateRoleMutation = useMutation({
+    mutationFn: ({ userId, role }: { userId: number; role: string }) => api.put(`/projects/${projectId}/members/${userId}`, { role }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["project-members", projectId] });
+      setRoleChange(null);
+    },
+  });
+
+  const handleAddMembers = () => {
+    if (selectedUsers.length === 0) return;
+    selectedUsers.forEach((u) => {
+      addMemberMutation.mutate({ user_id: u.id, role: selectedRole });
+    });
+    setSelectedUsers([]);
+    setUserSearch("");
+    setShowAddMember(false);
+  };
+
+  const toggleUser = (user: UserBrief) => {
+    setSelectedUsers((prev) =>
+      prev.some((u) => u.id === user.id) ? prev.filter((u) => u.id !== user.id) : [...prev, user]
+    );
+  };
+
+  const searchUsers = (searchResults || []) as UserBrief[];
+  const existingIds = new Set(membersData.map((m) => m.user_id));
+  const filteredResults = searchUsers.filter((u) => !existingIds.has(u.id));
 
   const columns: TableColumn<ProjectMember>[] = [
     { key: "name", label: "Name", render: (m) => (
       <div className="flex items-center gap-2">
         <Avatar name={m.user?.name || "?"} size="sm" />
-        <span className="text-sm text-primary">{m.user?.name || `User #${m.user_id}`}</span>
+        <div className="min-w-0">
+          <span className="text-sm text-primary">{m.user?.name || `User #${m.user_id}`}</span>
+          {m.user?.email && <p className="text-xs text-tertiary truncate">{m.user.email}</p>}
+        </div>
       </div>
     )},
-    { key: "role", label: "Role", render: (m) => <span className="text-xs text-secondary">{m.role}</span> },
-    { key: "actions", label: "", width: "60px", render: (m) => hasPermission("project-edit") ? (
-      <button onClick={() => removeMutation.mutate(m.user_id)} className="text-xs text-danger hover:underline">Remove</button>
+    { key: "role", label: "Role", render: (m) => canEdit ? (
+      <select
+        value={roleChange?.userId === m.user_id ? roleChange.role : m.role}
+        onChange={(e) => {
+          const newRole = e.target.value;
+          setRoleChange({ userId: m.user_id, role: newRole });
+          updateRoleMutation.mutate({ userId: m.user_id, role: newRole });
+        }}
+        className="h-7 px-2 rounded text-xs bg-surface border border-default text-primary hover:border-hover focus:outline-none focus:ring-1 focus:ring-primary-ring"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <option value="member">Member</option>
+        <option value="lead">Lead</option>
+        <option value="manager">Manager</option>
+      </select>
+    ) : <span className="text-xs text-secondary">{m.role}</span> },
+    { key: "actions", label: "", width: "80px", render: (m) => canEdit ? (
+      <button onClick={(e) => { e.stopPropagation(); setRemoveConfirm({ show: true, member: m }); }} className="text-xs text-danger hover:underline">Remove</button>
     ) : null },
   ];
 
@@ -346,8 +549,78 @@ function MembersTab({ projectId, membersData, loading }: { projectId: number; me
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <p className="text-xs text-tertiary">{membersData.length} member{membersData.length !== 1 ? "s" : ""}</p>
-        {hasPermission("project-edit") && <Button size="sm" variant="secondary"><Plus className="h-3.5 w-3.5" /> Add</Button>}
+        {canEdit && <Button size="sm" variant="secondary" onClick={() => setShowAddMember(!showAddMember)}><Plus className="h-3.5 w-3.5" /> Add Member</Button>}
       </div>
+
+      {/* Add member panel */}
+      {showAddMember && (
+        <Card className="p-4 space-y-3">
+          <p className="text-xs font-semibold text-primary">Add members to project</p>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-tertiary pointer-events-none" />
+            <input
+              type="text"
+              value={userSearch}
+              onChange={(e) => setUserSearch(e.target.value)}
+              placeholder="Search users by name or email..."
+              className="w-full h-9 pl-9 pr-3 rounded-md bg-surface border border-default text-sm text-primary placeholder:text-tertiary hover:border-hover focus:outline-none focus:ring-2 focus:ring-primary-ring focus:border-primary"
+            />
+          </div>
+          {userSearch.length >= 2 && (
+            <div className="max-h-40 overflow-y-auto space-y-0.5 border border-default rounded-md">
+              {searchLoading ? (
+                <div className="p-3 text-xs text-tertiary text-center">Searching...</div>
+              ) : filteredResults.length === 0 ? (
+                <div className="p-3 text-xs text-tertiary text-center">No users found</div>
+              ) : (
+                filteredResults.map((u) => {
+                  const isSelected = selectedUsers.some((su) => su.id === u.id);
+                  return (
+                    <button key={u.id} onClick={() => toggleUser(u)}
+                      className={`flex items-center gap-2 w-full px-3 py-2 text-left text-sm transition-colors ${
+                        isSelected ? "bg-primary-soft text-primary" : "text-secondary hover:bg-hover"
+                      }`}
+                    >
+                      <Avatar name={u.name} size="sm" />
+                      <div className="min-w-0 flex-1">
+                        <span className="text-sm">{u.name}</span>
+                        {u.email && <p className="text-xs text-tertiary">{u.email}</p>}
+                      </div>
+                      {isSelected && <CheckCircle2 className="h-4 w-4 text-primary" />}
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          )}
+          {selectedUsers.length > 0 && (
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs text-tertiary">{selectedUsers.length} selected</span>
+              {selectedUsers.map((u) => (
+                <span key={u.id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary-soft text-primary text-xs">
+                  {u.name}
+                  <button onClick={() => toggleUser(u)} className="hover:text-primary-hover"><X className="h-3 w-3" /></button>
+                </span>
+              ))}
+            </div>
+          )}
+          <div className="flex items-center gap-2">
+            <select
+              value={selectedRole}
+              onChange={(e) => setSelectedRole(e.target.value)}
+              className="h-9 px-3 rounded-md bg-surface border border-default text-sm text-primary hover:border-hover focus:outline-none focus:ring-2 focus:ring-primary-ring"
+            >
+              <option value="member">Member</option>
+              <option value="lead">Lead</option>
+              <option value="manager">Manager</option>
+            </select>
+            <Button size="sm" onClick={handleAddMembers} loading={addMemberMutation.isPending} disabled={selectedUsers.length === 0}>
+              Add to Project
+            </Button>
+          </div>
+        </Card>
+      )}
+
       {loading ? (
         <div className="space-y-2">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} variant="rect" className="h-10 w-full" />)}</div>
       ) : (
@@ -359,19 +632,39 @@ function MembersTab({ projectId, membersData, loading }: { projectId: number; me
             </div>
           } />
       )}
+
+      {/* Remove confirmation */}
+      <Drawer open={removeConfirm.show} onClose={() => setRemoveConfirm({ show: false, member: null })} title="Remove member">
+        <div className="space-y-4">
+          <p className="text-sm text-secondary">
+            Remove <strong className="text-primary">{removeConfirm.member?.user?.name || `User #${removeConfirm.member?.user_id}`}</strong> from this project?
+          </p>
+          <div className="flex items-center gap-2">
+            <Button variant="danger" size="sm" onClick={() => { if (removeConfirm.member) removeMutation.mutate(removeConfirm.member.user_id); }} loading={removeMutation.isPending}>Remove</Button>
+            <Button variant="secondary" size="sm" onClick={() => setRemoveConfirm({ show: false, member: null })}>Cancel</Button>
+          </div>
+        </div>
+      </Drawer>
     </div>
   );
 }
 
 /* ---------- Meetings Tab ---------- */
-function MeetingsTab({ meetingsData }: { projectId: number; meetingsData: Meeting[] }) {
+function MeetingsTab({ projectId, meetingsData }: { projectId: number; meetingsData: Meeting[] }) {
+  const navigate = useNavigate();
   return (
     <div className="space-y-3">
-      <p className="text-xs text-tertiary">{meetingsData.length} meeting{meetingsData.length !== 1 ? "s" : ""}</p>
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-tertiary">{meetingsData.length} meeting{meetingsData.length !== 1 ? "s" : ""}</p>
+        <Button size="sm" variant="secondary" onClick={() => navigate(`/work/meetings/new?project_id=${projectId}`)}>
+          <Plus className="h-3.5 w-3.5" /> Log Meeting
+        </Button>
+      </div>
       {meetingsData.length === 0 ? (
         <div className="flex flex-col items-center py-10 text-center bg-surface border border-default rounded-lg">
           <CalendarDays className="h-8 w-8 text-tertiary mb-2" />
-          <p className="text-sm text-tertiary">No meetings scheduled</p>
+          <p className="text-sm text-tertiary">No meetings logged</p>
+          <Button size="sm" variant="secondary" className="mt-3" onClick={() => navigate(`/work/meetings/new?project_id=${projectId}`)}>Log Meeting</Button>
         </div>
       ) : (
         <div className="space-y-1.5">
@@ -379,8 +672,12 @@ function MeetingsTab({ meetingsData }: { projectId: number; meetingsData: Meetin
             <Card key={m.id} variant="interactive" onClick={() => openDrawer("meeting", m.id)} className="p-3">
               <div className="flex items-center justify-between">
                 <div className="min-w-0 mr-3">
-                  <p className="text-sm text-primary truncate">{m.title}</p>
-                  <p className="text-xs text-tertiary mt-0.5">{formatDateTime(m.meeting_date)}</p>
+                  <p className="text-sm font-medium text-primary truncate">{m.title}</p>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <p className="text-xs text-tertiary">{formatDateTime(m.meeting_date)}</p>
+                    {m.summary && <span className="text-xs text-tertiary">&middot;</span>}
+                    {m.summary && <p className="text-xs text-tertiary truncate">{m.summary}</p>}
+                  </div>
                 </div>
                 {m.organizer && <Avatar name={m.organizer.name} size="sm" />}
               </div>
@@ -406,9 +703,12 @@ function ActivityTab({ activityData }: { activityData: ActivityLog[] }) {
           <Card key={a.id} className="p-3">
             <div className="flex items-start gap-2.5">
               <div className="h-2 w-2 rounded-full bg-primary-soft mt-1.5 shrink-0" />
-              <div>
+              <div className="min-w-0">
                 <p className="text-sm text-primary">{a.description}</p>
                 <p className="text-xs text-tertiary mt-0.5">{formatRelative(a.created_at)}</p>
+                {a.causer_id && a.properties && (
+                  <p className="text-xs text-tertiary mt-0.5">by {String(a.properties.causer_name || "Unknown")}</p>
+                )}
               </div>
             </div>
           </Card>

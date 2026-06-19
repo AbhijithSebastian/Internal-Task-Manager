@@ -1,11 +1,12 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { Bell, Plus, Menu, ChevronRight } from "lucide-react";
+import { Bell, Plus, Menu, ChevronRight, Search, Command } from "lucide-react";
 import { useAuth } from "@/store/auth";
 import { useState, useRef, useEffect } from "react";
 import { useEntityDrawer } from "@/hooks/useEntityDrawer";
 
 interface HeaderProps {
   onMenuClick: () => void;
+  onSearchClick?: () => void;
 }
 
 const newActions = [
@@ -21,10 +22,10 @@ const breadcrumbLabels: Record<string, string> = {
   tasks: "Tasks",
   projects: "Projects",
   meetings: "Meetings",
-  people: "People",
+  users: "Users",
   announcements: "Announcements",
   notifications: "Notifications",
-  analytics: "Analytics",
+  reports: "Reports",
   admin: "Administration",
   roles: "Roles",
   permissions: "Permissions",
@@ -34,7 +35,7 @@ const breadcrumbLabels: Record<string, string> = {
   invite: "Invite",
 };
 
-export function Header({ onMenuClick }: HeaderProps) {
+export function Header({ onMenuClick, onSearchClick }: HeaderProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
@@ -96,6 +97,17 @@ export function Header({ onMenuClick }: HeaderProps) {
           </span>
         ))}
       </nav>
+      <button
+        onClick={onSearchClick}
+        className="flex items-center gap-2 px-3 py-1.5 mr-2 rounded-md text-secondary hover:bg-hover hover:text-primary transition-colors duration-fast text-sm"
+      >
+        <Search className="h-4 w-4" />
+        <span className="hidden sm:inline">Search</span>
+        <kbd className="hidden lg:inline-flex items-center gap-0.5 rounded border border-subtle px-1 py-0.5 text-xs text-tertiary">
+          <Command className="h-3 w-3" />
+          <span>K</span>
+        </kbd>
+      </button>
       <div className="flex items-center gap-2">
         <div ref={newRef} className="relative">
           <button
