@@ -4,7 +4,7 @@ from app.core.enums import UserRole
 
 
 class LoginRequest(BaseModel):
-    email: str
+    email: EmailStr
     password: str
 
 

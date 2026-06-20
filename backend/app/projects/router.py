@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
 from datetime import datetime
 
@@ -35,7 +35,7 @@ def search_projects(
 
 
 class ProjectCreate(BaseModel):
-    name: str
+    name: str = Field(min_length=1)
     description: Optional[str] = None
     priority: str = "medium"
     start_date: Optional[str] = None
@@ -120,7 +120,7 @@ def list_projects(
 @router.get("/{project_id}")
 def get_project(project_id: int, db: Session = Depends(get_db),
                 current_user: User = Depends(get_current_user)):
-    project = db.query(Project).filter(Project.id == project_id).first()
+    project = db.query(Project).filter(Project.id == project_id, Project.deleted_at.is_(None)).first()
     if not project:
         raise NotFoundException("Project", project_id)
 
