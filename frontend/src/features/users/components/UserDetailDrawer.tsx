@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { api } from "@/services/api";
@@ -10,8 +11,9 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { Card } from "@/components/ui/Card";
 import { formatDate, formatRelative } from "@/utils/formatters";
-import { Mail, Shield, Calendar, Clock, CheckCircle2, XCircle, Briefcase, Building2, UserCircle, Activity, Edit3 } from "lucide-react";
-import type { User, Project, Task, ActivityLog } from "@/types";
+import { cn } from "@/lib/utils";
+import { Mail, Shield, Calendar, Clock, CheckCircle2, XCircle, Briefcase, Building2, UserCircle, Activity, Edit3, Check, Save, Search } from "lucide-react";
+import type { User, Project, Task, ActivityLog, Permission } from "@/types";
 
 interface UserDetailDrawerProps {
   userId: number | null;
@@ -55,7 +57,64 @@ export function UserDetailDrawer({ userId, onClose }: UserDetailDrawerProps) {
     },
   });
 
+  const [customPerms, setCustomPerms] = useState<Set<string>>(new Set());
+  const [inheritPerms, setInheritPerms] = useState(true);
+  const [permSearch, setPermSearch] = useState("");
+
+  const { data: allPerms, isLoading: permsLoading } = useQuery({
+    queryKey: ["permissions"],
+    queryFn: () =>
+      api.get("/permissions").then((r) => r.data?.items || r.data?.data || []),
+    enabled: Boolean(userId),
+  });
+
+  const permissions = (Array.isArray(allPerms) ? allPerms : []) as Permission[];
+
   const u = user as User | undefined;
+
+  useEffect(() => {
+    if (u) {
+      setInheritPerms(u.inherit_role_permissions);
+      setCustomPerms(new Set(u.permissions || []));
+    }
+  }, [u]);
+
+  const savePermsMutation = useMutation({
+    mutationFn: (data: { inherit_role_permissions: boolean; permissions: string[] }) =>
+      api.put(`/users/${userId}`, data).then((r) => r.data?.data || r.data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["user", userId] });
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+    },
+  });
+
+  const handleTogglePerm = (permName: string) => {
+    setCustomPerms((prev) => {
+      const next = new Set(prev);
+      if (next.has(permName)) next.delete(permName);
+      else next.add(permName);
+      return next;
+    });
+  };
+
+  const handleSavePerms = () => {
+    savePermsMutation.mutate({
+      inherit_role_permissions: inheritPerms,
+      permissions: Array.from(customPerms),
+    });
+  };
+
+  const hasPermsChanged = () => {
+    if (!u) return false;
+    if (inheritPerms !== u.inherit_role_permissions) return true;
+    const oldPerms = new Set(u.permissions || []);
+    if (oldPerms.size !== customPerms.size) return true;
+    for (const p of oldPerms) {
+      if (!customPerms.has(p)) return true;
+    }
+    return false;
+  };
+
   const tasks = (Array.isArray(userTasks) ? userTasks : []) as Task[];
   const projects = (Array.isArray(userProjects) ? userProjects : []) as Project[];
   const activity = (Array.isArray(userActivity) ? userActivity : []) as ActivityLog[];
@@ -168,6 +227,108 @@ export function UserDetailDrawer({ userId, onClose }: UserDetailDrawerProps) {
               </div>
             </Card>
           </div>
+
+          {hasPermission("user-edit") && (
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-xs font-semibold uppercase text-tertiary tracking-wide">
+                  <Shield className="h-3.5 w-3.5 inline mr-1 -mt-0.5" />
+                  Permissions
+                </h4>
+                {hasPermsChanged() && (
+                  <Button size="sm" onClick={handleSavePerms} loading={savePermsMutation.isPending}>
+                    <Save className="h-3.5 w-3.5" /> Save
+                  </Button>
+                )}
+              </div>
+              <Card className="p-4 space-y-3">
+                <label className="flex items-center justify-between cursor-pointer">
+                  <div>
+                    <p className="text-sm font-medium text-primary">Inherit role permissions</p>
+                    <p className="text-xs text-tertiary">When enabled, user inherits all permissions from their role</p>
+                  </div>
+                  <button
+                    onClick={() => setInheritPerms(!inheritPerms)}
+                    className={cn(
+                      "relative inline-flex h-5 w-9 items-center rounded-full transition-colors",
+                      inheritPerms ? "bg-primary" : "bg-subtle"
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        "inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform",
+                        inheritPerms ? "translate-x-[18px]" : "translate-x-[3px]"
+                      )}
+                    />
+                  </button>
+                </label>
+                {!inheritPerms && (
+                  <div className="space-y-3 pt-2 border-t border-subtle">
+                    <div className="relative">
+                      <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-tertiary pointer-events-none" />
+                      <input
+                        type="text"
+                        value={permSearch}
+                        onChange={(e) => setPermSearch(e.target.value)}
+                        placeholder="Search permissions..."
+                        className="w-full h-8 pl-8 pr-3 rounded-md bg-surface border border-default text-xs text-primary placeholder:text-tertiary focus:outline-none focus:ring-1 focus:ring-primary"
+                      />
+                    </div>
+                    {permsLoading ? (
+                      <div className="space-y-1">
+                        {Array.from({ length: 3 }).map((_, i) => (
+                          <Skeleton key={i} variant="text" className="h-6 w-full" />
+                        ))}
+                      </div>
+                    ) : (
+                      Object.entries(
+                        permissions
+                          .filter((p) => {
+                            if (!permSearch) return true;
+                            const q = permSearch.toLowerCase();
+                            return (
+                              p.name.toLowerCase().includes(q) ||
+                              (p.label || "").toLowerCase().includes(q) ||
+                              (p.group || "").toLowerCase().includes(q)
+                            );
+                          })
+                          .reduce<Record<string, Permission[]>>((acc, p) => {
+                            const g = p.group || "Other";
+                            if (!acc[g]) acc[g] = [];
+                            acc[g].push(p);
+                            return acc;
+                          }, {})
+                      ).map(([group, perms]) => (
+                        <div key={group}>
+                          <p className="text-[10px] font-semibold uppercase text-tertiary tracking-wide mb-1">{group}</p>
+                          <div className="flex flex-wrap gap-1">
+                            {perms.map((p) => {
+                              const enabled = customPerms.has(p.name);
+                              return (
+                                <button
+                                  key={p.id}
+                                  onClick={() => handleTogglePerm(p.name)}
+                                  className={cn(
+                                    "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium transition-colors",
+                                    enabled
+                                      ? "bg-primary-soft text-primary"
+                                      : "bg-subtle text-secondary hover:bg-hover"
+                                  )}
+                                >
+                                  {enabled && <Check className="h-2.5 w-2.5" />}
+                                  {p.label || p.name}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
+              </Card>
+            </div>
+          )}
 
           <div>
             <h4 className="text-xs font-semibold uppercase text-tertiary tracking-wide mb-3">

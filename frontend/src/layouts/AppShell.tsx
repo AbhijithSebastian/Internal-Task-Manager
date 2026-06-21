@@ -26,7 +26,7 @@ export function AppShell() {
       <div className="flex h-screen overflow-hidden bg-app">
         <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         <div className="flex flex-1 flex-col min-w-0">
-          <Header onMenuClick={() => setSidebarOpen(true)} onSearchClick={() => setSearchOpen(true)} />
+          <Header onMenuClick={() => setSidebarOpen(true)} />
           <main className="flex-1 overflow-y-auto">
             <Outlet />
           </main>

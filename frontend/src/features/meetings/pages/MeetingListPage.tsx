@@ -29,7 +29,11 @@ export default function MeetingListPage() {
   const meetings: Meeting[] = Array.isArray(data) ? data : data?.items || [];
   const total = data?.total || meetings.length;
 
-  const upcoming = meetings.filter((m) => new Date(m.meeting_date) > new Date()).length;
+  const thisMonth = meetings.filter((m) => {
+    const d = new Date(m.meeting_date);
+    const now = new Date();
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  }).length;
 
   const columns: TableColumn<Meeting>[] = [
     { key: "title", label: "Title", render: (m) => (
@@ -61,7 +65,7 @@ export default function MeetingListPage() {
         </div>
         {hasPermission("meeting-create") && (
           <Button onClick={() => navigate("/work/meetings/new")}>
-            <Plus className="h-4 w-4" /> Schedule Meeting
+            <Plus className="h-4 w-4" /> Log Meeting
           </Button>
         )}
       </div>
@@ -78,15 +82,15 @@ export default function MeetingListPage() {
           </Card>
           <Card className="p-3.5 space-y-2">
             <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-tertiary">
-              <UserCheck className="h-3.5 w-3.5" /> Upcoming
+              <UserCheck className="h-3.5 w-3.5" /> This Month
             </div>
-            <p className="text-xl font-bold text-primary">{upcoming}</p>
+            <p className="text-xl font-bold text-primary">{thisMonth}</p>
           </Card>
           <Card className="p-3.5 space-y-2">
             <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-tertiary">
-              <FileText className="h-3.5 w-3.5" /> Past
+              <FileText className="h-3.5 w-3.5" /> Total Logged
             </div>
-            <p className="text-xl font-bold text-primary">{Math.max(0, total - upcoming)}</p>
+            <p className="text-xl font-bold text-primary">{total}</p>
           </Card>
         </div>
       )}
@@ -106,8 +110,8 @@ export default function MeetingListPage() {
           <div className="flex flex-col items-center py-16 text-center">
             <CalendarDays className="h-12 w-12 text-tertiary mb-3" />
             <h3 className="text-lg font-semibold text-primary">No meetings</h3>
-            <p className="text-sm text-secondary mt-1 mb-4">Schedule your first meeting.</p>
-            <Button onClick={() => navigate("/work/meetings/new")}><Plus className="h-4 w-4" /> Schedule Meeting</Button>
+            <p className="text-sm text-secondary mt-1 mb-4">Log your first meeting.</p>
+            <Button onClick={() => navigate("/work/meetings/new")}><Plus className="h-4 w-4" /> Log Meeting</Button>
           </div>
         }
       />

@@ -9,6 +9,7 @@ import {
   BarChart3,
   Shield,
   Settings,
+  ListChecks,
   type LucideIcon,
 } from "lucide-react";
 
@@ -36,6 +37,7 @@ export const navSections: NavSection[] = [
     label: "Work",
     items: [
       { label: "Tasks", href: "/work/tasks", icon: CheckSquare },
+      { label: "Subtasks", href: "/work/subtasks", icon: ListChecks },
       { label: "Projects", href: "/work/projects", icon: FolderKanban },
       { label: "Meetings", href: "/work/meetings", icon: Video },
     ],

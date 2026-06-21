@@ -22,6 +22,7 @@ import AnnouncementFormPage from "@/features/announcements/pages/AnnouncementFor
 import NotificationListPage from "@/features/notifications/pages/NotificationListPage";
 import ReportsPage from "@/features/reports/pages/ReportsPage";
 import RoleListPage from "@/features/roles/pages/RoleListPage";
+import SubtaskListPage from "@/features/subtasks/pages/SubtaskListPage";
 import AdminSettingsPage from "@/features/admin/pages/AdminSettingsPage";
 
 function ProtectedLayout() {
@@ -72,6 +73,9 @@ export function AppRoutes() {
         <Route path="/work/tasks" element={<TaskListPage />} />
         <Route path="/work/tasks/new" element={<TaskFormPage />} />
         <Route path="/work/tasks/:id/edit" element={<TaskFormPage />} />
+
+        {/* Subtasks */}
+        <Route path="/work/subtasks" element={<SubtaskListPage />} />
 
         {/* Projects */}
         <Route path="/work/projects" element={<ProjectListPage />} />

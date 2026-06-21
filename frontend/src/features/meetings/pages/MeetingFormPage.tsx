@@ -99,7 +99,7 @@ export default function MeetingFormPage() {
         <button onClick={() => navigate("/work/meetings")} className="p-1 rounded-md text-tertiary hover:text-primary hover:bg-hover transition-colors">
           <ArrowLeft className="h-4 w-4" />
         </button>
-        <h1 className="text-xl font-bold text-primary">{isEdit ? "Edit Meeting" : "Schedule Meeting"}</h1>
+        <h1 className="text-xl font-bold text-primary">{isEdit ? "Edit Meeting Log" : "Log Meeting"}</h1>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-5">
@@ -161,7 +161,7 @@ export default function MeetingFormPage() {
         </Card>
 
         <div className="flex items-center gap-3">
-          <Button type="submit" loading={mutation.isPending}>{isEdit ? "Save Changes" : "Schedule Meeting"}</Button>
+          <Button type="submit" loading={mutation.isPending}>{isEdit ? "Save Changes" : "Log Meeting"}</Button>
           <Button variant="secondary" onClick={() => navigate("/work/meetings")}>Cancel</Button>
         </div>
       </form>

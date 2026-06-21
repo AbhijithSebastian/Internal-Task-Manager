@@ -1,82 +1,57 @@
 import { useState, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { api } from "@/services/api";
 import { reportsService } from "@/features/reports/services/reports";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
-import { Skeleton, SkeletonTable } from "@/components/ui/Skeleton";
+import { SkeletonTable } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { formatDate } from "@/utils/formatters";
 import {
   FileText,
   Download,
-  CheckCircle2,
-  Clock,
-  Users,
-  Calendar,
-  Activity,
-  AlertTriangle,
-  BarChart3,
   ChevronDown,
   Building2,
+  Calendar,
+  Users,
+  Activity,
+  CheckCircle2,
   UserCheck,
+  MessageSquare,
+  Eye,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type Tab = "task_completion" | "workload_distribution" | "weekly_summary" | "meeting_logs";
+type Tab = "project_report" | "meeting_logs";
 
-interface TaskCompletionReport {
-  project_id: number;
-  project_name: string;
-  total_tasks: number;
-  completed_tasks: number;
+interface ProjectReport {
+  id: number;
+  name: string;
   completion_percentage: number;
+  estimated_completion_date?: string;
+  team_members: { id: number; name: string; avatar_url?: string; role: string }[];
+  activities_count: number;
+  meetings_count: number;
+  completed_parts: string[];
 }
 
-interface WorkloadReport {
-  user_id: number;
-  user_name: string;
-  avatar_url?: string;
-  assigned_tasks: number;
-  completed_tasks: number;
-  completion_rate: number;
-}
-
-interface WeeklySummaryItem {
-  label: string;
-  value: number;
-  change?: number;
-}
-
-interface MeetingLogReport {
+interface MeetingReport {
   id: number;
   title: string;
   meeting_date: string;
+  topic?: string;
+  attendees: { id: number; name: string; avatar_url?: string; role: string }[];
+  absentees?: string[];
+  summary: string;
+  remarks?: string;
+  important_notes?: string;
+  next_meeting_date?: string;
   project_name?: string;
-  organizer?: {
-    id: number;
-    name: string;
-    avatar_url?: string;
-  };
-  summary?: string;
-}
-
-interface ProjectHealthReport {
-  id: number;
-  name: string;
-  health: "good" | "at_risk" | "critical";
-  progress_percentage: number;
-  completed_tasks: number;
-  in_progress_tasks: number;
-  total_tasks: number;
 }
 
 const TABS: { key: Tab; label: string }[] = [
-  { key: "task_completion", label: "Task Completion" },
-  { key: "workload_distribution", label: "Workload Distribution" },
-  { key: "weekly_summary", label: "Weekly Summary" },
+  { key: "project_report", label: "Project Report" },
   { key: "meeting_logs", label: "Meeting Logs" },
 ];
 
@@ -97,196 +72,177 @@ function ProgressBar({ value, className }: { value: number; className?: string }
   );
 }
 
-const summaryIcons = [CheckCircle2, Clock, Users, Calendar, Activity, BarChart3, AlertTriangle, UserCheck];
-
-function renderTaskCompletion(data: unknown, loading: boolean) {
-  if (loading) return <SkeletonTable rows={5} columns={4} />;
-  const items = (Array.isArray(data) ? data : []) as TaskCompletionReport[];
+function renderProjectReport(data: unknown, loading: boolean) {
+  if (loading) return <SkeletonTable rows={4} columns={3} />;
+  const items = (Array.isArray(data) ? data : []) as ProjectReport[];
   if (items.length === 0) {
     return (
       <Card>
         <EmptyState
-          icon={<CheckCircle2 className="h-8 w-8 text-tertiary" />}
-          title="No task completion data"
-          description="Complete some tasks to see completion reports."
+          icon={<Building2 className="h-8 w-8 text-tertiary" />}
+          title="No project reports"
+          description="Project reports will appear here once projects have data."
         />
       </Card>
     );
   }
   return (
-    <div className="bg-surface border border-default shadow-card rounded-lg overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-subtle bg-subtle">
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-secondary">Project</th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-secondary">Progress</th>
-              <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wide text-secondary">Completed</th>
-              <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wide text-secondary">Total</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-subtle">
-            {items.map((item) => (
-              <tr key={item.project_id} className="hover:bg-hover transition-colors duration-fast">
-                <td className="px-4 py-3 text-sm font-medium text-primary">{item.project_name}</td>
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-3">
-                    <ProgressBar value={item.completion_percentage} className="flex-1" />
-                    <span className="text-xs text-tertiary shrink-0 w-10 text-right">
-                      {Math.round(item.completion_percentage)}%
-                    </span>
-                  </div>
-                </td>
-                <td className="px-4 py-3 text-sm text-right text-semantic-success font-medium">{item.completed_tasks}</td>
-                <td className="px-4 py-3 text-sm text-right text-secondary">{item.total_tasks}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
-
-function renderWorkloadDistribution(data: unknown, loading: boolean) {
-  if (loading) {
-    return (
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <Card key={i} className="p-4 space-y-3">
-            <div className="flex items-center gap-3">
-              <Skeleton variant="circle" className="h-10 w-10" />
-              <div className="space-y-1.5 flex-1">
-                <Skeleton variant="text" className="h-4 w-2/3" />
-                <Skeleton variant="text" className="h-3 w-1/3" />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <Skeleton variant="text" className="h-3 w-16" />
-                <Skeleton variant="text" className="h-3 w-10" />
-              </div>
-              <Skeleton variant="rect" className="h-2 w-full rounded-full" />
-            </div>
-          </Card>
-        ))}
-      </div>
-    );
-  }
-  const items = (Array.isArray(data) ? data : []) as WorkloadReport[];
-  if (items.length === 0) {
-    return (
-      <Card>
-        <EmptyState
-          icon={<Users className="h-8 w-8 text-tertiary" />}
-          title="No workload data"
-          description="Assign tasks to users to see workload distribution."
-        />
-      </Card>
-    );
-  }
-  return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {items.map((item) => (
-        <Card key={item.user_id} className="p-4 space-y-3">
-          <div className="flex items-center gap-3">
-            <Avatar name={item.user_name} size="md" src={item.avatar_url} />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-primary truncate">{item.user_name}</p>
-              <div className="flex items-center gap-2 text-xs text-tertiary mt-0.5">
-                <span>{item.assigned_tasks} tasks</span>
-              </div>
-            </div>
-            <div className="text-right">
-              <p className="text-lg font-bold text-primary">{Math.round(item.completion_rate)}%</p>
-              <p className="text-xs text-tertiary">completion</p>
-            </div>
-          </div>
-          <ProgressBar value={item.completion_rate} />
-          <div className="flex items-center justify-between text-xs text-tertiary pt-1">
-            <span className="inline-flex items-center gap-1">
-              <CheckCircle2 className="h-3 w-3 text-semantic-success" />
-              {item.completed_tasks} done
-            </span>
-            <span className="inline-flex items-center gap-1">
-              <Clock className="h-3 w-3 text-semantic-warning" />
-              {item.assigned_tasks - item.completed_tasks} pending
-            </span>
-          </div>
-        </Card>
+    <div className="grid gap-4">
+      {items.map((project) => (
+        <ProjectReportCard key={project.id} project={project} />
       ))}
     </div>
   );
 }
 
-function renderWeeklySummary(data: unknown, loading: boolean) {
-  if (loading) {
-    return (
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <Card key={i} className="p-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <Skeleton variant="text" className="h-3 w-20" />
-              <Skeleton variant="rect" className="h-4 w-4 rounded" />
-            </div>
-            <Skeleton variant="text" className="h-8 w-16" />
-            <Skeleton variant="text" className="h-3 w-24" />
-          </Card>
-        ))}
-      </div>
-    );
-  }
-  let items: WeeklySummaryItem[] = [];
-  if (Array.isArray(data)) {
-    items = data as WeeklySummaryItem[];
-  } else if (data && typeof data === "object") {
-    items = Object.entries(data as Record<string, unknown>).map(([key, val]) => ({
-      label: key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()),
-      value: typeof val === "number" ? val : 0,
-    }));
-  }
-  if (items.length === 0) {
-    return (
-      <Card>
-        <EmptyState
-          icon={<BarChart3 className="h-8 w-8 text-tertiary" />}
-          title="No weekly summary"
-          description="Data will appear here once the week progresses."
-        />
-      </Card>
-    );
-  }
+function ProjectReportCard({ project }: { project: ProjectReport }) {
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewData, setPreviewData] = useState<ProjectReport | null>(null);
+  const [loadingPreview, setLoadingPreview] = useState(false);
+
+  const handlePreview = async () => {
+    if (previewOpen) {
+      setPreviewOpen(false);
+      return;
+    }
+    setLoadingPreview(true);
+    try {
+      const data = await reportsService.getProjectPreview(project.id);
+      setPreviewData(data);
+    } catch {
+      setPreviewData(null);
+    }
+    setLoadingPreview(false);
+    setPreviewOpen(true);
+  };
+
+  const handleDownload = async () => {
+    try {
+      const blob = await reportsService.exportReport("project_report", "csv");
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `project-${project.id}-report.csv`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch {
+      // silent
+    }
+  };
+
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-      {items.map((item, idx) => {
-        const Icon = summaryIcons[idx % summaryIcons.length];
-        return (
-          <Card key={item.label} className="p-4 space-y-1.5">
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-tertiary font-medium uppercase tracking-wider">{item.label}</span>
-              <Icon className="h-3.5 w-3.5 text-tertiary" />
+    <Card className="overflow-hidden">
+      <div className="p-4 space-y-4">
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="h-10 w-10 rounded-lg bg-primary-soft text-primary flex items-center justify-center shrink-0">
+              <Building2 className="h-5 w-5" />
             </div>
-            <p className="text-2xl font-bold text-primary">{item.value.toLocaleString()}</p>
-            {item.change != null && (
-              <span
-                className={cn(
-                  "inline-flex items-center gap-0.5 text-xs",
-                  item.change >= 0 ? "text-semantic-success" : "text-semantic-danger"
-                )}
-              >
-                {item.change >= 0 ? "+" : ""}{item.change}% from last week
-              </span>
+            <div className="min-w-0">
+              <h3 className="text-sm font-semibold text-primary truncate">{project.name}</h3>
+              {project.estimated_completion_date && (
+                <p className="text-xs text-tertiary flex items-center gap-1 mt-0.5">
+                  <Calendar className="h-3 w-3" />
+                  Est. completion: {formatDate(project.estimated_completion_date)}
+                </p>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <Button variant="secondary" size="sm" onClick={handlePreview} loading={loadingPreview}>
+              <Eye className="h-3.5 w-3.5" /> Preview
+            </Button>
+            <Button variant="secondary" size="sm" onClick={handleDownload}>
+              <Download className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-4">
+          <div className="flex-1">
+            <div className="flex items-center justify-between text-xs text-tertiary mb-1">
+              <span>Progress</span>
+              <span className="font-medium text-primary">{Math.round(project.completion_percentage)}%</span>
+            </div>
+            <ProgressBar value={project.completion_percentage} />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-3 gap-3">
+          <div className="flex items-center gap-2 text-xs text-tertiary">
+            <Users className="h-3.5 w-3.5" />
+            <span>{project.team_members.length} members</span>
+          </div>
+          <div className="flex items-center gap-2 text-xs text-tertiary">
+            <Activity className="h-3.5 w-3.5" />
+            <span>{project.activities_count} activities</span>
+          </div>
+          <div className="flex items-center gap-2 text-xs text-tertiary">
+            <MessageSquare className="h-3.5 w-3.5" />
+            <span>{project.meetings_count} meetings</span>
+          </div>
+        </div>
+
+        {project.completed_parts.length > 0 && (
+          <div className="space-y-1">
+            <p className="text-xs font-medium text-tertiary">Completed Parts</p>
+            <div className="flex flex-wrap gap-1.5">
+              {project.completed_parts.map((part, i) => (
+                <Badge key={i} variant="success" size="sm">
+                  <CheckCircle2 className="h-2.5 w-2.5" /> {part}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {project.team_members.length > 0 && (
+          <div className="space-y-1.5">
+            <p className="text-xs font-medium text-tertiary">Team Members</p>
+            <div className="flex flex-wrap gap-2">
+              {project.team_members.slice(0, 8).map((m) => (
+                <div key={m.id} className="flex items-center gap-1.5">
+                  <Avatar name={m.name} size="sm" src={m.avatar_url} />
+                  <div className="text-xs">
+                    <p className="text-primary">{m.name}</p>
+                    <p className="text-tertiary">{m.role}</p>
+                  </div>
+                </div>
+              ))}
+              {project.team_members.length > 8 && (
+                <span className="text-xs text-tertiary self-center">+{project.team_members.length - 8} more</span>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {previewOpen && (
+        <div className="border-t border-subtle">
+          <div className="p-4 bg-subtle/50">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-xs font-semibold uppercase text-tertiary tracking-wide">Full Preview</h4>
+              <button onClick={() => setPreviewOpen(false)} className="text-xs text-link hover:underline">
+                Close
+              </button>
+            </div>
+            {previewData ? (
+              <pre className="text-xs text-secondary whitespace-pre-wrap max-h-60 overflow-y-auto">
+                {JSON.stringify(previewData, null, 2)}
+              </pre>
+            ) : (
+              <p className="text-xs text-tertiary">Preview data not available</p>
             )}
-          </Card>
-        );
-      })}
-    </div>
+          </div>
+        </div>
+      )}
+    </Card>
   );
 }
 
 function renderMeetingLogs(data: unknown, loading: boolean) {
-  if (loading) return <SkeletonTable rows={5} columns={4} />;
-  const items = (Array.isArray(data) ? data : []) as MeetingLogReport[];
+  if (loading) return <SkeletonTable rows={4} columns={3} />;
+  const items = (Array.isArray(data) ? data : []) as MeetingReport[];
   if (items.length === 0) {
     return (
       <Card>
@@ -299,145 +255,183 @@ function renderMeetingLogs(data: unknown, loading: boolean) {
     );
   }
   return (
-    <div className="bg-surface border border-default shadow-card rounded-lg overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-subtle bg-subtle">
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-secondary">Meeting</th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-secondary">Project</th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-secondary">Organizer</th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-secondary">Date</th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-secondary">Summary</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-subtle">
-            {items.map((item) => (
-              <tr key={item.id} className="hover:bg-hover transition-colors duration-fast">
-                <td className="px-4 py-3 text-sm font-medium text-primary">{item.title}</td>
-                <td className="px-4 py-3 text-sm text-secondary">{item.project_name || "-"}</td>
-                <td className="px-4 py-3">
-                  {item.organizer ? (
-                    <div className="flex items-center gap-2">
-                      <Avatar name={item.organizer.name} size="sm" src={item.organizer.avatar_url} />
-                      <span className="text-sm text-primary">{item.organizer.name}</span>
-                    </div>
-                  ) : (
-                    <span className="text-sm text-tertiary">-</span>
-                  )}
-                </td>
-                <td className="px-4 py-3 text-sm text-secondary">{formatDate(item.meeting_date)}</td>
-                <td className="px-4 py-3 text-sm text-tertiary max-w-xs truncate">
-                  {item.summary || "-"}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+    <div className="grid gap-4">
+      {items.map((meeting) => (
+        <MeetingReportCard key={meeting.id} meeting={meeting} />
+      ))}
     </div>
+  );
+}
+
+function MeetingReportCard({ meeting }: { meeting: MeetingReport }) {
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewData, setPreviewData] = useState<MeetingReport | null>(null);
+  const [loadingPreview, setLoadingPreview] = useState(false);
+
+  const handlePreview = async () => {
+    if (previewOpen) {
+      setPreviewOpen(false);
+      return;
+    }
+    setLoadingPreview(true);
+    try {
+      const data = await reportsService.getMeetingLog(meeting.id);
+      setPreviewData(data);
+    } catch {
+      setPreviewData(null);
+    }
+    setLoadingPreview(false);
+    setPreviewOpen(true);
+  };
+
+  const handleDownload = async () => {
+    try {
+      const blob = await reportsService.exportReport("meeting_logs", "csv");
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `meeting-${meeting.id}-report.csv`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch {
+      // silent
+    }
+  };
+
+  return (
+    <Card className="overflow-hidden">
+      <div className="p-4 space-y-4">
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="h-10 w-10 rounded-lg bg-primary-soft text-primary flex items-center justify-center shrink-0">
+              <Calendar className="h-5 w-5" />
+            </div>
+            <div className="min-w-0">
+              <h3 className="text-sm font-semibold text-primary truncate">{meeting.title}</h3>
+              <div className="flex items-center gap-2 text-xs text-tertiary mt-0.5">
+                <span>{formatDate(meeting.meeting_date)}</span>
+                {meeting.project_name && (
+                  <>
+                    <span>·</span>
+                    <span>{meeting.project_name}</span>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <Button variant="secondary" size="sm" onClick={handlePreview} loading={loadingPreview}>
+              <Eye className="h-3.5 w-3.5" /> Preview
+            </Button>
+            <Button variant="secondary" size="sm" onClick={handleDownload}>
+              <Download className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        </div>
+
+        {meeting.topic && (
+          <div>
+            <p className="text-xs text-tertiary font-medium">Topic</p>
+            <p className="text-sm text-primary">{meeting.topic}</p>
+          </div>
+        )}
+
+        {meeting.summary && (
+          <div>
+            <p className="text-xs text-tertiary font-medium mb-1">Summary</p>
+            <p className="text-sm text-secondary leading-relaxed line-clamp-3">{meeting.summary}</p>
+          </div>
+        )}
+
+        <div className="grid grid-cols-2 gap-3">
+          {meeting.attendees.length > 0 && (
+            <div>
+              <p className="text-xs text-tertiary font-medium mb-1 flex items-center gap-1">
+                <UserCheck className="h-3 w-3" /> Attendees ({meeting.attendees.length})
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {meeting.attendees.slice(0, 6).map((a) => (
+                  <div key={a.id} className="flex items-center gap-1 bg-subtle rounded-full px-2 py-0.5">
+                    <Avatar name={a.name} size="sm" src={a.avatar_url} />
+                    <span className="text-xs text-primary">{a.name}</span>
+                    <span className="text-[10px] text-tertiary">({a.role})</span>
+                  </div>
+                ))}
+                {meeting.attendees.length > 6 && (
+                  <span className="text-xs text-tertiary">+{meeting.attendees.length - 6}</span>
+                )}
+              </div>
+            </div>
+          )}
+          {meeting.absentees && meeting.absentees.length > 0 && (
+            <div>
+              <p className="text-xs text-tertiary font-medium mb-1">Absentees</p>
+              <div className="flex flex-wrap gap-1">
+                {meeting.absentees.map((name, i) => (
+                  <Badge key={i} variant="neutral" size="sm">{name}</Badge>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          {meeting.remarks && (
+            <div>
+              <p className="text-xs text-tertiary font-medium">Remarks</p>
+              <p className="text-xs text-secondary">{meeting.remarks}</p>
+            </div>
+          )}
+          {meeting.important_notes && (
+            <div>
+              <p className="text-xs text-tertiary font-medium">Important Notes</p>
+              <p className="text-xs text-secondary">{meeting.important_notes}</p>
+            </div>
+          )}
+        </div>
+
+        {meeting.next_meeting_date && (
+          <div className="flex items-center gap-1.5 text-xs text-primary">
+            <Calendar className="h-3.5 w-3.5" />
+            Next meeting: {formatDate(meeting.next_meeting_date)}
+          </div>
+        )}
+      </div>
+
+      {previewOpen && (
+        <div className="border-t border-subtle">
+          <div className="p-4 bg-subtle/50">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-xs font-semibold uppercase text-tertiary tracking-wide">Full Preview</h4>
+              <button onClick={() => setPreviewOpen(false)} className="text-xs text-link hover:underline">
+                Close
+              </button>
+            </div>
+            {previewData ? (
+              <pre className="text-xs text-secondary whitespace-pre-wrap max-h-60 overflow-y-auto">
+                {JSON.stringify(previewData, null, 2)}
+              </pre>
+            ) : (
+              <p className="text-xs text-tertiary">Preview data not available</p>
+            )}
+          </div>
+        </div>
+      )}
+    </Card>
   );
 }
 
 function renderTabContent(tab: Tab, data: unknown, loading: boolean) {
   switch (tab) {
-    case "task_completion":
-      return renderTaskCompletion(data, loading);
-    case "workload_distribution":
-      return renderWorkloadDistribution(data, loading);
-    case "weekly_summary":
-      return renderWeeklySummary(data, loading);
+    case "project_report":
+      return renderProjectReport(data, loading);
     case "meeting_logs":
       return renderMeetingLogs(data, loading);
   }
 }
 
-function ProjectHealthCard({ project }: { project: ProjectHealthReport }) {
-  return (
-    <Card className="space-y-3">
-      <div className="flex items-center justify-between">
-        <p className="text-sm font-semibold text-primary">{project.name}</p>
-        <Badge variant={project.health === "good" ? "success" : project.health === "at_risk" ? "warning" : "danger"} size="sm">
-          {project.health === "good" ? "Good" : project.health === "at_risk" ? "At Risk" : "Critical"}
-        </Badge>
-      </div>
-      <div className="space-y-2">
-        <div className="flex justify-between text-xs">
-          <span className="text-tertiary">Progress</span>
-          <span className="text-primary font-medium">{project.progress_percentage}%</span>
-        </div>
-        <ProgressBar value={project.progress_percentage} />
-        <div className="grid grid-cols-3 gap-2 text-xs text-tertiary pt-1">
-          <div className="text-center">
-            <p className="text-primary font-medium">{project.completed_tasks}</p>
-            <p>Done</p>
-          </div>
-          <div className="text-center">
-            <p className="text-primary font-medium">{project.in_progress_tasks}</p>
-            <p>In Prog</p>
-          </div>
-          <div className="text-center">
-            <p className="text-primary font-medium">{project.total_tasks}</p>
-            <p>Total</p>
-          </div>
-        </div>
-      </div>
-    </Card>
-  );
-}
-
-function ProjectHealthSection() {
-  const { data: projectHealth, isLoading: healthLoading } = useQuery({
-    queryKey: ["reports", "project-health"],
-    queryFn: () =>
-      api
-        .get("/reports/project/0/preview")
-        .then((r) => r.data?.data ?? r.data ?? null)
-        .catch(() => null),
-    retry: false,
-  });
-
-  const projectHealthArr = (Array.isArray(projectHealth) ? projectHealth : projectHealth ? [projectHealth] : []) as ProjectHealthReport[];
-
-  if (projectHealthArr.length === 0 && !healthLoading) return null;
-
-  return (
-    <div>
-      <h2 className="text-sm font-semibold text-primary mb-3">
-        <Building2 className="h-4 w-4 inline mr-1.5 -mt-0.5" />
-        Project Health
-      </h2>
-      {healthLoading ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <Card key={i} className="p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <Skeleton variant="text" className="h-4 w-24" />
-                <Skeleton variant="text" className="h-5 w-14 rounded-full" />
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <Skeleton variant="text" className="h-3 w-16" />
-                  <Skeleton variant="text" className="h-3 w-8" />
-                </div>
-                <Skeleton variant="rect" className="h-2 w-full rounded-full" />
-              </div>
-            </Card>
-          ))}
-        </div>
-      ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {projectHealthArr.map((p) => (
-            <ProjectHealthCard key={p.id} project={p} />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
 export default function ReportsPage() {
-  const [activeTab, setActiveTab] = useState<Tab>("task_completion");
+  const [activeTab, setActiveTab] = useState<Tab>("project_report");
   const [exportOpen, setExportOpen] = useState(false);
   const exportRef = useRef<HTMLDivElement>(null);
 
@@ -459,7 +453,7 @@ export default function ReportsPage() {
   const handleExport = async (format: "csv" | "xlsx") => {
     setExportOpen(false);
     try {
-      const blob = await reportsService.exportReport(format);
+      const blob = await reportsService.exportReport(activeTab, format);
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -467,13 +461,12 @@ export default function ReportsPage() {
       a.click();
       window.URL.revokeObjectURL(url);
     } catch {
-      // Export failed silently
+      // silent
     }
   };
 
   return (
     <div className="page-container py-6 space-y-5">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-primary">Reports</h1>
         <div ref={exportRef} className="relative">
@@ -500,7 +493,6 @@ export default function ReportsPage() {
         </div>
       </div>
 
-      {/* Tab bar */}
       <div className="flex items-center gap-2 border-b border-subtle pb-3">
         {TABS.map((tab) => (
           <button
@@ -518,11 +510,7 @@ export default function ReportsPage() {
         ))}
       </div>
 
-      {/* Tab Content */}
       {renderTabContent(activeTab, tabData, tabLoading)}
-
-      {/* Project Health */}
-      <ProjectHealthSection />
     </div>
   );
 }

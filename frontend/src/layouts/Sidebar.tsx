@@ -41,47 +41,44 @@ export function Sidebar({ open, onClose }: SidebarProps) {
             <X className="h-5 w-5" />
           </button>
         </div>
-        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
-          {navSections.map((section) => (
-            <div key={section.label}>
-              <p className="px-3 mb-1 text-xs font-medium uppercase tracking-wide text-tertiary pointer-events-none select-none">
-                {section.label}
-              </p>
-              <ul className="space-y-0.5">
-                {section.items
-                  .filter((item) => {
-                    if (!item.roles) return true;
-                    if (!user) return false;
-                    if (user.is_super_admin) return true;
-                    return item.roles.includes(user.role || "");
-                  })
-                  .map((item) => {
-                    const Icon = item.icon;
-                    const active = isActive(item.href);
-                    return (
-                      <li key={item.href}>
-                        <Link
-                          to={item.href}
-                          onClick={onClose}
-                          className={cn(
-                            "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-fast",
-                            active
-                              ? "bg-primary-soft text-primary"
-                              : "text-secondary hover:bg-hover hover:text-primary"
-                          )}
-                        >
-                          <Icon className={cn("h-4 w-4 shrink-0", active ? "text-primary" : "text-tertiary")} />
-                          <span>{item.label}</span>
-                          {item.badge === "notification" && (
-                            <span className="ml-auto w-2 h-2 rounded-full bg-semantic-danger" />
-                          )}
-                        </Link>
-                      </li>
-                    );
-                  })}
+        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
+          {navSections.map((section) => {
+            const visible = section.items.filter((item) => {
+              if (!item.roles) return true;
+              if (!user) return false;
+              if (user.is_super_admin) return true;
+              return item.roles.includes(user.role || "");
+            });
+            if (visible.length === 0) return null;
+            return (
+              <ul key={section.label} className="space-y-0.5">
+                {visible.map((item) => {
+                  const Icon = item.icon;
+                  const active = isActive(item.href);
+                  return (
+                    <li key={item.href}>
+                      <Link
+                        to={item.href}
+                        onClick={onClose}
+                        className={cn(
+                          "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-fast",
+                          active
+                            ? "bg-primary-soft text-primary"
+                            : "text-secondary hover:bg-hover hover:text-primary"
+                        )}
+                      >
+                        <Icon className={cn("h-4 w-4 shrink-0", active ? "text-primary" : "text-tertiary")} />
+                        <span>{item.label}</span>
+                        {item.badge === "notification" && (
+                          <span className="ml-auto w-2 h-2 rounded-full bg-semantic-danger" />
+                        )}
+                      </Link>
+                    </li>
+                  );
+                })}
               </ul>
-            </div>
-          ))}
+            );
+          })}
         </nav>
         <div className="p-3 border-t border-subtle">
           <Link

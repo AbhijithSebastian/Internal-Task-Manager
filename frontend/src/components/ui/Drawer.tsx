@@ -36,7 +36,7 @@ export function Drawer({ open, onClose, title, children, className }: DrawerProp
         ref={drawerRef}
         tabIndex={-1}
         className={cn(
-          "absolute right-0 top-0 bottom-0 w-full max-w-[560px] bg-surface shadow-drawer flex flex-col animate-slide-in-right focus:outline-none",
+          "absolute right-0 top-0 bottom-0 w-full max-w-[560px] bg-surface shadow-drawer border-l border-default z-drawer flex flex-col animate-slide-in-right focus:outline-none",
           className
         )}
       >

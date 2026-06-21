@@ -1,20 +1,11 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { Bell, Plus, Menu, ChevronRight, Search, Command } from "lucide-react";
+import { Bell, Menu, ChevronRight } from "lucide-react";
 import { useAuth } from "@/store/auth";
 import { useState, useRef, useEffect } from "react";
-import { useEntityDrawer } from "@/hooks/useEntityDrawer";
 
 interface HeaderProps {
   onMenuClick: () => void;
-  onSearchClick?: () => void;
 }
-
-const newActions = [
-  { label: "New Task", href: "/work/tasks/new", roles: [] },
-  { label: "New Project", href: "/work/projects/new", roles: [] },
-  { label: "New Meeting", href: "/work/meetings/new", roles: [] },
-  { label: "New Announcement", href: "/work/announcements/new", roles: [] },
-];
 
 const breadcrumbLabels: Record<string, string> = {
   dashboard: "Dashboard",
@@ -35,15 +26,12 @@ const breadcrumbLabels: Record<string, string> = {
   invite: "Invite",
 };
 
-export function Header({ onMenuClick, onSearchClick }: HeaderProps) {
+export function Header({ onMenuClick }: HeaderProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
-  const { closeDrawer } = useEntityDrawer();
-  const [newMenuOpen, setNewMenuOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
-  const newRef = useRef<HTMLDivElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
 
@@ -56,7 +44,6 @@ export function Header({ onMenuClick, onSearchClick }: HeaderProps) {
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (newRef.current && !newRef.current.contains(e.target as Node)) setNewMenuOpen(false);
       if (notifRef.current && !notifRef.current.contains(e.target as Node)) setNotifOpen(false);
       if (profileRef.current && !profileRef.current.contains(e.target as Node)) setProfileOpen(false);
     };
@@ -70,7 +57,6 @@ export function Header({ onMenuClick, onSearchClick }: HeaderProps) {
   };
 
   const goToNotifications = () => {
-    closeDrawer();
     navigate("/work/notifications");
     setNotifOpen(false);
   };
@@ -97,45 +83,10 @@ export function Header({ onMenuClick, onSearchClick }: HeaderProps) {
           </span>
         ))}
       </nav>
-      <button
-        onClick={onSearchClick}
-        className="flex items-center gap-2 px-3 py-1.5 mr-2 rounded-md text-secondary hover:bg-hover hover:text-primary transition-colors duration-fast text-sm"
-        aria-label="Open search"
-      >
-        <Search className="h-4 w-4" />
-        <span className="hidden sm:inline">Search</span>
-        <kbd className="hidden lg:inline-flex items-center gap-0.5 rounded border border-subtle px-1 py-0.5 text-xs text-tertiary">
-          <Command className="h-3 w-3" />
-          <span>K</span>
-        </kbd>
-      </button>
       <div className="flex items-center gap-2">
-        <div ref={newRef} className="relative">
-          <button
-            onClick={() => { setNewMenuOpen(!newMenuOpen); setNotifOpen(false); setProfileOpen(false); }}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-primary text-inverse text-sm font-medium hover:bg-primary-hover active:bg-primary-active transition-colors duration-fast"
-            aria-label="Create new"
-          >
-            <Plus className="h-4 w-4" />
-            <span className="hidden sm:inline">New</span>
-          </button>
-          {newMenuOpen && (
-            <div className="absolute right-0 top-full mt-1 w-48 bg-surface border border-default rounded-lg shadow-dropdown z-dropdown py-1">
-              {newActions.map((action) => (
-                <button
-                  key={action.href}
-                  onClick={() => { closeDrawer(); navigate(action.href); setNewMenuOpen(false); }}
-                  className="w-full text-left px-4 py-2 text-sm text-primary hover:bg-hover transition-colors duration-fast"
-                >
-                  {action.label}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
         <div ref={notifRef} className="relative">
           <button
-            onClick={() => { setNotifOpen(!notifOpen); setNewMenuOpen(false); setProfileOpen(false); }}
+            onClick={() => { setNotifOpen(!notifOpen); setProfileOpen(false); }}
             className="relative p-2 rounded-md text-secondary hover:bg-hover transition-colors duration-fast"
           >
             <Bell className="h-4 w-4" />
@@ -163,7 +114,7 @@ export function Header({ onMenuClick, onSearchClick }: HeaderProps) {
         </div>
         <div ref={profileRef} className="relative">
           <button
-            onClick={() => { setProfileOpen(!profileOpen); setNewMenuOpen(false); setNotifOpen(false); }}
+            onClick={() => { setProfileOpen(!profileOpen); setNotifOpen(false); }}
             className="flex items-center gap-2 p-1 rounded-md hover:bg-hover transition-colors duration-fast"
           >
             <div className="h-7 w-7 rounded-full bg-primary-soft text-primary flex items-center justify-center text-xs font-semibold">
