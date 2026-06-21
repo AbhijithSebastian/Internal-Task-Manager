@@ -25,7 +25,7 @@ export default function InviteUserPage() {
     enabled: isEdit,
   });
 
-  const { data: rolesData } = useQuery({
+  const { data: rolesData, isError: rolesError } = useQuery({
     queryKey: ["roles"],
     queryFn: () => api.get("/roles").then((r) => r.data || []),
   });
@@ -112,6 +112,10 @@ export default function InviteUserPage() {
 
   const roleOptions = roles.map((r) => ({ value: r.name, label: r.label || r.name }));
   const isSending = createMutation.isPending || updateMutation.isPending;
+
+  if (rolesError) {
+    return <div className="page-container py-6"><p className="text-sm text-danger">Failed to load roles. Please try again.</p></div>;
+  }
 
   return (
     <div className="page-container max-w-xl py-6">

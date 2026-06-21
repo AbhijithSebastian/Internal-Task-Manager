@@ -117,8 +117,8 @@ export function SearchModal({ open, onClose }: SearchModalProps) {
   let flatIdx = 0;
 
   return (
-    <div className="fixed inset-0 z-modal flex items-start justify-center pt-[12vh]" onClick={handleClose}>
-      <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-modal-bg" />
+    <div className="fixed inset-0 z-modal flex items-start justify-center pt-[12vh]" onClick={handleClose} role="dialog" aria-modal="true" aria-label="Search">
+      <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-modal-bg" aria-label="Close search" />
       <div
         className="relative w-full max-w-2xl bg-surface rounded-xl shadow-modal border border-default overflow-hidden z-modal animate-scale-in"
         onClick={(e) => e.stopPropagation()}
@@ -132,6 +132,7 @@ export function SearchModal({ open, onClose }: SearchModalProps) {
             onChange={(e) => setQuery(e.target.value)}
             className="flex-1 border-0 bg-transparent py-4 text-sm text-primary placeholder:text-tertiary focus:outline-none focus:ring-0"
             placeholder="Search tasks, projects, users..."
+            aria-label="Search tasks, projects, and users"
           />
           {query && (
             <button

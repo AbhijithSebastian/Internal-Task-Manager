@@ -21,10 +21,11 @@ export function Sidebar({ open, onClose }: SidebarProps) {
   return (
     <>
       {open && (
-        <div
-          className="fixed inset-0 z-drawer-bg bg-black/30 lg:hidden"
-          onClick={onClose}
-        />
+          <div
+            className="fixed inset-0 z-drawer-bg bg-black/30 lg:hidden"
+            onClick={onClose}
+            aria-label="Close sidebar"
+          />
       )}
       <aside
         className={cn(
@@ -36,7 +37,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
           <Link to="/dashboard" className="text-xl font-bold tracking-tight text-primary">
             Task Manager
           </Link>
-          <button onClick={onClose} className="lg:hidden p-1 rounded-md hover:bg-hover text-secondary">
+          <button onClick={onClose} className="lg:hidden p-1 rounded-md hover:bg-hover text-secondary" aria-label="Close sidebar menu">
             <X className="h-5 w-5" />
           </button>
         </div>

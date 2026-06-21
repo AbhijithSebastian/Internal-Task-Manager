@@ -30,7 +30,7 @@ export default function AnnouncementFormPage() {
   const [scheduledAt, setScheduledAt] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const { data: existing } = useQuery({
+  const { data: existing, isLoading: existingLoading, isError: existingError } = useQuery({
     queryKey: ["announcement", id],
     queryFn: () => announcementsService.get(Number(id)),
     enabled: isEdit,
@@ -121,6 +121,9 @@ export default function AnnouncementFormPage() {
   };
 
   const isPending = createMutation.isPending || updateMutation.isPending;
+
+  if (isEdit && existingLoading) return <div className="page-container py-8"><p className="text-sm text-secondary">Loading announcement...</p></div>;
+  if (isEdit && existingError) return <div className="page-container py-6"><p className="text-sm text-danger">Failed to load announcement. Please try again.</p></div>;
 
   return (
     <div className="page-container max-w-2xl py-6">

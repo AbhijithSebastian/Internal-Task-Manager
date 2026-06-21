@@ -20,7 +20,7 @@ export default function ProjectFormPage() {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const { data: project, isLoading } = useQuery({
+  const { data: project, isLoading, isError: projectError } = useQuery({
     queryKey: ["project", id],
     queryFn: () => api.get(`/projects/${id}`).then((r) => r.data?.data || r.data),
     enabled: isEdit,
@@ -90,6 +90,7 @@ export default function ProjectFormPage() {
   const set = (key: string, value: string) => setForm((f) => ({ ...f, [key]: value }));
 
   if (isEdit && isLoading) return <div className="page-container py-8"><SkeletonForm fields={6} /></div>;
+  if (isEdit && projectError) return <div className="page-container py-6"><p className="text-sm text-danger">Failed to load project. Please try again.</p></div>;
 
   const users = Array.isArray(usersData) ? usersData as Array<{ id: number; name: string }> : [];
 

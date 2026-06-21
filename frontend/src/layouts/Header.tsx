@@ -77,7 +77,7 @@ export function Header({ onMenuClick, onSearchClick }: HeaderProps) {
 
   return (
     <header className="sticky top-0 z-sticky flex items-center h-14 px-6 bg-surface border-b border-default">
-      <button onClick={onMenuClick} className="mr-3 p-1.5 rounded-md text-secondary hover:bg-hover lg:hidden">
+      <button onClick={onMenuClick} className="mr-3 p-1.5 rounded-md text-secondary hover:bg-hover lg:hidden" aria-label="Open sidebar menu">
         <Menu className="h-5 w-5" />
       </button>
       <nav className="flex items-center gap-1 text-sm text-tertiary flex-1 min-w-0">
@@ -100,6 +100,7 @@ export function Header({ onMenuClick, onSearchClick }: HeaderProps) {
       <button
         onClick={onSearchClick}
         className="flex items-center gap-2 px-3 py-1.5 mr-2 rounded-md text-secondary hover:bg-hover hover:text-primary transition-colors duration-fast text-sm"
+        aria-label="Open search"
       >
         <Search className="h-4 w-4" />
         <span className="hidden sm:inline">Search</span>
@@ -113,6 +114,7 @@ export function Header({ onMenuClick, onSearchClick }: HeaderProps) {
           <button
             onClick={() => { setNewMenuOpen(!newMenuOpen); setNotifOpen(false); setProfileOpen(false); }}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-primary text-inverse text-sm font-medium hover:bg-primary-hover active:bg-primary-active transition-colors duration-fast"
+            aria-label="Create new"
           >
             <Plus className="h-4 w-4" />
             <span className="hidden sm:inline">New</span>

@@ -5,8 +5,13 @@ from httpx import AsyncClient
 @pytest.mark.asyncio
 async def test_stability_concurrent_crud(auth_client: AsyncClient):
     """Test concurrent CRUD operations to ensure no race conditions or deadlocks."""
+    # Create a project dynamically so we don't depend on seed data IDs
+    project_resp = await auth_client.post("/api/v1/projects", json={"name": "Concurrency Test Project"})
+    assert project_resp.status_code == 201, f"Failed to create project: {project_resp.text}"
+    project_id = project_resp.json()["id"]
+
     async def create_and_delete_task(i):
-        payload = {"title": f"Concurrent Task {i}", "project_id": 1}
+        payload = {"title": f"Concurrent Task {i}", "project_id": project_id}
         resp = await auth_client.post("/api/v1/tasks", json=payload)
         if resp.status_code == 201:
             task_id = resp.json()["id"]

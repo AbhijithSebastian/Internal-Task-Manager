@@ -5,7 +5,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { ToggleLeft, Settings, Globe, Mail, Key, Shield } from "lucide-react";
 
 export default function AdminSettingsPage() {
-  const { data: config, isLoading } = useQuery({
+  const { data: config, isLoading, isError } = useQuery({
     queryKey: ["admin", "settings"],
     queryFn: () => api.get("/admin/settings").then((r) => r.data?.data || r.data || {}),
   });
@@ -66,6 +66,8 @@ export default function AdminSettingsPage() {
 
       {isLoading ? (
         <div className="space-y-4">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} variant="rect" className="h-32 w-full rounded-lg" />)}</div>
+      ) : isError ? (
+        <div className="flex flex-col items-center py-16 text-center"><p className="text-sm text-danger">Failed to load settings.</p></div>
       ) : (
         <div className="grid gap-6 lg:grid-cols-2">
           {sections.map((section) => {

@@ -23,7 +23,7 @@ export default function NotificationListPage() {
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 
   const markReadMutation = useMutation({
-    mutationFn: (id: string) => api.post(`/notifications/${id}/read`),
+    mutationFn: (id: string) => api.patch(`/notifications/${id}/read`),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["notifications"] }),
   });
 

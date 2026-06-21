@@ -34,7 +34,7 @@ export default function MeetingFormPage() {
   const projects = Array.isArray(projectsData) ? projectsData as Array<{ id: number; name: string }> : [];
   const tasks = Array.isArray(tasksData) ? tasksData as Array<{ id: number; title: string }> : [];
 
-  const { data: meeting, isLoading: meetingLoading } = useQuery({
+  const { data: meeting, isLoading: meetingLoading, isError: meetingError } = useQuery({
     queryKey: ["meeting", id],
     queryFn: () => api.get(`/meetings/${id}`).then((r) => r.data?.data || r.data),
     enabled: isEdit,
@@ -91,6 +91,7 @@ export default function MeetingFormPage() {
   const update = (key: string, value: string) => setForm((f) => ({ ...f, [key]: value }));
 
   if (isEdit && meetingLoading) return <div className="page-container py-8"><SkeletonForm fields={6} /></div>;
+  if (isEdit && meetingError) return <div className="page-container py-6"><p className="text-sm text-danger">Failed to load meeting. Please try again.</p></div>;
 
   return (
     <div className="page-container max-w-2xl py-6">
