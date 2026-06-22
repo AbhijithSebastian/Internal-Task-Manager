@@ -1,5 +1,6 @@
 import time
 import logging
+from typing import Optional
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 
@@ -29,7 +30,7 @@ class RequestLogMiddleware(BaseHTTPMiddleware):
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
-    def __init__(self, app, requests_per_minute: int = 60, whitelist_paths: set | None = None):
+    def __init__(self, app, requests_per_minute: int = 60, whitelist_paths: Optional[set] = None):
         super().__init__(app)
         self.requests_per_minute = requests_per_minute
         self.whitelist_paths = whitelist_paths or {"/health", "/api/v1/docs", "/api/v1/openapi.json", "/api/v1/redoc"}

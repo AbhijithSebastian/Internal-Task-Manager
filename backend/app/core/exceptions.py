@@ -1,3 +1,4 @@
+from typing import Optional
 from fastapi import HTTPException, status
 
 
@@ -7,7 +8,7 @@ class BusinessException(HTTPException):
 
 
 class NotFoundException(HTTPException):
-    def __init__(self, entity: str = "Resource", entity_id: int | None = None):
+    def __init__(self, entity: str = "Resource", entity_id: Optional[int] = None):
         message = f"{entity} with ID {entity_id} not found." if entity_id else f"{entity} not found."
         super().__init__(status_code=status.HTTP_404_NOT_FOUND, detail=message)
 
@@ -23,6 +24,6 @@ class ForbiddenError(HTTPException):
 
 
 class ValidationError(HTTPException):
-    def __init__(self, message: str, errors: dict | None = None):
+    def __init__(self, message: str, errors: Optional[dict] = None):
         detail = {"message": message, "errors": errors or {}}
         super().__init__(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=detail)

@@ -24,7 +24,7 @@ from app.core.enums import TaskStatus, UserRole, ProjectStatus
 router = APIRouter()
 
 
-def resolve_project_ids(current_user: User, db: Session) -> list[int] | None:
+def resolve_project_ids(current_user: User, db: Session) -> Optional[list[int]]:
     if current_user.is_super_admin:
         return None
     if current_user.role and current_user.role.name == UserRole.PROJECT_MANAGER.value:
@@ -37,7 +37,7 @@ def resolve_project_ids(current_user: User, db: Session) -> list[int] | None:
     return [r[0] for r in ids]
 
 
-def apply_project_filter(query, project_ids: list[int] | None, column="project_id"):
+def apply_project_filter(query, project_ids: Optional[list[int]], column="project_id"):
     if project_ids is not None:
         return query.filter(getattr(query.entity, column).in_(project_ids))
     return query
@@ -74,17 +74,16 @@ def get_reports(
         filters["user_id"] = current_user.id
 
     data = {}
-    match tab:
-        case "task_completion":
-            data = get_task_completion(filters, db)
-        case "workload_distribution":
-            data = get_workload_distribution(filters, db)
-        case "weekly_summary":
-            data = get_weekly_summary(filters, db)
-        case "meeting_logs":
-            data = get_meeting_logs(filters, db)
-        case _:
-            data = get_task_completion(filters, db)
+    if tab == "task_completion":
+        data = get_task_completion(filters, db)
+    elif tab == "workload_distribution":
+        data = get_workload_distribution(filters, db)
+    elif tab == "weekly_summary":
+        data = get_weekly_summary(filters, db)
+    elif tab == "meeting_logs":
+        data = get_meeting_logs(filters, db)
+    else:
+        data = get_task_completion(filters, db)
 
     return {"data": data, "tab": tab, "filters": filters}
 
@@ -114,25 +113,24 @@ def export_report(
     if date_to:
         filters["date_to"] = date_to
 
-    match tab:
-        case "task_completion":
-            rows = get_task_completion(filters, db)
-            headers = ["Project", "Total Tasks", "Completed", "Pending", "Completion Rate (%)"]
-        case "workload_distribution":
-            rows = get_workload_distribution(filters, db)
-            headers = ["User"]
-            for s in TaskStatus:
-                headers.append(s.label())
-            headers.append("Total")
-        case "weekly_summary":
-            rows = get_weekly_summary(filters, db)
-            headers = ["Date From", "Date To", "Tasks Created", "Tasks Completed", "Comments Added"]
-        case "meeting_logs":
-            rows = get_meeting_logs(filters, db)
-            headers = ["Project", "Date", "Title", "Attendees", "Summary", "Decisions Taken", "Blockers", "Action Items", "Notes"]
-        case _:
-            rows = get_task_completion(filters, db)
-            headers = ["Project", "Total Tasks", "Completed", "Pending", "Completion Rate (%)"]
+    if tab == "task_completion":
+        rows = get_task_completion(filters, db)
+        headers = ["Project", "Total Tasks", "Completed", "Pending", "Completion Rate (%)"]
+    elif tab == "workload_distribution":
+        rows = get_workload_distribution(filters, db)
+        headers = ["User"]
+        for s in TaskStatus:
+            headers.append(s.label())
+        headers.append("Total")
+    elif tab == "weekly_summary":
+        rows = get_weekly_summary(filters, db)
+        headers = ["Date From", "Date To", "Tasks Created", "Tasks Completed", "Comments Added"]
+    elif tab == "meeting_logs":
+        rows = get_meeting_logs(filters, db)
+        headers = ["Project", "Date", "Title", "Attendees", "Summary", "Decisions Taken", "Blockers", "Action Items", "Notes"]
+    else:
+        rows = get_task_completion(filters, db)
+        headers = ["Project", "Total Tasks", "Completed", "Pending", "Completion Rate (%)"]
 
     if format == "xlsx":
         return export_xlsx(headers, rows, tab)

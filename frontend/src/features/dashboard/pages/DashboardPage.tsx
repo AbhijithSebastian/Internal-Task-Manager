@@ -15,15 +15,12 @@ import {
   AlertTriangle,
   TrendingUp,
   TrendingDown,
-  ArrowRight,
   Plus,
   Calendar,
   Megaphone,
   Activity,
-  AlertCircle,
-  FolderOpen,
-  ListChecks,
   Building2,
+  ListChecks,
 } from "lucide-react";
 
 interface DashboardStats {
@@ -35,13 +32,6 @@ interface DashboardStats {
     tasks_due_this_week: number;
     pending_reviews: number;
   };
-}
-
-interface DashboardProject {
-  id: number;
-  name: string;
-  completion_percentage: number;
-  status?: string;
 }
 
 interface DashboardActivity {
@@ -136,12 +126,6 @@ export default function DashboardPage() {
     queryFn: () => api.get("/dashboard/stats").then((r) => r.data),
   });
 
-  const { data: projects, isLoading: projectsLoading } = useQuery<DashboardProject[]>({
-    queryKey: ["dashboard", "projects"],
-    queryFn: () =>
-      api.get("/dashboard/projects").then((r) => r.data?.data ?? r.data?.items ?? r.data ?? []),
-  });
-
   const { data: activities, isLoading: activitiesLoading } = useQuery<DashboardActivity[]>({
     queryKey: ["dashboard", "activities"],
     queryFn: () =>
@@ -169,17 +153,6 @@ export default function DashboardPage() {
       api
         .get("/tasks", {
           params: { assignee_id: user?.id, per_page: 3, sort_by: "updated_at", sort_direction: "desc" },
-        })
-        .then((r) => r.data?.data ?? r.data?.items ?? r.data ?? []),
-    enabled: !!user?.id,
-  });
-
-  const { data: deadlinesData } = useQuery<DashboardTask[]>({
-    queryKey: ["tasks", "deadlines", user?.id],
-    queryFn: () =>
-      api
-        .get("/tasks", {
-          params: { assignee_id: user?.id, per_page: 10, sort_by: "due_date", sort_direction: "asc", has_due_date: true },
         })
         .then((r) => r.data?.data ?? r.data?.items ?? r.data ?? []),
     enabled: !!user?.id,
@@ -221,7 +194,6 @@ export default function DashboardPage() {
 
   const isLoading =
     statsLoading ||
-    projectsLoading ||
     activitiesLoading ||
     tasksLoading ||
     meetingsLoading ||
@@ -337,11 +309,9 @@ export default function DashboardPage() {
 
   const tasks = Array.isArray(tasksData) ? tasksData : [];
   const recentList = Array.isArray(recentItems) ? recentItems : [];
-  const deadlinesList = Array.isArray(deadlinesData) ? deadlinesData : [];
   const activitiesList = Array.isArray(activities) ? activities : [];
   const meetings = Array.isArray(meetingsData) ? meetingsData : [];
   const announcements = Array.isArray(announcementsData) ? announcementsData : [];
-  const projectList = Array.isArray(projects) ? projects : [];
 
   const kpis = {
     active_projects: stats?.active_projects ?? 0,
@@ -460,145 +430,74 @@ export default function DashboardPage() {
       )}
 
       {/* Main grid */}
-      <div className="grid gap-4 lg:grid-cols-3">
-        {/* Left column */}
-        <div className="lg:col-span-2 space-y-4">
-          {/* My Tasks Widget */}
-          <Card className="p-0 overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-subtle">
-              <h2 className="text-sm font-semibold text-primary">My Tasks</h2>
-              <button
-                onClick={() => navigate("/work/tasks")}
-                className="text-xs text-link hover:underline flex items-center gap-0.5"
-              >
-                View all <ArrowRight className="h-3 w-3" />
-              </button>
-            </div>
-            {tasks.length > 0 ? (
-              <div className="divide-y divide-subtle">
-                {tasks.slice(0, 8).map((task) => (
-                  <button
-                    key={task.id}
-                    onClick={() => openDrawer("task", task.id)}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-hover transition-colors duration-fast"
-                  >
-                    <span className="h-4 w-4 rounded border border-default flex items-center justify-center shrink-0 bg-surface">
-                      {task.status === "done" || task.status === "approved" ? (
-                        <CheckSquare className="h-3 w-3 text-semantic-success" />
-                      ) : null}
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-primary truncate">{task.title}</p>
-                      <p className="text-xs text-tertiary mt-0.5">
-                        {task.project_name && <>{task.project_name} &middot; </>}
-                        {task.due_date ? `Due ${formatRelative(task.due_date)}` : "No due date"}
-                      </p>
-                    </div>
-                    <Badge variant={priorityVariant(task.priority)} size="sm" dot>
-                      {task.priority}
-                    </Badge>
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <div className="px-4 py-10 text-center">
-                <CheckSquare className="h-8 w-8 mx-auto text-tertiary mb-2" />
-                <p className="text-sm text-tertiary">No tasks assigned yet</p>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="mt-3"
-                  onClick={() => navigate("/work/tasks/new")}
+      <div className="grid gap-5 lg:grid-cols-2">
+        {/* My Tasks Widget */}
+        <Card className="p-0 overflow-hidden lg:col-span-1">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-subtle">
+            <h2 className="text-sm font-semibold text-primary">My Tasks</h2>
+            <button
+              onClick={() => navigate("/work/tasks")}
+              className="text-xs text-link hover:underline flex items-center gap-0.5"
+            >
+              View all
+            </button>
+          </div>
+          {tasks.length > 0 ? (
+            <div className="divide-y divide-subtle">
+              {tasks.slice(0, 10).map((task) => (
+                <button
+                  key={task.id}
+                  onClick={() => openDrawer("task", task.id)}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-hover transition-colors duration-fast"
                 >
-                  <Plus className="h-3.5 w-3.5" /> Create your first task
-                </Button>
-              </div>
-            )}
-            {tasks.length > 0 && (
-              <div className="px-4 py-2.5 border-t border-subtle bg-subtle/30">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="w-full justify-center text-link"
-                  onClick={() => navigate("/work/tasks/new")}
-                >
-                  <Plus className="h-3.5 w-3.5" /> Add Task
-                </Button>
-              </div>
-            )}
-          </Card>
-
-          {/* My Deadlines */}
-          <Card className="p-0 overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-subtle">
-              <h2 className="text-sm font-semibold text-primary">My Deadlines</h2>
-              <AlertCircle className="h-3.5 w-3.5 text-tertiary" />
-            </div>
-            {deadlinesList.length > 0 ? (
-              <div className="divide-y divide-subtle">
-                {deadlinesList.slice(0, 6).map((task) => {
-                  const isOverdue = task.due_date && new Date(task.due_date) < new Date();
-                  const isSoon = task.due_date && !isOverdue && new Date(task.due_date).getTime() - Date.now() < 3 * 24 * 60 * 60 * 1000;
-                  return (
-                    <button key={task.id} onClick={() => openDrawer("task", task.id)} className="w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-hover transition-colors duration-fast">
-                      <div className="flex-1 min-w-0">
-                        <p className={`text-sm truncate ${isOverdue ? "text-semantic-danger font-medium" : isSoon ? "text-semantic-warning font-medium" : "text-primary"}`}>{task.title}</p>
-                        <p className="text-xs text-tertiary mt-0.5">{task.due_date ? `Due ${formatRelative(task.due_date)}` : "No due date"}{task.project_name ? ` · ${task.project_name}` : ""}</p>
-                      </div>
-                      {isOverdue && <Badge variant="danger" size="sm">Overdue</Badge>}
-                      {isSoon && !isOverdue && <Badge variant="warning" size="sm">Soon</Badge>}
-                    </button>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="px-4 py-8 text-center">
-                <CheckSquare className="h-7 w-7 mx-auto text-tertiary mb-1.5" />
-                <p className="text-sm text-tertiary">No upcoming deadlines</p>
-              </div>
-            )}
-          </Card>
-
-          {/* Recent Activity */}
-          <Card className="p-0 overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-subtle">
-              <h2 className="text-sm font-semibold text-primary">Recent Activity</h2>
-              <Activity className="h-3.5 w-3.5 text-tertiary" />
-            </div>
-            {activitiesList.length > 0 ? (
-              <div className="divide-y divide-subtle">
-                {activitiesList.slice(0, 10).map((a) => (
-                  <div key={a.id} className="flex items-start gap-2.5 px-4 py-2.5">
-                    <Avatar
-                      name={a.causer?.name || "S"}
-                      size="sm"
-                      src={a.causer?.avatar_url}
-                    />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-secondary leading-snug">
-                        {a.causer?.name && (
-                          <span className="font-medium text-primary">{a.causer.name} </span>
-                        )}
-                        {a.description}
-                      </p>
-                      <p className="text-xs text-tertiary mt-0.5">
-                        {formatRelative(a.created_at)}
-                      </p>
-                    </div>
+                  <span className="h-4 w-4 rounded border border-default flex items-center justify-center shrink-0 bg-surface">
+                    {task.status === "done" || task.status === "approved" ? (
+                      <CheckSquare className="h-3 w-3 text-semantic-success" />
+                    ) : null}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-primary truncate">{task.title}</p>
+                    <p className="text-xs text-tertiary mt-0.5">
+                      {task.project_name && <>{task.project_name} &middot; </>}
+                      {task.due_date ? `Due ${formatRelative(task.due_date)}` : "No due date"}
+                    </p>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="px-4 py-10 text-center">
-                <Activity className="h-8 w-8 mx-auto text-tertiary mb-2" />
-                <p className="text-sm text-tertiary">No activity yet</p>
-              </div>
-            )}
-          </Card>
-        </div>
+                  <Badge variant={priorityVariant(task.priority)} size="sm" dot>
+                    {task.priority}
+                  </Badge>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="px-4 py-10 text-center">
+              <CheckSquare className="h-8 w-8 mx-auto text-tertiary mb-2" />
+              <p className="text-sm text-tertiary">No tasks assigned yet</p>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="mt-3"
+                onClick={() => navigate("/work/tasks/new")}
+              >
+                <Plus className="h-3.5 w-3.5" /> Create your first task
+              </Button>
+            </div>
+          )}
+          {tasks.length > 0 && (
+            <div className="px-4 py-2.5 border-t border-subtle bg-subtle/30">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full justify-center text-link"
+                onClick={() => navigate("/work/tasks/new")}
+              >
+                <Plus className="h-3.5 w-3.5" /> Add Task
+              </Button>
+            </div>
+          )}
+        </Card>
 
-        {/* Right column */}
-        <div className="space-y-4">
+        {/* Right column: Upcoming Meetings & Announcements */}
+        <div className="space-y-4 lg:col-span-1">
           {/* Upcoming Meetings */}
           <Card className="p-0 overflow-hidden">
             <div className="flex items-center justify-between px-4 py-3 border-b border-subtle">
@@ -607,7 +506,7 @@ export default function DashboardPage() {
                 onClick={() => navigate("/work/meetings")}
                 className="text-xs text-link hover:underline flex items-center gap-0.5"
               >
-                View all <ArrowRight className="h-3 w-3" />
+                View all
               </button>
             </div>
             {meetings.length > 0 ? (
@@ -651,7 +550,7 @@ export default function DashboardPage() {
                 onClick={() => navigate("/work/announcements")}
                 className="text-xs text-link hover:underline flex items-center gap-0.5"
               >
-                View all <ArrowRight className="h-3 w-3" />
+                View all
               </button>
             </div>
             {announcements.length > 0 ? (
@@ -686,97 +585,45 @@ export default function DashboardPage() {
               </div>
             )}
           </Card>
-
-          {/* Quick Actions */}
-          <Card>
-            <h2 className="text-sm font-semibold text-primary mb-3">Quick Actions</h2>
-            <div className="space-y-1.5">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="w-full justify-start"
-                onClick={() => navigate("/work/tasks/new")}
-              >
-                <Plus className="h-3.5 w-3.5" /> New Task
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="w-full justify-start"
-                onClick={() => navigate("/work/projects/new")}
-              >
-                <FolderOpen className="h-3.5 w-3.5" /> New Project
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="w-full justify-start"
-                onClick={() => navigate("/work/meetings/new")}
-              >
-                <Calendar className="h-3.5 w-3.5" /> New Meeting
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="w-full justify-start"
-                onClick={() => navigate("/work/announcements/new")}
-              >
-                <Megaphone className="h-3.5 w-3.5" /> New Announcement
-              </Button>
-            </div>
-          </Card>
-
-          {/* Project Progress */}
-          <Card>
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-sm font-semibold text-primary">Project Progress</h2>
-              <button
-                onClick={() => navigate("/work/projects")}
-                className="text-xs text-link hover:underline flex items-center gap-0.5"
-              >
-                View all <ArrowRight className="h-3 w-3" />
-              </button>
-            </div>
-            {projectList.length > 0 ? (
-              <div className="space-y-3">
-                {projectList.slice(0, 5).map((p) => (
-                  <button
-                    key={p.id}
-                    onClick={() => openDrawer("project", p.id)}
-                    className="w-full text-left hover:bg-hover -mx-2 px-2 py-1.5 rounded-md transition-colors"
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm text-primary truncate">{p.name}</span>
-                      <span className="text-xs text-tertiary shrink-0 ml-2">
-                        {Math.round(p.completion_percentage)}%
-                      </span>
-                    </div>
-                    <div className="h-1.5 bg-subtle rounded-full overflow-hidden">
-                      <div
-                        className="h-full rounded-full transition-all"
-                        style={{
-                          width: `${Math.min(100, Math.max(0, p.completion_percentage))}%`,
-                          backgroundColor:
-                            p.completion_percentage >= 80
-                              ? "var(--color-semantic-success)"
-                              : p.completion_percentage >= 40
-                              ? "var(--color-semantic-warning)"
-                              : "var(--color-semantic-danger)",
-                        }}
-                      />
-                    </div>
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <div className="py-6 text-center">
-                <Building2 className="h-7 w-7 mx-auto text-tertiary mb-1.5" />
-                <p className="text-sm text-tertiary">No active projects</p>
-              </div>
-            )}
-          </Card>
         </div>
       </div>
+
+      {/* Recent Activity - Full Width */}
+      <Card className="p-0 overflow-hidden">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-subtle">
+          <h2 className="text-sm font-semibold text-primary">Recent Activity</h2>
+          <Activity className="h-3.5 w-3.5 text-tertiary" />
+        </div>
+        {activitiesList.length > 0 ? (
+          <div className="divide-y divide-subtle">
+            {activitiesList.slice(0, 10).map((a) => (
+              <div key={a.id} className="flex items-start gap-2.5 px-4 py-2.5">
+                <Avatar
+                  name={a.causer?.name || "S"}
+                  size="sm"
+                  src={a.causer?.avatar_url}
+                />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-secondary leading-snug">
+                    {a.causer?.name && (
+                      <span className="font-medium text-primary">{a.causer.name} </span>
+                    )}
+                    {a.description}
+                  </p>
+                  <p className="text-xs text-tertiary mt-0.5">
+                    {formatRelative(a.created_at)}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="px-4 py-10 text-center">
+            <Activity className="h-8 w-8 mx-auto text-tertiary mb-2" />
+            <p className="text-sm text-tertiary">No activity yet</p>
+          </div>
+        )}
+      </Card>
     </div>
   );
 }

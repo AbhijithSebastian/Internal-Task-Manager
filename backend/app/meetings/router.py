@@ -16,6 +16,7 @@ router = APIRouter()
 
 class MeetingCreate(BaseModel):
     project_id: int
+    module_id: Optional[int] = None
     title: str
     meeting_date: str
     location: Optional[str] = None
@@ -33,6 +34,7 @@ class MeetingCreate(BaseModel):
 class MeetingUpdate(BaseModel):
     title: Optional[str] = None
     meeting_date: Optional[str] = None
+    module_id: Optional[int] = None
     location: Optional[str] = None
     attendees: Optional[list[str]] = None
     summary: Optional[str] = None
@@ -91,6 +93,7 @@ def create_meeting(
 ):
     meeting = MeetingLog(
         project_id=data.project_id,
+        module_id=data.module_id,
         author_id=current_user.id,
         title=data.title,
         meeting_date=datetime.strptime(data.meeting_date, "%Y-%m-%d").date(),
@@ -150,6 +153,8 @@ def update_meeting(
         meeting.next_meeting_date = datetime.fromisoformat(data.next_meeting_date)
     if data.related_task_id is not None:
         meeting.related_task_id = data.related_task_id
+    if data.module_id is not None:
+        meeting.module_id = data.module_id
 
     db.commit()
     db.refresh(meeting)
@@ -180,6 +185,8 @@ def format_meeting(m: MeetingLog) -> dict:
         "id": m.id,
         "project_id": m.project_id,
         "project_name": m.project.name if m.project else None,
+        "module_id": m.module_id,
+        "module_name": m.module.name if m.module else None,
         "author": {"id": m.author.id, "name": m.author.name} if m.author else None,
         "title": m.title,
         "meeting_date": m.meeting_date.isoformat() if m.meeting_date else None,

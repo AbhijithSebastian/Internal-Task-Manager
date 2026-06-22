@@ -1,4 +1,5 @@
 from app.core.database import Base
+from app.modules.models import Module
 from app.projects.models import Project, ProjectMember
 from app.tasks.models import Task, TaskDependency, task_assignees
 from app.comments.models import Comment, Mention

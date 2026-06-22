@@ -25,6 +25,7 @@ class TaskCreate(BaseModel):
     employee_eta: Optional[str] = None
     estimated_hours: Optional[float] = None
     project_id: int
+    module_id: Optional[int] = None
     assignee_ids: Optional[list[int]] = None
     dependency_ids: Optional[list[int]] = None
     parent_id: Optional[int] = None
@@ -42,6 +43,7 @@ class TaskUpdate(BaseModel):
     employee_eta: Optional[str] = None
     estimated_hours: Optional[float] = None
     status: Optional[str] = None
+    module_id: Optional[int] = None
     assignee_ids: Optional[list[int]] = None
     dependency_ids: Optional[list[int]] = None
     requires_approval: Optional[bool] = None
@@ -151,6 +153,7 @@ def create_task(data: TaskCreate, db: Session = Depends(get_db),
         employee_eta=datetime.fromisoformat(data.employee_eta).date() if data.employee_eta else None,
         estimated_hours=data.estimated_hours,
         project_id=data.project_id,
+        module_id=data.module_id,
         author_id=current_user.id,
         parent_id=data.parent_id,
         requires_approval=data.requires_approval,
@@ -501,6 +504,8 @@ def format_task(t: Task) -> dict:
         "estimated_hours": float(t.estimated_hours) if t.estimated_hours else None,
         "project_id": t.project_id,
         "project_name": t.project.name if t.project else None,
+        "module_id": t.module_id,
+        "module_name": t.module.name if t.module else None,
         "author": {"id": t.author.id, "name": t.author.name} if t.author else None,
         "assignees": [{"id": a.id, "name": a.name} for a in (t.assignees or [])],
         "parent_id": t.parent_id,

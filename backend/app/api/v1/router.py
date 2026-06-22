@@ -4,6 +4,7 @@ from app.api.v1 import (
     comments, meetings, announcements, reports, notifications,
     attachments, activity, dashboard, milestones, integrations
 )
+from app.modules.router import router as modules_router
 from app.search.router import router as search_router
 from app.admin.router import router as admin_router
 
@@ -24,6 +25,7 @@ api_router.include_router(attachments.router, prefix="/attachments", tags=["Atta
 api_router.include_router(activity.router, prefix="/activity", tags=["Activity"])
 api_router.include_router(dashboard.router, prefix="/dashboard", tags=["Dashboard"])
 api_router.include_router(milestones.router, prefix="/milestones", tags=["Milestones"])
+api_router.include_router(modules_router, prefix="/modules", tags=["Modules"])
 api_router.include_router(integrations.router, prefix="/integrations", tags=["Integrations"])
 api_router.include_router(admin_router, prefix="/admin", tags=["Admin"])
 api_router.include_router(search_router, prefix="/search", tags=["Search"])

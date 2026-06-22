@@ -9,6 +9,7 @@ class MeetingLog(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     project_id = Column(Integer, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
+    module_id = Column(Integer, ForeignKey("modules.id", ondelete="SET NULL"), nullable=True, index=True)
     author_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     title = Column(String(255), nullable=False)
     meeting_date = Column(Date, nullable=False)
@@ -26,5 +27,6 @@ class MeetingLog(Base):
     updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
     project = relationship("Project", back_populates="meeting_logs", lazy="selectin")
+    module = relationship("Module", back_populates="meeting_logs", lazy="selectin")
     author = relationship("User", back_populates="meeting_logs", foreign_keys=[author_id], lazy="selectin")
     related_task = relationship("Task", foreign_keys=[related_task_id], lazy="selectin")

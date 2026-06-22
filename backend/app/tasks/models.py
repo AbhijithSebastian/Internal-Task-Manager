@@ -1,4 +1,5 @@
 from datetime import datetime, date
+from typing import Optional
 from sqlalchemy import (
     Column, Integer, String, Text, Boolean, DateTime, Date,
     ForeignKey, Enum as SAEnum, Numeric, Table, JSON
@@ -30,6 +31,7 @@ class Task(Base):
     employee_eta = Column(Date, nullable=True)
     estimated_hours = Column(Numeric(8, 2), nullable=True)
     project_id = Column(Integer, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False, index=True)
+    module_id = Column(Integer, ForeignKey("modules.id", ondelete="SET NULL"), nullable=True, index=True)
     author_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
     parent_id = Column(Integer, ForeignKey("tasks.id", ondelete="CASCADE"), nullable=True, index=True)
     requires_approval = Column(Boolean, default=False, nullable=False)
@@ -44,6 +46,7 @@ class Task(Base):
     assignees = relationship("User", secondary=task_assignees, back_populates="assigned_tasks", lazy="selectin")
     approver = relationship("User", foreign_keys=[approver_id], lazy="selectin")
     project = relationship("Project", back_populates="tasks", foreign_keys=[project_id], lazy="selectin")
+    module = relationship("Module", back_populates="tasks", lazy="selectin")
 
     parent = relationship("Task", back_populates="subtasks", remote_side=[id], lazy="selectin")
     subtasks = relationship("Task", back_populates="parent", remote_side=[parent_id], lazy="selectin",
@@ -65,7 +68,7 @@ class Task(Base):
     )
 
     @property
-    def approval_status(self) -> str | None:
+    def approval_status(self) -> Optional[str]:
         if not self.requires_approval:
             return None
         status_map = {

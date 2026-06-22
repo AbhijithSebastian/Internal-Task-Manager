@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { api } from "@/services/api";
-import { openDrawer } from "@/hooks/useDrawer";
 import { Drawer } from "@/components/ui/Drawer";
 import { Badge } from "@/components/ui/Badge";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -21,6 +21,7 @@ export function ProjectDetailDrawer({ projectId, onClose }: ProjectDetailDrawerP
     enabled: Boolean(projectId),
   });
 
+  const navigate = useNavigate();
   const p = project as Project | undefined;
 
   return (
@@ -55,7 +56,7 @@ export function ProjectDetailDrawer({ projectId, onClose }: ProjectDetailDrawerP
 
           <div className="grid grid-cols-2 gap-4">
             {p.member_count !== undefined && (
-              <Card className="p-3 cursor-pointer hover:bg-hover transition-colors" onClick={() => openDrawer("members", p.id)}>
+              <Card className="p-3 cursor-pointer hover:bg-hover transition-colors" onClick={() => { onClose(); navigate(`/work/projects/${p.id}`); }}>
                 <div className="flex items-center gap-2 text-sm">
                   <Users className="h-4 w-4 text-tertiary" />
                   <div>
@@ -65,7 +66,7 @@ export function ProjectDetailDrawer({ projectId, onClose }: ProjectDetailDrawerP
                 </div>
               </Card>
             )}
-            <Card className="p-3 cursor-pointer hover:bg-hover transition-colors" onClick={() => openDrawer("tasks", p.id)}>
+            <Card className="p-3 cursor-pointer hover:bg-hover transition-colors" onClick={() => { onClose(); navigate(`/work/projects/${p.id}`); }}>
               <div className="flex items-center gap-2 text-sm">
                 <ListTodo className="h-4 w-4 text-tertiary" />
                 <div>

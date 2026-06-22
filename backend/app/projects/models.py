@@ -35,6 +35,7 @@ class Project(Base):
                          foreign_keys="Task.project_id")
     meeting_logs = relationship("MeetingLog", back_populates="project", lazy="selectin", cascade="all, delete-orphan")
     milestones = relationship("Milestone", back_populates="project", lazy="selectin", cascade="all, delete-orphan")
+    modules = relationship("Module", back_populates="project", lazy="selectin", cascade="all, delete-orphan")
     integrations = relationship("Integration", back_populates="project", lazy="selectin", cascade="all, delete-orphan")
 
     @property

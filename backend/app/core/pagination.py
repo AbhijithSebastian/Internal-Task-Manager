@@ -1,5 +1,5 @@
 from math import ceil
-from typing import Any, Generic, TypeVar
+from typing import Any, Generic, TypeVar, Optional
 from pydantic import BaseModel
 from sqlalchemy import Select
 from sqlalchemy.orm import Session
@@ -43,7 +43,7 @@ def build_paginated_response(
     total: int,
     page: int,
     per_page: int,
-    schema_class: type[BaseModel] | None = None,
+    schema_class: Optional[type[BaseModel]] = None,
 ) -> dict:
     if schema_class:
         items = [schema_class.model_validate(item) for item in items]
