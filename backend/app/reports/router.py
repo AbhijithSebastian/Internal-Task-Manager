@@ -313,8 +313,16 @@ def get_workload_distribution(filters: dict, db: Session) -> list[dict]:
 
 def get_weekly_summary(filters: dict, db: Session) -> list[dict]:
     today = date.today()
-    date_from = filters.get("date_from", str(today.replace(day=today.day - today.weekday())))
-    date_to = filters.get("date_to", str(today.replace(day=today.day - today.weekday() + 6)))
+    raw_from = filters.get("date_from")
+    raw_to = filters.get("date_to")
+    if raw_from:
+        date_from = datetime.strptime(raw_from, "%Y-%m-%d").date()
+    else:
+        date_from = today.replace(day=today.day - today.weekday())
+    if raw_to:
+        date_to = datetime.strptime(raw_to, "%Y-%m-%d").date()
+    else:
+        date_to = today.replace(day=today.day - today.weekday() + 6)
 
     tasks_created = db.query(func.count(Task.id)).filter(
         Task.deleted_at.is_(None), Task.parent_id.is_(None),

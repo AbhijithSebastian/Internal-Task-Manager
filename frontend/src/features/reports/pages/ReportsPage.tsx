@@ -2,8 +2,6 @@ import { useState, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { reportsService } from "@/features/reports/services/reports";
 import { Card } from "@/components/ui/Card";
-import { Badge } from "@/components/ui/Badge";
-import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { SkeletonTable } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/shared/EmptyState";
@@ -17,41 +15,53 @@ import {
   Users,
   Activity,
   CheckCircle2,
-  UserCheck,
   MessageSquare,
-  Eye,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type Tab = "project_report" | "meeting_logs";
+type Tab = "task_completion" | "workload_distribution" | "weekly_summary" | "meeting_logs";
 
-interface ProjectReport {
-  id: number;
-  name: string;
-  completion_percentage: number;
-  estimated_completion_date?: string;
-  team_members: { id: number; name: string; avatar_url?: string; role: string }[];
-  activities_count: number;
-  meetings_count: number;
-  completed_parts: string[];
+interface TaskCompletionRow {
+  project_id: number;
+  project_name: string;
+  total_tasks: number;
+  completed_tasks: number;
+  pending_tasks: number;
+  completion_rate: number;
 }
 
-interface MeetingReport {
-  id: number;
+interface WorkloadRow {
+  user_id: number;
+  user_name: string;
+  [key: string]: number | string;
+}
+
+interface WeeklySummaryRow {
+  date_from: string;
+  date_to: string;
+  tasks_created: number;
+  tasks_completed: number;
+  comments_added: number;
+}
+
+interface MeetingLogRow {
+  meeting_id: number;
+  project_name: string;
+  date: string | null;
   title: string;
-  meeting_date: string;
-  topic?: string;
-  attendees: { id: number; name: string; avatar_url?: string; role: string }[];
-  absentees?: string[];
+  attendees: string;
   summary: string;
-  remarks?: string;
-  important_notes?: string;
-  next_meeting_date?: string;
-  project_name?: string;
+  decisions_taken: string;
+  blockers: string;
+  action_items: string;
+  notes: string;
+  author_name: string | null;
 }
 
 const TABS: { key: Tab; label: string }[] = [
-  { key: "project_report", label: "Project Report" },
+  { key: "task_completion", label: "Task Completion" },
+  { key: "workload_distribution", label: "Workload Distribution" },
+  { key: "weekly_summary", label: "Weekly Summary" },
   { key: "meeting_logs", label: "Meeting Logs" },
 ];
 
@@ -72,366 +82,252 @@ function ProgressBar({ value, className }: { value: number; className?: string }
   );
 }
 
-function renderProjectReport(data: unknown, loading: boolean) {
-  if (loading) return <SkeletonTable rows={4} columns={3} />;
-  const items = (Array.isArray(data) ? data : []) as ProjectReport[];
-  if (items.length === 0) {
-    return (
-      <Card>
-        <EmptyState
-          icon={<Building2 className="h-8 w-8 text-tertiary" />}
-          title="No project reports"
-          description="Project reports will appear here once projects have data."
-        />
-      </Card>
-    );
-  }
+function TaskCompletionView({ data }: { data: TaskCompletionRow[] }) {
   return (
-    <div className="grid gap-4">
-      {items.map((project) => (
-        <ProjectReportCard key={project.id} project={project} />
-      ))}
-    </div>
-  );
-}
-
-function ProjectReportCard({ project }: { project: ProjectReport }) {
-  const [previewOpen, setPreviewOpen] = useState(false);
-  const [previewData, setPreviewData] = useState<ProjectReport | null>(null);
-  const [loadingPreview, setLoadingPreview] = useState(false);
-
-  const handlePreview = async () => {
-    if (previewOpen) {
-      setPreviewOpen(false);
-      return;
-    }
-    setLoadingPreview(true);
-    try {
-      const data = await reportsService.getProjectPreview(project.id);
-      setPreviewData(data);
-    } catch {
-      setPreviewData(null);
-    }
-    setLoadingPreview(false);
-    setPreviewOpen(true);
-  };
-
-  const handleDownload = async () => {
-    try {
-      const blob = await reportsService.exportReport("project_report", "csv");
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `project-${project.id}-report.csv`;
-      a.click();
-      window.URL.revokeObjectURL(url);
-    } catch {
-      // silent
-    }
-  };
-
-  return (
-    <Card className="overflow-hidden">
-      <div className="p-4 space-y-4">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-3 min-w-0">
+    <div className="space-y-3">
+      {data.map((row) => (
+        <Card key={row.project_id} className="p-4 space-y-3">
+          <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-lg bg-primary-soft text-primary flex items-center justify-center shrink-0">
               <Building2 className="h-5 w-5" />
             </div>
-            <div className="min-w-0">
-              <h3 className="text-sm font-semibold text-primary truncate">{project.name}</h3>
-              {project.estimated_completion_date && (
-                <p className="text-xs text-tertiary flex items-center gap-1 mt-0.5">
-                  <Calendar className="h-3 w-3" />
-                  Est. completion: {formatDate(project.estimated_completion_date)}
-                </p>
-              )}
+            <div className="min-w-0 flex-1">
+              <h3 className="text-sm font-semibold text-primary">{row.project_name}</h3>
+              <div className="flex items-center gap-4 mt-1 text-xs text-tertiary">
+                <span className="flex items-center gap-1">
+                  <CheckCircle2 className="h-3 w-3" /> {row.completed_tasks} done
+                </span>
+                <span>{row.pending_tasks} pending</span>
+                <span>{row.total_tasks} total</span>
+              </div>
+            </div>
+            <div className="text-right shrink-0">
+              <span className="text-lg font-bold text-primary">{row.completion_rate}%</span>
             </div>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <Button variant="secondary" size="sm" onClick={handlePreview} loading={loadingPreview}>
-              <Eye className="h-3.5 w-3.5" /> Preview
-            </Button>
-            <Button variant="secondary" size="sm" onClick={handleDownload}>
-              <Download className="h-3.5 w-3.5" />
-            </Button>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-4">
-          <div className="flex-1">
-            <div className="flex items-center justify-between text-xs text-tertiary mb-1">
-              <span>Progress</span>
-              <span className="font-medium text-primary">{Math.round(project.completion_percentage)}%</span>
-            </div>
-            <ProgressBar value={project.completion_percentage} />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-3 gap-3">
-          <div className="flex items-center gap-2 text-xs text-tertiary">
-            <Users className="h-3.5 w-3.5" />
-            <span>{project.team_members.length} members</span>
-          </div>
-          <div className="flex items-center gap-2 text-xs text-tertiary">
-            <Activity className="h-3.5 w-3.5" />
-            <span>{project.activities_count} activities</span>
-          </div>
-          <div className="flex items-center gap-2 text-xs text-tertiary">
-            <MessageSquare className="h-3.5 w-3.5" />
-            <span>{project.meetings_count} meetings</span>
-          </div>
-        </div>
-
-        {project.completed_parts.length > 0 && (
-          <div className="space-y-1">
-            <p className="text-xs font-medium text-tertiary">Completed Parts</p>
-            <div className="flex flex-wrap gap-1.5">
-              {project.completed_parts.map((part, i) => (
-                <Badge key={i} variant="success" size="sm">
-                  <CheckCircle2 className="h-2.5 w-2.5" /> {part}
-                </Badge>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {project.team_members.length > 0 && (
-          <div className="space-y-1.5">
-            <p className="text-xs font-medium text-tertiary">Team Members</p>
-            <div className="flex flex-wrap gap-2">
-              {project.team_members.slice(0, 8).map((m) => (
-                <div key={m.id} className="flex items-center gap-1.5">
-                  <Avatar name={m.name} size="sm" src={m.avatar_url} />
-                  <div className="text-xs">
-                    <p className="text-primary">{m.name}</p>
-                    <p className="text-tertiary">{m.role}</p>
-                  </div>
-                </div>
-              ))}
-              {project.team_members.length > 8 && (
-                <span className="text-xs text-tertiary self-center">+{project.team_members.length - 8} more</span>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {previewOpen && (
-        <div className="border-t border-subtle">
-          <div className="p-4 bg-subtle/50">
-            <div className="flex items-center justify-between mb-3">
-              <h4 className="text-xs font-semibold uppercase text-tertiary tracking-wide">Full Preview</h4>
-              <button onClick={() => setPreviewOpen(false)} className="text-xs text-link hover:underline">
-                Close
-              </button>
-            </div>
-            {previewData ? (
-              <pre className="text-xs text-secondary whitespace-pre-wrap max-h-60 overflow-y-auto">
-                {JSON.stringify(previewData, null, 2)}
-              </pre>
-            ) : (
-              <p className="text-xs text-tertiary">Preview data not available</p>
-            )}
-          </div>
-        </div>
-      )}
-    </Card>
-  );
-}
-
-function renderMeetingLogs(data: unknown, loading: boolean) {
-  if (loading) return <SkeletonTable rows={4} columns={3} />;
-  const items = (Array.isArray(data) ? data : []) as MeetingReport[];
-  if (items.length === 0) {
-    return (
-      <Card>
-        <EmptyState
-          icon={<Calendar className="h-8 w-8 text-tertiary" />}
-          title="No meeting logs"
-          description="Meeting logs will appear here once meetings are conducted."
-        />
-      </Card>
-    );
-  }
-  return (
-    <div className="grid gap-4">
-      {items.map((meeting) => (
-        <MeetingReportCard key={meeting.id} meeting={meeting} />
+          <ProgressBar value={row.completion_rate} />
+        </Card>
       ))}
     </div>
   );
 }
 
-function MeetingReportCard({ meeting }: { meeting: MeetingReport }) {
-  const [previewOpen, setPreviewOpen] = useState(false);
-  const [previewData, setPreviewData] = useState<MeetingReport | null>(null);
-  const [loadingPreview, setLoadingPreview] = useState(false);
-
-  const handlePreview = async () => {
-    if (previewOpen) {
-      setPreviewOpen(false);
-      return;
-    }
-    setLoadingPreview(true);
-    try {
-      const data = await reportsService.getMeetingLog(meeting.id);
-      setPreviewData(data);
-    } catch {
-      setPreviewData(null);
-    }
-    setLoadingPreview(false);
-    setPreviewOpen(true);
-  };
-
-  const handleDownload = async () => {
-    try {
-      const blob = await reportsService.exportReport("meeting_logs", "csv");
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `meeting-${meeting.id}-report.csv`;
-      a.click();
-      window.URL.revokeObjectURL(url);
-    } catch {
-      // silent
-    }
-  };
-
+function WorkloadView({ data }: { data: WorkloadRow[] }) {
+  const statusKeys = data.length > 0
+    ? Object.keys(data[0]).filter((k) => k.endsWith("_tasks") && k !== "total_tasks")
+    : [];
   return (
-    <Card className="overflow-hidden">
-      <div className="p-4 space-y-4">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="h-10 w-10 rounded-lg bg-primary-soft text-primary flex items-center justify-center shrink-0">
-              <Calendar className="h-5 w-5" />
+    <div className="overflow-x-auto">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b border-subtle">
+            <th className="text-left py-2 px-3 text-xs font-medium text-tertiary uppercase">User</th>
+            {statusKeys.map((key) => (
+              <th key={key} className="text-center py-2 px-3 text-xs font-medium text-tertiary uppercase">
+                {key.replace("_tasks", "").replace("_", " ")}
+              </th>
+            ))}
+            <th className="text-center py-2 px-3 text-xs font-medium text-tertiary uppercase">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {data.map((row) => (
+            <tr key={row.user_id} className="border-b border-subtle hover:bg-hover">
+              <td className="py-2 px-3 text-primary font-medium">{row.user_name}</td>
+              {statusKeys.map((key) => (
+                <td key={key} className="text-center py-2 px-3 text-secondary">{row[key]}</td>
+              ))}
+              <td className="text-center py-2 px-3 text-primary font-semibold">{row.total_tasks}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function WeeklySummaryView({ data }: { data: WeeklySummaryRow[] }) {
+  return (
+    <div className="space-y-3">
+      {data.map((row, i) => (
+        <Card key={i} className="p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-primary">
+              {formatDate(row.date_from)} — {formatDate(row.date_to)}
+            </h3>
+          </div>
+          <div className="grid grid-cols-3 gap-4">
+            <div className="text-center p-3 bg-subtle rounded-lg">
+              <p className="text-2xl font-bold text-primary">{row.tasks_created}</p>
+              <p className="text-xs text-tertiary mt-1">Tasks Created</p>
             </div>
-            <div className="min-w-0">
-              <h3 className="text-sm font-semibold text-primary truncate">{meeting.title}</h3>
-              <div className="flex items-center gap-2 text-xs text-tertiary mt-0.5">
-                <span>{formatDate(meeting.meeting_date)}</span>
-                {meeting.project_name && (
-                  <>
-                    <span>·</span>
-                    <span>{meeting.project_name}</span>
-                  </>
-                )}
+            <div className="text-center p-3 bg-subtle rounded-lg">
+              <p className="text-2xl font-bold text-semantic-success">{row.tasks_completed}</p>
+              <p className="text-xs text-tertiary mt-1">Tasks Completed</p>
+            </div>
+            <div className="text-center p-3 bg-subtle rounded-lg">
+              <p className="text-2xl font-bold text-primary">{row.comments_added}</p>
+              <p className="text-xs text-tertiary mt-1">Comments Added</p>
+            </div>
+          </div>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+function MeetingLogsView({ data }: { data: MeetingLogRow[] }) {
+  return (
+    <div className="space-y-3">
+      {data.map((row) => (
+        <Card key={row.meeting_id} className="p-4 space-y-3">
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="h-10 w-10 rounded-lg bg-primary-soft text-primary flex items-center justify-center shrink-0">
+                <Calendar className="h-5 w-5" />
+              </div>
+              <div className="min-w-0">
+                <h3 className="text-sm font-semibold text-primary">{row.title}</h3>
+                <div className="flex items-center gap-2 text-xs text-tertiary mt-0.5">
+                  <span>{row.date ? formatDate(row.date) : "—"}</span>
+                  {row.project_name && (
+                    <>
+                      <span>·</span>
+                      <span>{row.project_name}</span>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <Button variant="secondary" size="sm" onClick={handlePreview} loading={loadingPreview}>
-              <Eye className="h-3.5 w-3.5" /> Preview
-            </Button>
-            <Button variant="secondary" size="sm" onClick={handleDownload}>
-              <Download className="h-3.5 w-3.5" />
-            </Button>
-          </div>
-        </div>
 
-        {meeting.topic && (
-          <div>
-            <p className="text-xs text-tertiary font-medium">Topic</p>
-            <p className="text-sm text-primary">{meeting.topic}</p>
-          </div>
-        )}
+          {row.attendees && (
+            <div className="flex items-center gap-1.5 text-xs text-secondary">
+              <Users className="h-3 w-3 text-tertiary" />
+              <span className="font-medium text-tertiary">Attendees:</span> {row.attendees}
+            </div>
+          )}
 
-        {meeting.summary && (
-          <div>
-            <p className="text-xs text-tertiary font-medium mb-1">Summary</p>
-            <p className="text-sm text-secondary leading-relaxed line-clamp-3">{meeting.summary}</p>
-          </div>
-        )}
-
-        <div className="grid grid-cols-2 gap-3">
-          {meeting.attendees.length > 0 && (
+          {row.summary && (
             <div>
-              <p className="text-xs text-tertiary font-medium mb-1 flex items-center gap-1">
-                <UserCheck className="h-3 w-3" /> Attendees ({meeting.attendees.length})
-              </p>
-              <div className="flex flex-wrap gap-1.5">
-                {meeting.attendees.slice(0, 6).map((a) => (
-                  <div key={a.id} className="flex items-center gap-1 bg-subtle rounded-full px-2 py-0.5">
-                    <Avatar name={a.name} size="sm" src={a.avatar_url} />
-                    <span className="text-xs text-primary">{a.name}</span>
-                    <span className="text-[10px] text-tertiary">({a.role})</span>
-                  </div>
-                ))}
-                {meeting.attendees.length > 6 && (
-                  <span className="text-xs text-tertiary">+{meeting.attendees.length - 6}</span>
-                )}
+              <p className="text-xs text-tertiary font-medium mb-1">Summary</p>
+              <p className="text-sm text-secondary leading-relaxed">{row.summary}</p>
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 gap-3">
+            {row.decisions_taken && (
+              <div>
+                <p className="text-xs text-tertiary font-medium mb-1">Decisions Taken</p>
+                <p className="text-xs text-secondary">{row.decisions_taken}</p>
               </div>
-            </div>
-          )}
-          {meeting.absentees && meeting.absentees.length > 0 && (
-            <div>
-              <p className="text-xs text-tertiary font-medium mb-1">Absentees</p>
-              <div className="flex flex-wrap gap-1">
-                {meeting.absentees.map((name, i) => (
-                  <Badge key={i} variant="neutral" size="sm">{name}</Badge>
-                ))}
+            )}
+            {row.blockers && (
+              <div>
+                <p className="text-xs text-tertiary font-medium mb-1">Blockers</p>
+                <p className="text-xs text-secondary">{row.blockers}</p>
               </div>
-            </div>
-          )}
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          {meeting.remarks && (
-            <div>
-              <p className="text-xs text-tertiary font-medium">Remarks</p>
-              <p className="text-xs text-secondary">{meeting.remarks}</p>
-            </div>
-          )}
-          {meeting.important_notes && (
-            <div>
-              <p className="text-xs text-tertiary font-medium">Important Notes</p>
-              <p className="text-xs text-secondary">{meeting.important_notes}</p>
-            </div>
-          )}
-        </div>
-
-        {meeting.next_meeting_date && (
-          <div className="flex items-center gap-1.5 text-xs text-primary">
-            <Calendar className="h-3.5 w-3.5" />
-            Next meeting: {formatDate(meeting.next_meeting_date)}
-          </div>
-        )}
-      </div>
-
-      {previewOpen && (
-        <div className="border-t border-subtle">
-          <div className="p-4 bg-subtle/50">
-            <div className="flex items-center justify-between mb-3">
-              <h4 className="text-xs font-semibold uppercase text-tertiary tracking-wide">Full Preview</h4>
-              <button onClick={() => setPreviewOpen(false)} className="text-xs text-link hover:underline">
-                Close
-              </button>
-            </div>
-            {previewData ? (
-              <pre className="text-xs text-secondary whitespace-pre-wrap max-h-60 overflow-y-auto">
-                {JSON.stringify(previewData, null, 2)}
-              </pre>
-            ) : (
-              <p className="text-xs text-tertiary">Preview data not available</p>
             )}
           </div>
-        </div>
-      )}
-    </Card>
+
+          <div className="grid grid-cols-2 gap-3">
+            {row.action_items && (
+              <div>
+                <p className="text-xs text-tertiary font-medium mb-1">Action Items</p>
+                <p className="text-xs text-secondary">{row.action_items}</p>
+              </div>
+            )}
+            {row.notes && (
+              <div>
+                <p className="text-xs text-tertiary font-medium mb-1">Notes</p>
+                <p className="text-xs text-secondary">{row.notes}</p>
+              </div>
+            )}
+          </div>
+
+          {row.author_name && (
+            <p className="text-xs text-tertiary">
+              Reported by <span className="font-medium text-primary">{row.author_name}</span>
+            </p>
+          )}
+        </Card>
+      ))}
+    </div>
   );
 }
 
 function renderTabContent(tab: Tab, data: unknown, loading: boolean) {
-  switch (tab) {
-    case "project_report":
-      return renderProjectReport(data, loading);
-    case "meeting_logs":
-      return renderMeetingLogs(data, loading);
+  if (loading) return <SkeletonTable rows={4} columns={3} />;
+
+  if (tab === "task_completion") {
+    const items = Array.isArray(data) ? (data as TaskCompletionRow[]) : [];
+    if (items.length === 0) {
+      return (
+        <Card>
+          <EmptyState
+            icon={<Building2 className="h-8 w-8 text-tertiary" />}
+            title="No task data"
+            description="Task completion data will appear here once projects have tasks."
+          />
+        </Card>
+      );
+    }
+    return <TaskCompletionView data={items} />;
   }
+
+  if (tab === "workload_distribution") {
+    const items = Array.isArray(data) ? (data as WorkloadRow[]) : [];
+    if (items.length === 0) {
+      return (
+        <Card>
+          <EmptyState
+            icon={<Activity className="h-8 w-8 text-tertiary" />}
+            title="No workload data"
+            description="Workload distribution will appear here once users have tasks."
+          />
+        </Card>
+      );
+    }
+    return <WorkloadView data={items} />;
+  }
+
+  if (tab === "weekly_summary") {
+    const items = Array.isArray(data) ? (data as WeeklySummaryRow[]) : [];
+    if (items.length === 0) {
+      return (
+        <Card>
+          <EmptyState
+            icon={<Calendar className="h-8 w-8 text-tertiary" />}
+            title="No weekly data"
+            description="Weekly summary will appear here once there is activity."
+          />
+        </Card>
+      );
+    }
+    return <WeeklySummaryView data={items} />;
+  }
+
+  if (tab === "meeting_logs") {
+    const items = Array.isArray(data) ? (data as MeetingLogRow[]) : [];
+    if (items.length === 0) {
+      return (
+        <Card>
+          <EmptyState
+            icon={<MessageSquare className="h-8 w-8 text-tertiary" />}
+            title="No meeting logs"
+            description="Meeting logs will appear here once meetings are conducted."
+          />
+        </Card>
+      );
+    }
+    return <MeetingLogsView data={items} />;
+  }
+
+  return null;
 }
 
 export default function ReportsPage() {
-  const [activeTab, setActiveTab] = useState<Tab>("project_report");
+  const [activeTab, setActiveTab] = useState<Tab>("task_completion");
   const [exportOpen, setExportOpen] = useState(false);
   const exportRef = useRef<HTMLDivElement>(null);
 
