@@ -2,6 +2,19 @@ from datetime import datetime
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, Table, ForeignKey
 from sqlalchemy.orm import relationship
 from app.core.database import Base
+from app.roles.models import Role
+from app.permissions.models import Permission
+from app.projects.models import Project, ProjectMember
+from app.tasks.models import Task
+from app.comments.models import Comment, Mention
+from app.meetings.models import MeetingLog
+from app.milestones.models import Milestone
+from app.announcements.models import Announcement
+from app.notifications.models import Notification
+from app.activity_logs.models import ActivityLog
+from app.integrations.models import Integration
+from app.attachments.models import Attachment
+from app.modules.models import Module
 
 
 class PasswordResetToken(Base):
