@@ -2,7 +2,7 @@ import os
 import uuid
 import shutil
 from pathlib import Path
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query, Form
 from sqlalchemy.orm import Session
 from typing import Optional
 
@@ -55,9 +55,9 @@ def list_attachments(
 
 @router.post("/upload", status_code=201)
 async def upload_attachment(
-    model_type: str,
-    model_id: int,
-    collection_name: str = "default",
+    model_type: str = Form(...),
+    model_id: int = Form(...),
+    collection_name: str = Form("default"),
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
     current_user: User = require_permissions(["attachments.upload"]),

@@ -1,26 +1,39 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/services/api";
 import { openDrawer } from "@/hooks/useDrawer";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
 import { FilterBar } from "@/components/ui/FilterBar";
 import { Table, type TableColumn } from "@/components/ui/Table";
 import { SkeletonKpiRow } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/shared/EmptyState";
-import { CheckCircle2, Circle, ListChecks, Trash2, ListTodo } from "lucide-react";
+import { CheckCircle2, Circle, ListChecks, Trash2, ListTodo, Plus, X, Search } from "lucide-react";
 import type { Task } from "@/types";
 
 export default function SubtaskListPage() {
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
+  const [showModal, setShowModal] = useState(false);
+  const [newTitle, setNewTitle] = useState("");
+  const [parentQuery, setParentQuery] = useState("");
+  const [selectedParent, setSelectedParent] = useState<{ id: number; title: string } | null>(null);
+  const parentSearchRef = useRef<HTMLDivElement>(null);
+
+  const { data: parentResults } = useQuery({
+    queryKey: ["tasks-search", parentQuery],
+    queryFn: () =>
+      api.get("/tasks/parents", { params: { q: parentQuery } }).then((r) => r.data?.tasks || r.data?.data || r.data || []),
+    enabled: parentQuery.length >= 1,
+  });
 
   const { data, isLoading } = useQuery({
     queryKey: ["subtasks", page, search],
     queryFn: () =>
       api
-        .get("/tasks", { params: { has_parent: true, page, search, per_page: 20, with: "parent" } })
+        .get("/tasks", { params: { has_parent: true, page, search, per_page: 20 } })
         .then((r) => r.data?.items || r.data?.data || []),
   });
 
@@ -36,6 +49,18 @@ export default function SubtaskListPage() {
   const deleteMutation = useMutation({
     mutationFn: (id: number) => api.delete(`/tasks/${id}`),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["subtasks"] }),
+  });
+
+  const createMutation = useMutation({
+    mutationFn: (data: { title: string; parent_id: number }) =>
+      api.post(`/tasks/${data.parent_id}/subtasks`, { title: data.title }).then((r) => r.data),
+    onSuccess: () => {
+      setNewTitle("");
+      setSelectedParent(null);
+      setParentQuery("");
+      setShowModal(false);
+      queryClient.invalidateQueries({ queryKey: ["subtasks"] });
+    },
   });
 
   const doneCount = subtasks.filter((s) => s.status === "done").length;
@@ -96,6 +121,9 @@ export default function SubtaskListPage() {
         <div>
           <h1 className="text-xl font-bold text-primary">Subtasks</h1>
         </div>
+        <Button size="sm" onClick={() => setShowModal(true)}>
+          <Plus className="h-3.5 w-3.5" /> New Subtask
+        </Button>
       </div>
 
       {isLoading ? (
@@ -148,6 +176,87 @@ export default function SubtaskListPage() {
           />
         }
       />
+
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 bg-black/40" onClick={() => setShowModal(false)}>
+          <div className="w-full max-w-md bg-surface rounded-xl shadow-elevated border border-default" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-subtle">
+              <h2 className="text-base font-semibold text-primary">New Subtask</h2>
+              <button type="button" onClick={() => setShowModal(false)} className="p-1 rounded text-tertiary hover:text-primary hover:bg-hover transition-colors">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="p-5 space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-primary">Subtask Title</label>
+                <input
+                  type="text"
+                  value={newTitle}
+                  onChange={(e) => setNewTitle(e.target.value)}
+                  placeholder="What needs to be done?"
+                  className="w-full h-9 px-3 rounded-md bg-surface border border-default text-sm text-primary placeholder:text-tertiary focus:outline-none focus:ring-2 focus:ring-primary-ring focus:border-primary"
+                  autoFocus
+                />
+              </div>
+              <div className="space-y-1.5" ref={parentSearchRef}>
+                <label className="text-sm font-medium text-primary">Parent Task</label>
+                {selectedParent ? (
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-primary-soft text-sm text-primary">
+                    <span className="flex-1 truncate">{selectedParent.title}</span>
+                    <button type="button" onClick={() => { setSelectedParent(null); setParentQuery(""); }} className="text-tertiary hover:text-primary transition-colors">
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="relative">
+                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-tertiary" />
+                    <input
+                      type="text"
+                      value={parentQuery}
+                      onChange={(e) => setParentQuery(e.target.value)}
+                      placeholder="Search parent tasks..."
+                      className="w-full h-9 pl-8 pr-3 rounded-md bg-surface border border-default text-sm text-primary placeholder:text-tertiary focus:outline-none focus:ring-2 focus:ring-primary-ring focus:border-primary"
+                    />
+                    {parentQuery.length >= 1 && (
+                      <div className="absolute top-full left-0 right-0 mt-1 z-10 bg-surface border border-default rounded-lg shadow-elevated max-h-48 overflow-y-auto">
+                        {(!parentResults || (parentResults as any[]).length === 0) ? (
+                          <div className="p-3 text-sm text-tertiary text-center">No tasks found</div>
+                        ) : (
+                          (parentResults as any[]).map((t: any) => (
+                            <button
+                              key={t.id}
+                              type="button"
+                              onClick={() => { setSelectedParent({ id: t.id, title: t.title }); setParentQuery(""); }}
+                              className="w-full text-left px-3 py-2 text-sm text-primary hover:bg-hover transition-colors"
+                            >
+                              {t.title}
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-subtle">
+              <Button variant="ghost" size="sm" onClick={() => setShowModal(false)}>Cancel</Button>
+              <Button
+                size="sm"
+                loading={createMutation.isPending}
+                disabled={!newTitle.trim() || !selectedParent}
+                onClick={() => {
+                  if (newTitle.trim() && selectedParent) {
+                    createMutation.mutate({ title: newTitle.trim(), parent_id: selectedParent.id });
+                  }
+                }}
+              >
+                <Plus className="h-3.5 w-3.5" /> Create
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

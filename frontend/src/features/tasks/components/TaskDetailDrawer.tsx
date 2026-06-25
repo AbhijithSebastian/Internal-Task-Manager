@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/services/api";
 import { useAuth } from "@/store/auth";
@@ -8,15 +8,16 @@ import { Button } from "@/components/ui/Button";
 import { Avatar } from "@/components/ui/Avatar";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { TaskStatusBadge, TaskPriorityBadge } from "@/features/tasks/components/TaskStatusBadge";
-import { formatDate, formatRelative, formatFileSize, formatDateTime } from "@/utils/formatters";
-import type { Comment, Attachment, ActivityLog, UserBrief, TaskBrief, Task } from "@/types";
+import { formatDate, formatRelative, formatDateTime } from "@/utils/formatters";
+import type { Comment, ActivityLog, UserBrief, TaskBrief, Task } from "@/types";
 import {
   Calendar, Clock, FolderKanban, ListChecks, MessageSquare, Activity as ActivityIcon,
-  Paperclip, Link2, Plus, Trash2, Send, Upload, FileText,
+  Paperclip, Link2, Plus, Trash2, Send,
   CheckCircle2, Circle, X, AlertCircle, ExternalLink,
   UserPlus, CheckCircle as CheckIcon, ThumbsDown, Lock, Unlock,
-  Save, Reply, Edit3, Download, Search,
+  Save, Reply, Edit3, Search,
 } from "lucide-react";
+import { AttachmentsSection } from "@/components/shared/AttachmentsSection";
 
 const STATUS_OPTIONS = [
   { value: "backlog", label: "Backlog" },
@@ -581,148 +582,6 @@ function ActivitySection({ taskId }: { taskId: number }) {
   );
 }
 
-function AttachmentsSection({ taskId }: { taskId: number }) {
-  const queryClient = useQueryClient();
-  const [dragOver, setDragOver] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const { data: attachments, isLoading } = useQuery({
-    queryKey: ["attachments", taskId],
-    queryFn: () =>
-      api
-        .get("/attachments", { params: { model_type: "task", model_id: taskId } })
-        .then((r) => r.data?.data || r.data || []),
-    enabled: Boolean(taskId),
-  });
-
-  const uploadMutation = useMutation({
-    mutationFn: (file: File) => {
-      const fd = new FormData();
-      fd.append("file", file);
-      fd.append("model_type", "task");
-      fd.append("model_id", String(taskId));
-      fd.append("collection_name", "attachments");
-      return api.post("/attachments/upload", fd, {
-        headers: { "Content-Type": "multipart/form-data" },
-      }).then((r) => r.data);
-    },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["attachments", taskId] }),
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: (id: number) => api.delete(`/attachments/${id}`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["attachments", taskId] }),
-  });
-
-  const handleDrop = useCallback(
-    (e: React.DragEvent) => {
-      e.preventDefault();
-      setDragOver(false);
-      const file = e.dataTransfer.files[0];
-      if (file) uploadMutation.mutate(file);
-    },
-    [uploadMutation]
-  );
-
-  const handleFileSelect = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (file) uploadMutation.mutate(file);
-      if (e.target) e.target.value = "";
-    },
-    [uploadMutation]
-  );
-
-  const files = (attachments as Attachment[]) ?? [];
-
-  if (isLoading) {
-    return (
-      <div className="space-y-3">
-        <h3 className="text-sm font-semibold text-primary flex items-center gap-2">
-          <Paperclip className="h-4 w-4" />
-          Attachments
-        </h3>
-        <Skeleton variant="rect" className="h-20 w-full" />
-        <Skeleton variant="rect" className="h-12 w-full" />
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-3">
-      <h3 className="text-sm font-semibold text-primary flex items-center gap-2">
-        <Paperclip className="h-4 w-4" />
-        Attachments ({files.length})
-      </h3>
-      <div
-        onDrop={handleDrop}
-        onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-        onDragLeave={() => setDragOver(false)}
-        onClick={() => fileInputRef.current?.click()}
-        className={`relative flex flex-col items-center justify-center py-8 px-4 rounded-lg border-2 border-dashed cursor-pointer transition-colors ${
-          dragOver
-            ? "border-primary bg-primary-soft/30"
-            : "border-default hover:border-hover bg-surface"
-        }`}
-      >
-        <Upload className={`h-6 w-6 mb-2 ${dragOver ? "text-primary" : "text-tertiary"}`} />
-        <p className={`text-sm ${dragOver ? "text-primary font-medium" : "text-tertiary"}`}>
-          {dragOver ? "Drop file here" : "Click or drag file to upload"}
-        </p>
-        <p className="text-xs text-tertiary mt-0.5">Images, PDFs, documents</p>
-        <input
-          ref={fileInputRef}
-          type="file"
-          className="hidden"
-          onChange={handleFileSelect}
-          accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt"
-        />
-      </div>
-      {files.length === 0 ? (
-        <p className="text-sm text-tertiary text-center py-4">No files attached</p>
-      ) : (
-        <ul className="space-y-1">
-          {files.map((file) => (
-            <li key={file.id} className="flex items-center gap-3 py-2 px-3 rounded-md hover:bg-hover group transition-colors">
-              <FileText className="h-4 w-4 text-tertiary shrink-0" />
-              <div className="flex-1 min-w-0">
-                <a
-                  href={file.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm text-primary hover:underline truncate block"
-                >
-                  {file.name || file.file_name}
-                </a>
-                <p className="text-xs text-tertiary">{formatFileSize(file.size)}</p>
-              </div>
-              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <a
-                  href={file.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="p-1 text-tertiary hover:text-primary transition-colors"
-                >
-                  <Download className="h-3.5 w-3.5" />
-                </a>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (window.confirm(`Delete "${file.name || file.file_name}"?`))
-                      deleteMutation.mutate(file.id);
-                  }}
-                  className="p-1 text-tertiary hover:text-semantic-danger transition-colors"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
-}
 
 function DependenciesSection({ taskId, task }: { taskId: number; task: Task }) {
   const queryClient = useQueryClient();
@@ -1216,7 +1075,7 @@ export function TaskDetailDrawer({ taskId, onClose }: TaskDetailDrawerProps) {
           {activeTab === "subtasks" && <SubtasksSection taskId={t.id} subtasks={t.subtasks} />}
           {activeTab === "comments" && <CommentsSection taskId={t.id} projectId={t.project_id} />}
           {activeTab === "activity" && <ActivitySection taskId={t.id} />}
-          {activeTab === "attachments" && <AttachmentsSection taskId={t.id} />}
+          {activeTab === "attachments" && <AttachmentsSection modelType="task" modelId={t.id} />}
           {activeTab === "dependencies" && <DependenciesSection taskId={t.id} task={t} />}
 
           <div className="pt-3 border-t border-subtle space-y-1 text-xs text-tertiary">

@@ -39,8 +39,8 @@ def global_search(
             Project.name.ilike(term),
         ).limit(limit).all()
         results["projects"] = [
-            {"id": p.id, "name": p.name, "status": p.status.value if p.status else "active",
-             "priority": p.priority.value if p.priority else "medium"}
+            {"id": p.id, "name": p.name, "status": p.status if p.status else "active",
+             "priority": p.priority if p.priority else "medium"}
             for p in projects
         ]
 
@@ -51,8 +51,8 @@ def global_search(
             Task.title.ilike(term),
         ).limit(limit).all()
         results["tasks"] = [
-            {"id": t.id, "title": t.title, "status": t.status.value if t.status else "backlog",
-             "priority": t.priority.value if t.priority else "medium", "project_id": t.project_id}
+            {"id": t.id, "title": t.title, "status": t.status if t.status else "backlog",
+             "priority": t.priority if t.priority else "medium", "project_id": t.project_id}
             for t in tasks
         ]
 

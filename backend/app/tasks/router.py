@@ -12,6 +12,7 @@ from app.tasks.models import Task, TaskDependency, task_assignees
 from app.projects.models import Project, ProjectMember
 from app.users.models import User
 from app.core.enums import TaskStatus, TaskPriority, UserRole
+from app.common_schemas import enum_label
 
 router = APIRouter()
 
@@ -24,7 +25,7 @@ class TaskCreate(BaseModel):
     due_date: Optional[str] = None
     employee_eta: Optional[str] = None
     estimated_hours: Optional[float] = None
-    project_id: int
+    project_id: Optional[int] = None
     module_id: Optional[int] = None
     assignee_ids: Optional[list[int]] = None
     dependency_ids: Optional[list[int]] = None
@@ -59,6 +60,8 @@ def list_tasks(
     assignee_id: Optional[int] = Query(None),
     tag: Optional[str] = Query(None),
     tab: Optional[str] = Query(None),
+    parent_id: Optional[int] = Query(None),
+    has_parent: Optional[bool] = Query(None),
     sort_by: str = Query("created_at"),
     sort_direction: str = Query("desc"),
     page: int = Query(1, ge=1),
@@ -66,7 +69,12 @@ def list_tasks(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    query = db.query(Task).filter(Task.deleted_at.is_(None), Task.parent_id.is_(None))
+    if parent_id is not None:
+        query = db.query(Task).filter(Task.deleted_at.is_(None), Task.parent_id == parent_id)
+    elif has_parent:
+        query = db.query(Task).filter(Task.deleted_at.is_(None), Task.parent_id.is_not(None))
+    else:
+        query = db.query(Task).filter(Task.deleted_at.is_(None), Task.parent_id.is_(None))
 
     if tab == "my-tasks":
         query = query.filter(Task.assignees.any(User.id == current_user.id))
@@ -91,6 +99,9 @@ def list_tasks(
             query = query.filter(Task.status == TaskStatus.BLOCKED)
         elif status == "needs_review":
             query = query.filter(Task.requires_approval == True, Task.status == TaskStatus.IN_REVIEW)
+        elif "," in status:
+            status_list = [TaskStatus(s.strip()) for s in status.split(",")]
+            query = query.filter(Task.status.in_(status_list))
         else:
             query = query.filter(Task.status == TaskStatus(status))
     if priority:
@@ -121,12 +132,15 @@ def list_tasks(
 
 
 @router.get("/parents")
-def get_parent_tasks(project_id: Optional[int] = Query(None),
+def get_parent_tasks(q: Optional[str] = Query(None),
+                     project_id: Optional[int] = Query(None),
                      db: Session = Depends(get_db),
                      current_user: User = Depends(get_current_user)):
     query = db.query(Task).filter(Task.parent_id.is_(None), Task.deleted_at.is_(None))
     if project_id:
         query = query.filter(Task.project_id == project_id)
+    if q:
+        query = query.filter(Task.title.ilike(f"%{q}%"))
     tasks = query.order_by(Task.title).all()
     return {"tasks": [{"id": t.id, "title": t.title, "project_id": t.project_id} for t in tasks]}
 
@@ -144,6 +158,8 @@ def get_task(task_id: int, db: Session = Depends(get_db),
 @router.post("", status_code=201)
 def create_task(data: TaskCreate, db: Session = Depends(get_db),
                 current_user: User = require_permissions(["tasks.create"])):
+    if data.parent_id is None and data.project_id is None:
+        raise HTTPException(422, "project_id is required for top-level tasks")
     task = Task(
         title=data.title,
         description=data.description,
@@ -273,7 +289,7 @@ def update_task_status(task_id: int, status: str, db: Session = Depends(get_db),
     db.commit()
 
     log_activity(db, "tasks", task.id, "Task status changed", causer_id=current_user.id,
-                 properties={"old": old_status.value if old_status else None, "new": status})
+                 properties={"old": old_status if old_status else None, "new": status})
     return {"message": "Status updated"}
 
 
@@ -493,10 +509,10 @@ def format_task(t: Task) -> dict:
         "id": t.id,
         "title": t.title,
         "description": t.description,
-        "status": t.status.value if t.status else "backlog",
-        "status_label": t.status.label() if t.status else "Backlog",
-        "priority": t.priority.value if t.priority else "medium",
-        "priority_label": t.priority.label() if t.priority else "Medium",
+        "status": t.status if t.status else "backlog",
+        "status_label": enum_label(t.status, TaskStatus, "Backlog"),
+        "priority": t.priority if t.priority else "medium",
+        "priority_label": enum_label(t.priority, TaskPriority, "Medium"),
         "tags": t.tags,
         "blocked_reason": t.blocked_reason,
         "due_date": t.due_date,
@@ -525,12 +541,12 @@ def format_task(t: Task) -> dict:
 def format_task_detail(t: Task) -> dict:
     data = format_task(t)
     data["dependencies"] = [
-        {"id": d.id, "title": d.title, "status": d.status.value if d.status else "backlog",
+        {"id": d.id, "title": d.title, "status": d.status if d.status else "backlog",
          "assignees": [{"id": a.id, "name": a.name} for a in (d.assignees or [])]}
         for d in (t.dependencies or [])
     ]
     data["dependents"] = [
-        {"id": d.id, "title": d.title, "status": d.status.value if d.status else "backlog"}
+        {"id": d.id, "title": d.title, "status": d.status if d.status else "backlog"}
         for d in (t.dependents or [])
     ]
     data["subtasks"] = [

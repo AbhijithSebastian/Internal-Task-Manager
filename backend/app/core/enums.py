@@ -5,6 +5,8 @@ class UserRole(str, Enum):
     SUPER_ADMIN = "super-admin"
     PROJECT_MANAGER = "project-manager"
     TEAM_LEAD = "team-lead"
+    DEVELOPER = "developer"
+    DESIGNER = "designer"
     EMPLOYEE = "employee"
 
     def label(self) -> str:
@@ -12,6 +14,8 @@ class UserRole(str, Enum):
             "super-admin": "Super Admin",
             "project-manager": "Project Manager",
             "team-lead": "Team Lead",
+            "developer": "Developer",
+            "designer": "Designer",
             "employee": "Employee",
         }
         return labels[self.value]
@@ -115,7 +119,9 @@ class AnnouncementPriority(str, Enum):
 
 class AnnouncementStatus(str, Enum):
     DRAFT = "draft"
+    SCHEDULED = "scheduled"
     PUBLISHED = "published"
+    ARCHIVED = "archived"
 
     def label(self) -> str:
         return self.value.capitalize()
@@ -128,8 +134,14 @@ class MilestoneStatus(str, Enum):
     COMPLETED = "completed"
     CANCELLED = "cancelled"
 
+    def label(self) -> str:
+        return self.value.replace("_", " ").title()
+
 
 class IntegrationType(str, Enum):
     GITHUB = "github"
     FIGMA = "figma"
     EMAIL_HOOK = "email_hook"
+
+    def label(self) -> str:
+        return self.value.replace("_", " ").title()

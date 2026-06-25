@@ -12,7 +12,7 @@ type PublishMode = "draft" | "now" | "schedule";
 
 const PRIORITY_OPTIONS = [
   { value: "low", label: "Low" },
-  { value: "normal", label: "Normal" },
+  { value: "medium", label: "Medium" },
   { value: "high", label: "High" },
   { value: "urgent", label: "Urgent" },
 ];
@@ -25,7 +25,7 @@ export default function AnnouncementFormPage() {
 
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
-  const [priority, setPriority] = useState("normal");
+  const [priority, setPriority] = useState("medium");
   const [publishMode, setPublishMode] = useState<PublishMode>("draft");
   const [scheduledAt, setScheduledAt] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -41,7 +41,7 @@ export default function AnnouncementFormPage() {
     const a = existing;
     setTitle(a.title || "");
     setContent(a.content || "");
-    setPriority(a.priority || "normal");
+    setPriority(a.priority || "medium");
     if (a.status === "draft") {
       setPublishMode("draft");
     } else if (a.published_at) {

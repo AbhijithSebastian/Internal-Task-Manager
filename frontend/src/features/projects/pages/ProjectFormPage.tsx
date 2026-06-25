@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/services/api";
@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Card } from "@/components/ui/Card";
 import { SkeletonForm } from "@/components/ui/Skeleton";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, X, Upload, FileText } from "lucide-react";
 
 export default function ProjectFormPage() {
   const { id } = useParams<{ id: string }>();
@@ -19,6 +19,9 @@ export default function ProjectFormPage() {
     start_date: "", deadline: "", figma_url: "", github_url: "", docs_url: "", pm_id: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [files, setFiles] = useState<File[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
 
   const { data: project, isLoading, isError: projectError } = useQuery({
     queryKey: ["project", id],
@@ -28,7 +31,7 @@ export default function ProjectFormPage() {
 
   const { data: usersData } = useQuery({
     queryKey: ["users-minimal"],
-    queryFn: () => api.get("/users", { params: { per_page: 200 } }).then((r) => r.data?.items || r.data?.data || []),
+    queryFn: () => api.get("/users", { params: { per_page: 100 } }).then((r) => r.data?.items || r.data?.data || []),
   });
 
   useEffect(() => {
@@ -50,7 +53,29 @@ export default function ProjectFormPage() {
 
   const createMutation = useMutation({
     mutationFn: (data: Record<string, unknown>) => api.post("/projects", data),
-    onSuccess: (res) => { queryClient.invalidateQueries({ queryKey: ["projects"] }); navigate(`/work/projects/${res.data?.data?.id || res.data?.id}`); },
+    onSuccess: async (res) => {
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+      const projectId = res.data?.data?.id || res.data?.id;
+      if (projectId && files.length > 0) {
+        setUploading(true);
+        try {
+          for (const file of files) {
+            const fd = new FormData();
+            fd.append("file", file);
+            fd.append("model_type", "project");
+            fd.append("model_id", String(projectId));
+            fd.append("collection_name", "attachments");
+            await api.post("/attachments/upload", fd, {
+              headers: { "Content-Type": "multipart/form-data" },
+            });
+          }
+        } catch (e) {
+          console.error("Failed to upload some files", e);
+        }
+        setUploading(false);
+      }
+      navigate(`/work/projects/${projectId}`);
+    },
     onError: (err: { response?: { data?: { errors?: Record<string, string[]> } } }) => {
       const serverErrors = err.response?.data?.errors;
       if (serverErrors) {
@@ -148,9 +173,47 @@ export default function ProjectFormPage() {
           </div>
         </Card>
 
+        {!isEdit && (
+          <Card>
+            <h3 className="text-sm font-semibold text-primary mb-4">Attachments</h3>
+            <div
+              onClick={() => fileInputRef.current?.click()}
+              className="flex flex-col items-center justify-center py-6 px-4 rounded-lg border-2 border-dashed border-default hover:border-hover bg-surface cursor-pointer transition-colors"
+            >
+              <Upload className="h-5 w-5 text-tertiary mb-1" />
+              <p className="text-sm text-tertiary">Click to add PDFs, Excel, images</p>
+              <input
+                ref={fileInputRef}
+                type="file"
+                className="hidden"
+                multiple
+                accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt"
+                onChange={(e) => {
+                  const selected = Array.from(e.target.files || []);
+                  setFiles((prev) => [...prev, ...selected]);
+                  if (e.target) e.target.value = "";
+                }}
+              />
+            </div>
+            {files.length > 0 && (
+              <ul className="space-y-1 mt-3">
+                {files.map((f, i) => (
+                  <li key={i} className="flex items-center gap-2 py-1 px-2 rounded-md bg-subtle text-sm text-secondary">
+                    <FileText className="h-3.5 w-3.5 text-tertiary shrink-0" />
+                    <span className="flex-1 truncate">{f.name}</span>
+                    <button type="button" onClick={() => setFiles((prev) => prev.filter((_, j) => j !== i))} className="text-tertiary hover:text-semantic-danger transition-colors">
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
+        )}
+
         <div className="flex items-center gap-3">
-          <Button type="submit" loading={createMutation.isPending || updateMutation.isPending}>
-            {isEdit ? "Save Changes" : "Create Project"}
+          <Button type="submit" loading={createMutation.isPending || updateMutation.isPending || uploading}>
+            {isEdit ? "Save Changes" : (uploading ? "Uploading files..." : "Create Project")}
           </Button>
           <Button variant="secondary" onClick={() => navigate(isEdit ? `/work/projects/${id}` : "/work/projects")}>Cancel</Button>
         </div>

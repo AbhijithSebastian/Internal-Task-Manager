@@ -5,7 +5,6 @@ import {
   Users,
   Video,
   Megaphone,
-  Bell,
   BarChart3,
   Shield,
   Settings,
@@ -47,12 +46,6 @@ export const navSections: NavSection[] = [
     items: [
       { label: "Users", href: "/work/users", icon: Users },
       { label: "Announcements", href: "/work/announcements", icon: Megaphone },
-    ],
-  },
-  {
-    label: "Activity",
-    items: [
-      { label: "Notifications", href: "/work/notifications", icon: Bell, badge: "notification" },
     ],
   },
   {

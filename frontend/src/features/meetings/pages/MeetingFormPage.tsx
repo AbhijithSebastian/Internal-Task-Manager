@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/services/api";
@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Card } from "@/components/ui/Card";
 import { SkeletonForm } from "@/components/ui/Skeleton";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, X, Upload, FileText } from "lucide-react";
 
 export default function MeetingFormPage() {
   const { id } = useParams<{ id: string }>();
@@ -20,15 +20,18 @@ export default function MeetingFormPage() {
     project_id: "", attendees: "", recording_link: "", next_meeting_date: "", related_task_id: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [files, setFiles] = useState<File[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
 
   const { data: projectsData } = useQuery({
     queryKey: ["projects-minimal"],
-    queryFn: () => api.get("/projects", { params: { per_page: 200 } }).then((r) => r.data?.items || r.data?.data || []),
+    queryFn: () => api.get("/projects", { params: { per_page: 100 } }).then((r) => r.data?.items || r.data?.data || []),
   });
 
   const { data: tasksData } = useQuery({
     queryKey: ["tasks-minimal"],
-    queryFn: () => api.get("/tasks", { params: { per_page: 200 } }).then((r) => r.data?.items || r.data?.data || []),
+    queryFn: () => api.get("/tasks", { params: { per_page: 100 } }).then((r) => r.data?.items || r.data?.data || []),
   });
 
   const projects = Array.isArray(projectsData) ? projectsData as Array<{ id: number; name: string }> : [];
@@ -62,7 +65,31 @@ export default function MeetingFormPage() {
 
   const mutation = useMutation({
     mutationFn: (data: Record<string, unknown>) => isEdit ? api.put(`/meetings/${id}`, data) : api.post("/meetings", data),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["meetings"] }); navigate("/work/meetings"); },
+    onSuccess: async (res) => {
+      queryClient.invalidateQueries({ queryKey: ["meetings"] });
+      if (!isEdit && files.length > 0) {
+        const meetingId = res.data?.data?.id || res.data?.id;
+        if (meetingId) {
+          setUploading(true);
+          try {
+            for (const file of files) {
+              const fd = new FormData();
+              fd.append("file", file);
+              fd.append("model_type", "meeting_log");
+              fd.append("model_id", String(meetingId));
+              fd.append("collection_name", "attachments");
+              await api.post("/attachments/upload", fd, {
+                headers: { "Content-Type": "multipart/form-data" },
+              });
+            }
+          } catch (e) {
+            console.error("Failed to upload some files", e);
+          }
+          setUploading(false);
+        }
+      }
+      navigate("/work/meetings");
+    },
     onError: (err: { response?: { data?: { errors?: Record<string, string[]> } } }) => {
       const es = err.response?.data?.errors;
       if (es) {
@@ -76,6 +103,10 @@ export default function MeetingFormPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
+    if (!form.project_id) {
+      setErrors({ project_id: "Project is required" });
+      return;
+    }
     const payload: Record<string, unknown> = {
       ...form,
       project_id: form.project_id ? Number(form.project_id) : undefined,
@@ -113,8 +144,8 @@ export default function MeetingFormPage() {
                 { value: "office", label: "Office" },
                 { value: "client-site", label: "Client Site" },
               ]} />
-              <Select label="Project" value={form.project_id} onChange={(e) => update("project_id", e.target.value)} options={[
-                { value: "", label: "None" },
+              <Select label="Project" required value={form.project_id} onChange={(e) => update("project_id", e.target.value)} error={errors.project_id} options={[
+                { value: "", label: "Select project" },
                 ...projects.map((p: { id: number; name: string }) => ({ value: String(p.id), label: p.name })),
               ]} />
             </div>
@@ -160,8 +191,46 @@ export default function MeetingFormPage() {
           </div>
         </Card>
 
+        {!isEdit && (
+          <Card>
+            <h3 className="text-sm font-semibold text-primary mb-4">Attachments</h3>
+            <div
+              onClick={() => fileInputRef.current?.click()}
+              className="flex flex-col items-center justify-center py-6 px-4 rounded-lg border-2 border-dashed border-default hover:border-hover bg-surface cursor-pointer transition-colors"
+            >
+              <Upload className="h-5 w-5 text-tertiary mb-1" />
+              <p className="text-sm text-tertiary">Click to add PDFs, Excel, images</p>
+              <input
+                ref={fileInputRef}
+                type="file"
+                className="hidden"
+                multiple
+                accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt"
+                onChange={(e) => {
+                  const selected = Array.from(e.target.files || []);
+                  setFiles((prev) => [...prev, ...selected]);
+                  if (e.target) e.target.value = "";
+                }}
+              />
+            </div>
+            {files.length > 0 && (
+              <ul className="space-y-1 mt-3">
+                {files.map((f, i) => (
+                  <li key={i} className="flex items-center gap-2 py-1 px-2 rounded-md bg-subtle text-sm text-secondary">
+                    <FileText className="h-3.5 w-3.5 text-tertiary shrink-0" />
+                    <span className="flex-1 truncate">{f.name}</span>
+                    <button type="button" onClick={() => setFiles((prev) => prev.filter((_, j) => j !== i))} className="text-tertiary hover:text-semantic-danger transition-colors">
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
+        )}
+
         <div className="flex items-center gap-3">
-          <Button type="submit" loading={mutation.isPending}>{isEdit ? "Save Changes" : "Log Meeting"}</Button>
+          <Button type="submit" loading={mutation.isPending || uploading}>{isEdit ? "Save Changes" : (uploading ? "Uploading files..." : "Log Meeting")}</Button>
           <Button variant="secondary" onClick={() => navigate("/work/meetings")}>Cancel</Button>
         </div>
       </form>

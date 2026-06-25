@@ -12,6 +12,8 @@ from app.users.models import User
 from app.comments.models import Comment, Mention
 from app.activity_logs.models import ActivityLog
 from app.core.enums import TaskStatus, UserRole, ProjectStatus
+from app.common_schemas import enum_label
+from app.core.enums import ProjectStatus, ProjectPriority
 
 router = APIRouter()
 
@@ -199,12 +201,12 @@ def get_employee_data(user: User, db: Session) -> dict:
 
     return {
         "my_tasks": [{
-            "id": t.id, "title": t.title, "status": t.status.value if t.status else None,
-            "status_label": t.status.label() if t.status else None,
+            "id": t.id, "title": t.title, "status": t.status if t.status else None,
+            "status_label": enum_label(t.status, TaskStatus, "Backlog") if t.status else None,
             "due_date": t.due_date.isoformat() if t.due_date else None,
             "project_id": t.project_id,
             "project_name": t.project.name if t.project else None,
-            "priority": t.priority.value if t.priority else None,
+            "priority": t.priority if t.priority else None,
         } for t in my_tasks],
         "mentions": [{
             "id": m.id,

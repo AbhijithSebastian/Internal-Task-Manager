@@ -8,6 +8,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { formatDateTime, formatRelative } from "@/utils/formatters";
 import { CalendarDays, MapPin, FileText, Trash2 } from "lucide-react";
+import { AttachmentsSection } from "@/components/shared/AttachmentsSection";
 import type { Meeting } from "@/types";
 
 interface MeetingDetailDrawerProps {
@@ -109,6 +110,10 @@ export function MeetingDetailDrawer({ meetingId, open, onClose }: MeetingDetailD
                 <p className="text-sm text-secondary leading-relaxed whitespace-pre-wrap">{m.notes}</p>
               </div>
             )}
+
+            <div className="border-t border-subtle pt-4">
+              <AttachmentsSection modelType="meeting_log" modelId={m.id} />
+            </div>
 
             <div className="pt-4 border-t border-subtle space-y-1 text-xs text-tertiary">
               <p>Created {formatRelative(m.created_at)}</p>

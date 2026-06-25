@@ -19,7 +19,6 @@ import UsersListPage from "@/features/users/pages/UsersListPage";
 import InviteUserPage from "@/features/users/pages/InviteUserPage";
 import AnnouncementListPage from "@/features/announcements/pages/AnnouncementListPage";
 import AnnouncementFormPage from "@/features/announcements/pages/AnnouncementFormPage";
-import NotificationListPage from "@/features/notifications/pages/NotificationListPage";
 import ReportsPage from "@/features/reports/pages/ReportsPage";
 import RoleListPage from "@/features/roles/pages/RoleListPage";
 import SubtaskListPage from "@/features/subtasks/pages/SubtaskListPage";
@@ -97,9 +96,6 @@ export function AppRoutes() {
         <Route path="/work/announcements" element={<AnnouncementListPage />} />
         <Route path="/work/announcements/new" element={<AnnouncementFormPage />} />
         <Route path="/work/announcements/:id/edit" element={<AnnouncementFormPage />} />
-
-        {/* Notifications */}
-        <Route path="/work/notifications" element={<NotificationListPage />} />
 
         {/* Reports */}
         <Route path="/work/reports" element={<ReportsPage />} />

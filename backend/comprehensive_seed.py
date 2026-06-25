@@ -55,8 +55,8 @@ for i in range(1, 51):
     dept = random.choice(departments)
     job = random.choice(job_titles)
     role_choice = random.choices(
-        ["super-admin", "project-manager", "team-lead", "employee"],
-        weights=[1, 3, 6, 40]
+        ["super-admin", "project-manager", "team-lead", "developer", "designer", "employee"],
+        weights=[1, 3, 6, 15, 10, 20]
     )[0]
     u = User(
         name=f"User{i:03d}",
@@ -69,7 +69,9 @@ for i in range(1, 51):
     )
     db.add(u)
     db.flush()
-    role_map = {"super-admin": admin_role, "project-manager": pm_role, "team-lead": tl_role, "employee": emp_role}
+    dev_role = db.query(Role).filter(Role.name == "developer").first()
+    des_role = db.query(Role).filter(Role.name == "designer").first()
+    role_map = {"super-admin": admin_role, "project-manager": pm_role, "team-lead": tl_role, "developer": dev_role, "designer": des_role, "employee": emp_role}
     if role_map[role_choice]:
         u.roles.append(role_map[role_choice])
     additional.append(u)

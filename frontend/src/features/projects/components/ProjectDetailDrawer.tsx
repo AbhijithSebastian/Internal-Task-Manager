@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { Card } from "@/components/ui/Card";
 import { formatDate } from "@/utils/formatters";
 import { Users, ListTodo, AlertCircle } from "lucide-react";
+import { AttachmentsSection } from "@/components/shared/AttachmentsSection";
 import type { Project } from "@/types";
 
 interface ProjectDetailDrawerProps {
@@ -92,6 +93,10 @@ export function ProjectDetailDrawer({ projectId, onClose }: ProjectDetailDrawerP
 
           <div className="space-y-1 text-xs text-tertiary">
             {p.created_at && <p>Created {formatDate(p.created_at)}</p>}
+          </div>
+
+          <div className="border-t border-subtle pt-4">
+            <AttachmentsSection modelType="project" modelId={p.id} />
           </div>
         </div>
       )}

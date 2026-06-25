@@ -1,6 +1,18 @@
 from pydantic import BaseModel
-from typing import Optional, Any
+from typing import Optional, Any, Type, TypeVar
 from datetime import datetime, date
+from enum import Enum
+
+E = TypeVar("E", bound=Enum)
+
+
+def enum_label(value: str | None, enum_class: Type[E], default: str = "") -> str:
+    if not value:
+        return default
+    try:
+        return enum_class(value).label()  # type: ignore
+    except (ValueError, TypeError):
+        return str(value).replace("_", " ").title()
 
 
 class PaginatedResponse(BaseModel):

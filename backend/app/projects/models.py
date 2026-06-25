@@ -1,5 +1,5 @@
 from datetime import datetime, date
-from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, Date, ForeignKey, Enum as SAEnum
+from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, Date, ForeignKey
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 from app.core.enums import ProjectStatus, ProjectPriority, ProjectMemberRole
@@ -11,8 +11,8 @@ class Project(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
-    status = Column(SAEnum(ProjectStatus), default=ProjectStatus.ACTIVE, nullable=False, index=True)
-    priority = Column(SAEnum(ProjectPriority), default=ProjectPriority.MEDIUM, nullable=False, index=True)
+    status = Column(String(50), default=ProjectStatus.ACTIVE.value, nullable=False, index=True)
+    priority = Column(String(50), default=ProjectPriority.MEDIUM.value, nullable=False, index=True)
     start_date = Column(Date, nullable=True)
     end_date = Column(Date, nullable=True)
     author_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
@@ -61,7 +61,7 @@ class ProjectMember(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     project_id = Column(Integer, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    role = Column(SAEnum(ProjectMemberRole), default=ProjectMemberRole.MEMBER, nullable=False)
+    role = Column(String(50), default=ProjectMemberRole.MEMBER.value, nullable=False)
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 

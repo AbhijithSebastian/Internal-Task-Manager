@@ -18,6 +18,7 @@ import type { Announcement, PaginatedResponse } from "@/types";
 const STATUS_OPTIONS = [
   { value: "", label: "All Statuses" },
   { value: "published", label: "Published" },
+  { value: "scheduled", label: "Scheduled" },
   { value: "draft", label: "Draft" },
   { value: "archived", label: "Archived" },
 ];
@@ -25,7 +26,7 @@ const STATUS_OPTIONS = [
 const PRIORITY_OPTIONS = [
   { value: "", label: "All Priorities" },
   { value: "low", label: "Low" },
-  { value: "normal", label: "Normal" },
+  { value: "medium", label: "Medium" },
   { value: "high", label: "High" },
   { value: "urgent", label: "Urgent" },
 ];
@@ -58,6 +59,7 @@ export default function AnnouncementListPage() {
   const totalPages = result?.total_pages ?? 1;
 
   const publishedCount = result?.items?.filter((a) => a.status === "published").length ?? 0;
+  const scheduledCount = result?.items?.filter((a) => a.status === "scheduled").length ?? 0;
   const draftCount = result?.items?.filter((a) => a.status === "draft").length ?? 0;
   const archivedCount = result?.items?.filter((a) => a.status === "archived").length ?? 0;
 
@@ -82,6 +84,7 @@ export default function AnnouncementListPage() {
   const statusBadgeVariant = (status: string) => {
     switch (status) {
       case "published": return "success";
+      case "scheduled": return "info";
       case "draft": return "warning";
       case "archived": return "neutral";
       default: return "default";
@@ -100,6 +103,7 @@ export default function AnnouncementListPage() {
     if (!s) return "";
     const map: Record<string, string> = {
       published: "Published",
+      scheduled: "Scheduled",
       draft: "Draft",
       archived: "Archived",
     };
@@ -122,10 +126,11 @@ export default function AnnouncementListPage() {
         )}
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         {[
           { label: "Total", value: totalItems, color: "text-primary" },
           { label: "Published", value: publishedCount, color: "text-semantic-success" },
+          { label: "Scheduled", value: scheduledCount, color: "text-semantic-info" },
           { label: "Draft", value: draftCount, color: "text-semantic-warning" },
           { label: "Archived", value: archivedCount, color: "text-tertiary" },
         ].map((kpi) => (
@@ -204,7 +209,7 @@ export default function AnnouncementListPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
-                    {a.status === "draft" && hasPermission("announcement-edit") && (
+                    {(a.status === "draft" || a.status === "scheduled") && hasPermission("announcement-edit") && (
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -212,7 +217,7 @@ export default function AnnouncementListPage() {
                         }}
                         className="px-2 py-1 text-xs font-medium rounded-md text-semantic-success bg-semantic-success-soft hover:bg-semantic-success/20 transition-colors"
                       >
-                        Publish
+                        Publish Now
                       </button>
                     )}
                     {a.status === "published" && hasPermission("announcement-edit") && (

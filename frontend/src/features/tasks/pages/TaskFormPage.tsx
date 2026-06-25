@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { tasksService } from "@/features/tasks/services/tasks";
@@ -9,7 +9,7 @@ import { Select } from "@/components/ui/Select";
 import { Card } from "@/components/ui/Card";
 import { SkeletonForm } from "@/components/ui/Skeleton";
 import { Avatar } from "@/components/ui/Avatar";
-import { ArrowLeft, X } from "lucide-react";
+import { ArrowLeft, X, Upload, FileText } from "lucide-react";
 
 const statusOptions = [
   { value: "backlog", label: "Backlog" },
@@ -47,6 +47,9 @@ export default function TaskFormPage() {
     estimated_hours: "",
   });
   const [error, setError] = useState("");
+  const [files, setFiles] = useState<File[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
 
   const { data: task, isLoading: taskLoading } = useQuery({
     queryKey: ["task", id],
@@ -56,7 +59,7 @@ export default function TaskFormPage() {
 
   const { data: projectsData } = useQuery({
     queryKey: ["projects-list"],
-    queryFn: () => api.get("/projects").then((r) => r.data),
+    queryFn: () => api.get("/projects", { params: { per_page: 100 } }).then((r) => r.data),
   });
 
   const { data: usersData } = useQuery({
@@ -82,8 +85,29 @@ export default function TaskFormPage() {
   const mutation = useMutation({
     mutationFn: (data: Record<string, unknown>) =>
       isEdit ? tasksService.update(Number(id), data) : tasksService.create(data),
-    onSuccess: () => {
+    onSuccess: async (result: any) => {
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      if (!isEdit && files.length > 0) {
+        const taskId = result.id || result?.data?.id;
+        if (taskId) {
+          setUploading(true);
+          try {
+            for (const file of files) {
+              const fd = new FormData();
+              fd.append("file", file);
+              fd.append("model_type", "task");
+              fd.append("model_id", String(taskId));
+              fd.append("collection_name", "attachments");
+              await api.post("/attachments/upload", fd, {
+                headers: { "Content-Type": "multipart/form-data" },
+              });
+            }
+          } catch (e) {
+            console.error("Failed to upload some files", e);
+          }
+          setUploading(false);
+        }
+      }
       navigate("/work/tasks");
     },
     onError: (err: any) => setError(err?.response?.data?.detail || "Failed to save"),
@@ -218,9 +242,47 @@ export default function TaskFormPage() {
             />
           </div>
 
+          {!isEdit && (
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-primary">Attachments</label>
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                className="flex flex-col items-center justify-center py-6 px-4 rounded-lg border-2 border-dashed border-default hover:border-hover bg-surface cursor-pointer transition-colors"
+              >
+                <Upload className="h-5 w-5 text-tertiary mb-1" />
+                <p className="text-sm text-tertiary">Click to add PDFs, Excel, images</p>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  className="hidden"
+                  multiple
+                  accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt"
+                  onChange={(e) => {
+                    const selected = Array.from(e.target.files || []);
+                    setFiles((prev) => [...prev, ...selected]);
+                    if (e.target) e.target.value = "";
+                  }}
+                />
+              </div>
+              {files.length > 0 && (
+                <ul className="space-y-1">
+                  {files.map((f, i) => (
+                    <li key={i} className="flex items-center gap-2 py-1 px-2 rounded-md bg-subtle text-sm text-secondary">
+                      <FileText className="h-3.5 w-3.5 text-tertiary shrink-0" />
+                      <span className="flex-1 truncate">{f.name}</span>
+                      <button type="button" onClick={() => setFiles((prev) => prev.filter((_, j) => j !== i))} className="text-tertiary hover:text-semantic-danger transition-colors">
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+
           <div className="flex items-center gap-3 pt-2">
-            <Button type="submit" loading={mutation.isPending}>
-              {isEdit ? "Update Task" : "Create Task"}
+            <Button type="submit" loading={mutation.isPending || uploading}>
+              {isEdit ? "Update Task" : (uploading ? "Uploading files..." : "Create Task")}
             </Button>
             <Button type="button" variant="ghost" onClick={() => navigate(-1)}>
               Cancel

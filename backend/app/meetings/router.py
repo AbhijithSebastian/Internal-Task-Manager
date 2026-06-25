@@ -96,7 +96,7 @@ def create_meeting(
         module_id=data.module_id,
         author_id=current_user.id,
         title=data.title,
-        meeting_date=datetime.strptime(data.meeting_date, "%Y-%m-%d").date(),
+        meeting_date=datetime.fromisoformat(data.meeting_date).date(),
         location=data.location,
         attendees=data.attendees,
         summary=data.summary,
@@ -132,7 +132,7 @@ def update_meeting(
     if data.title is not None:
         meeting.title = data.title
     if data.meeting_date is not None:
-        meeting.meeting_date = datetime.strptime(data.meeting_date, "%Y-%m-%d").date()
+        meeting.meeting_date = datetime.fromisoformat(data.meeting_date).date()
     if data.location is not None:
         meeting.location = data.location
     if data.attendees is not None:

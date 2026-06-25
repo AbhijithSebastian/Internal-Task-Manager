@@ -61,6 +61,7 @@ export function AnnouncementDetailDrawer({ announcementId, onClose }: Announceme
   const statusBadgeVariant = (status: string) => {
     switch (status) {
       case "published": return "success";
+      case "scheduled": return "info";
       case "draft": return "warning";
       case "archived": return "neutral";
       default: return "default";

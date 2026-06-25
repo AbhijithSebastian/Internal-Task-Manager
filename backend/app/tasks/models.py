@@ -2,7 +2,7 @@ from datetime import datetime, date
 from typing import Optional
 from sqlalchemy import (
     Column, Integer, String, Text, Boolean, DateTime, Date,
-    ForeignKey, Enum as SAEnum, Numeric, Table, JSON
+    ForeignKey, Numeric, Table, JSON
 )
 from sqlalchemy.orm import relationship
 from app.core.database import Base
@@ -23,8 +23,8 @@ class Task(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     title = Column(String(500), nullable=False)
     description = Column(Text, nullable=True)
-    status = Column(SAEnum(TaskStatus), default=TaskStatus.BACKLOG, nullable=False, index=True)
-    priority = Column(SAEnum(TaskPriority), default=TaskPriority.MEDIUM, nullable=False, index=True)
+    status = Column(String(50), default=TaskStatus.BACKLOG.value, nullable=False, index=True)
+    priority = Column(String(50), default=TaskPriority.MEDIUM.value, nullable=False, index=True)
     tags = Column(JSON, nullable=True)
     blocked_reason = Column(Text, nullable=True)
     due_date = Column(Date, nullable=True, index=True)

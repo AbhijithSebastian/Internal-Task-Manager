@@ -67,6 +67,24 @@ def seed(db: Session):
             "announcements.view",
             "notifications.view",
         ],
+        "developer": [
+            "tasks.view", "tasks.create", "tasks.update", "tasks.change-status", "tasks.submit-approval",
+            "subtasks.view", "subtasks.create", "subtasks.update", "subtasks.change-status",
+            "dashboard.view", "dashboard.notifications", "dashboard.announcements",
+            "comments.view", "comments.create", "comments.update",
+            "attachments.view", "attachments.upload",
+            "announcements.view",
+            "notifications.view",
+        ],
+        "designer": [
+            "tasks.view", "tasks.update", "tasks.change-status",
+            "subtasks.view", "subtasks.update", "subtasks.change-status",
+            "dashboard.view", "dashboard.notifications", "dashboard.announcements",
+            "comments.view", "comments.create",
+            "attachments.view", "attachments.upload",
+            "announcements.view",
+            "notifications.view",
+        ],
         "employee": [
             "tasks.view", "tasks.update", "tasks.change-status", "tasks.submit-approval",
             "subtasks.view", "subtasks.update", "subtasks.change-status",
@@ -144,6 +162,13 @@ def seed(db: Session):
         ("Divya", "employee"),
         ("Abhijith", "super-admin"),
         ("Rojan", "employee"),
+        ("Alice", "developer"),
+        ("Bob", "developer"),
+        ("Carol", "designer"),
+        ("David", "designer"),
+        ("Eve", "project-manager"),
+        ("Frank", "developer"),
+        ("Grace", "designer"),
     ]
     for name, role_name in additional_users:
         u = User(

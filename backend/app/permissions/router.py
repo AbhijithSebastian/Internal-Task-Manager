@@ -104,6 +104,13 @@ def update_user_role(
     return {"message": "User role updated successfully"}
 
 
+@router.get("")
+def list_permissions(db: Session = Depends(get_db),
+                     current_user: User = require_permissions(["permissions.view"])):
+    all_perms = db.query(Permission).order_by(Permission.name).all()
+    return [{"id": p.id, "name": p.name, "guard_name": p.guard_name} for p in all_perms]
+
+
 def get_permission_groups() -> dict:
     PERMISSION_MAP = {
         "users": ["users.view", "users.create", "users.update", "users.delete",

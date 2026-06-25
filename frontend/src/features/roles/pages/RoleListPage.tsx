@@ -71,7 +71,7 @@ export default function RoleListPage() {
     queryKey: ["users"],
     queryFn: () =>
       api
-        .get("/users", { params: { per_page: 200 } })
+        .get("/users", { params: { per_page: 100 } })
         .then((r) => r.data?.items || r.data?.data || []),
   });
 

@@ -20,6 +20,7 @@ from app.meetings.models import MeetingLog
 from app.activity_logs.models import ActivityLog
 from app.attachments.models import Attachment
 from app.core.enums import TaskStatus, TaskPriority, ProjectStatus, ProjectPriority, ProjectMemberRole
+from app.common_schemas import enum_label
 
 router = APIRouter()
 
@@ -164,7 +165,7 @@ def get_project_reports(filters: dict, page: int, per_page: int, db: Session) ->
         other_members = []
 
         for link in p.member_links:
-            role_val = link.role.value if hasattr(link.role, "value") else str(link.role)
+            role_val = link.role if hasattr(link.role, "value") else str(link.role)
             member_info = {
                 "id": link.user_id,
                 "name": link.user.name if link.user else "Unknown",
@@ -215,10 +216,10 @@ def get_project_reports(filters: dict, page: int, per_page: int, db: Session) ->
             "name": p.name,
             "description": p.description,
             "client": None,
-            "status": p.status.value if p.status else "unknown",
-            "status_label": p.status.label() if p.status else "Unknown",
-            "priority": p.priority.value if p.priority else "unknown",
-            "priority_label": p.priority.label() if p.priority else "Unknown",
+            "status": p.status if p.status else "unknown",
+            "status_label": enum_label(p.status, ProjectStatus, "Active") if p.status else "Unknown",
+            "priority": p.priority if p.priority else "unknown",
+            "priority_label": enum_label(p.priority, ProjectPriority, "Medium") if p.priority else "Unknown",
             "progress": progress,
             "start_date": p.start_date.isoformat() if p.start_date else None,
             "end_date": p.end_date.isoformat() if p.end_date else None,
@@ -335,10 +336,10 @@ def get_task_reports(filters: dict, page: int, per_page: int, db: Session) -> di
             "id": t.id,
             "title": t.title,
             "description": t.description,
-            "status": t.status.value if t.status else "unknown",
-            "status_label": t.status.label() if t.status else "Unknown",
-            "priority": t.priority.value if t.priority else "unknown",
-            "priority_label": t.priority.label() if t.priority else "Unknown",
+            "status": t.status if t.status else "unknown",
+            "status_label": enum_label(t.status, TaskStatus, "Backlog") if t.status else "Unknown",
+            "priority": t.priority if t.priority else "unknown",
+            "priority_label": enum_label(t.priority, TaskPriority, "Medium") if t.priority else "Unknown",
             "project_id": t.project_id,
             "project_name": t.project.name if t.project else None,
             "assignees": assignees,
@@ -442,10 +443,10 @@ def get_subtask_reports(filters: dict, page: int, per_page: int, db: Session) ->
             "id": t.id,
             "title": t.title,
             "notes": t.description,
-            "status": t.status.value if t.status else "unknown",
-            "status_label": t.status.label() if t.status else "Unknown",
-            "priority": t.priority.value if t.priority else "unknown",
-            "priority_label": t.priority.label() if t.priority else "Unknown",
+            "status": t.status if t.status else "unknown",
+            "status_label": enum_label(t.status, TaskStatus, "Backlog") if t.status else "Unknown",
+            "priority": t.priority if t.priority else "unknown",
+            "priority_label": enum_label(t.priority, TaskPriority, "Medium") if t.priority else "Unknown",
             "parent_task_id": t.parent_id,
             "parent_task_title": parent_task.title if parent_task else None,
             "project_id": t.project_id,
@@ -829,7 +830,7 @@ def build_project_preview(project, db):
         team_members.append({
             "id": link.user_id,
             "name": link.user.name if link.user else "Unknown",
-            "role": link.role.value if hasattr(link.role, "value") else str(link.role),
+            "role": link.role if hasattr(link.role, "value") else str(link.role),
         })
 
     recent_activity = db.query(ActivityLog).filter(
@@ -847,10 +848,10 @@ def build_project_preview(project, db):
             "id": project.id,
             "name": project.name,
             "description": project.description,
-            "status": project.status.value if project.status else None,
-            "status_label": project.status.label() if project.status else None,
-            "priority": project.priority.value if project.priority else None,
-            "priority_label": project.priority.label() if project.priority else None,
+            "status": project.status if project.status else None,
+            "status_label": enum_label(project.status, ProjectStatus),
+            "priority": project.priority if project.priority else None,
+            "priority_label": enum_label(project.priority, ProjectPriority),
             "start_date": project.start_date.isoformat() if project.start_date else None,
             "end_date": project.end_date.isoformat() if project.end_date else None,
             "pm": project.project_manager.name if project.project_manager else None,
@@ -898,10 +899,10 @@ def build_task_preview(task, db):
             "id": task.id,
             "title": task.title,
             "description": task.description,
-            "status": task.status.value if task.status else None,
-            "status_label": task.status.label() if task.status else None,
-            "priority": task.priority.value if task.priority else None,
-            "priority_label": task.priority.label() if task.priority else None,
+            "status": task.status if task.status else None,
+            "status_label": enum_label(task.status, TaskStatus),
+            "priority": task.priority if task.priority else None,
+            "priority_label": enum_label(task.priority, TaskPriority),
             "project_name": task.project.name if task.project else None,
             "assignees": assignees,
             "author": task.author.name if task.author else None,
@@ -960,10 +961,10 @@ def build_subtask_preview(subtask, db):
             "id": subtask.id,
             "title": subtask.title,
             "notes": subtask.description,
-            "status": subtask.status.value if subtask.status else None,
-            "status_label": subtask.status.label() if subtask.status else None,
-            "priority": subtask.priority.value if subtask.priority else None,
-            "priority_label": subtask.priority.label() if subtask.priority else None,
+            "status": subtask.status if subtask.status else None,
+            "status_label": enum_label(subtask.status, TaskStatus),
+            "priority": subtask.priority if subtask.priority else None,
+            "priority_label": enum_label(subtask.priority, TaskPriority),
             "parent_task_title": parent.title if parent else None,
             "parent_task_id": parent.id if parent else None,
             "project_name": subtask.project.name if subtask.project else None,
@@ -1123,7 +1124,7 @@ def get_analytics(
             "total_tasks": total_t,
             "completed_tasks": done_t,
             "pending_tasks": total_t - done_t,
-            "status": p.status.value if p.status else "unknown",
+            "status": p.status if p.status else "unknown",
         })
 
     # ── Task Completion (by status) ──

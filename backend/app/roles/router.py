@@ -19,6 +19,30 @@ class RoleUpdatePermissions(BaseModel):
     permissions: list[str]
 
 
+class RoleCreate(BaseModel):
+    name: str
+    guard_name: str = "web"
+
+
+@router.post("", status_code=201)
+def create_role(data: RoleCreate, db: Session = Depends(get_db),
+                current_user: User = require_permissions(["role-create"])):
+    if db.query(Role).filter(Role.name == data.name).first():
+        raise HTTPException(409, "Role already exists")
+    role = Role(name=data.name, guard_name=data.guard_name)
+    db.add(role)
+    db.commit()
+    db.refresh(role)
+    log_activity(db, "roles", role.id, "Role created", causer_id=current_user.id,
+                 properties={"name": role.name})
+    return {
+        "id": role.id,
+        "name": role.name,
+        "label": UserRole(role.name).label() if role.name in [e.value for e in UserRole] else role.name,
+        "permissions": [],
+    }
+
+
 @router.get("")
 def list_roles(db: Session = Depends(get_db),
                current_user: User = require_permissions(["permissions.view"])):
@@ -80,3 +104,16 @@ def update_role_permissions(
                  causer_id=current_user.id,
                  properties={"role": role.name, "permissions": data.permissions})
     return {"message": "Role permissions updated successfully"}
+
+
+@router.delete("/{role_id}")
+def delete_role(role_id: int, db: Session = Depends(get_db),
+                current_user: User = require_permissions(["role-delete"])):
+    role = db.query(Role).filter(Role.id == role_id).first()
+    if not role:
+        raise NotFoundException("Role", role_id)
+    db.delete(role)
+    db.commit()
+    log_activity(db, "roles", role_id, "Role deleted", causer_id=current_user.id,
+                 properties={"name": role.name})
+    return {"message": "Role deleted successfully"}

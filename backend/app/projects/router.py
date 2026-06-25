@@ -11,6 +11,8 @@ from app.core.exceptions import NotFoundException, ForbiddenError
 from app.projects.models import Project, ProjectMember
 from app.users.models import User
 from app.core.enums import ProjectStatus, ProjectPriority, ProjectMemberRole, TaskStatus
+from app.common_schemas import enum_label
+from app.core.enums import ProjectStatus, ProjectPriority, TaskStatus
 
 router = APIRouter()
 
@@ -28,8 +30,8 @@ def search_projects(
         Project.name.ilike(term),
     ).limit(limit).all()
     return [
-        {"id": p.id, "name": p.name, "status": p.status.value if p.status else "active",
-         "priority": p.priority.value if p.priority else "medium"}
+        {"id": p.id, "name": p.name, "status": p.status if p.status else "active",
+         "priority": p.priority if p.priority else "medium"}
         for p in projects
     ]
 
@@ -159,7 +161,7 @@ def create_project(data: ProjectCreate, db: Session = Depends(get_db),
     db.refresh(project)
 
     log_activity(db, "projects", project.id, "Project created", causer_id=current_user.id,
-                 properties={"name": project.name, "priority": project.priority.value})
+                 properties={"name": project.name, "priority": project.priority})
     return format_project(project, db)
 
 
@@ -230,7 +232,7 @@ def update_project_status(project_id: int, status: str, db: Session = Depends(ge
 
     log_activity(db, "projects", project.id, "Project status changed",
                  causer_id=current_user.id,
-                 properties={"old": old_status.value if old_status else None, "new": status})
+                 properties={"old": old_status if old_status else None, "new": status})
     return {"message": "Status updated", "status": status}
 
 
@@ -261,7 +263,7 @@ def get_members(project_id: int, db: Session = Depends(get_db),
             "id": m.user.id,
             "name": m.user.name,
             "email": m.user.email,
-            "pivot_role": m.role.value if m.role else "member",
+            "pivot_role": m.role if m.role else "member",
         }
         for m in members
     ]
@@ -328,10 +330,10 @@ def format_project(p: Project, db: Session) -> dict:
         "id": p.id,
         "name": p.name,
         "description": p.description,
-        "status": p.status.value if p.status else "active",
-        "status_label": p.status.label() if p.status else "Active",
-        "priority": p.priority.value if p.priority else "medium",
-        "priority_label": p.priority.label() if p.priority else "Medium",
+        "status": p.status if p.status else "active",
+        "status_label": enum_label(p.status, ProjectStatus, "Active"),
+        "priority": p.priority if p.priority else "medium",
+        "priority_label": enum_label(p.priority, ProjectPriority, "Medium"),
         "start_date": p.start_date,
         "end_date": p.end_date,
         "author": {"id": p.author.id, "name": p.author.name} if p.author else None,
@@ -351,13 +353,13 @@ def format_project(p: Project, db: Session) -> dict:
 def format_project_detail(p: Project, db: Session) -> dict:
     data = format_project(p, db)
     data["members"] = [
-        {"id": m.user.id, "name": m.user.name, "email": m.user.email, "role": m.role.value if m.role else "member"}
+        {"id": m.user.id, "name": m.user.name, "email": m.user.email, "role": m.role if m.role else "member"}
         for m in p.member_links
     ]
     data["tasks"] = [
         {
-            "id": t.id, "title": t.title, "status": t.status.value if t.status else "backlog",
-            "priority": t.priority.value if t.priority else "medium",
+            "id": t.id, "title": t.title, "status": t.status if t.status else "backlog",
+            "priority": t.priority if t.priority else "medium",
             "author": {"id": t.author.id, "name": t.author.name} if t.author else None,
             "assignees": [{"id": a.id, "name": a.name} for a in t.assignees],
             "due_date": t.due_date, "created_at": t.created_at,
@@ -366,7 +368,7 @@ def format_project_detail(p: Project, db: Session) -> dict:
     ]
     data["milestones"] = [
         {
-            "id": m.id, "name": m.name, "status": m.status.value if m.status else "pending",
+            "id": m.id, "name": m.name, "status": m.status if m.status else "pending",
             "due_date": m.due_date, "completed_at": m.completed_at,
         }
         for m in p.milestones if not m.deleted_at

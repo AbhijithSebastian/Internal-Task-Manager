@@ -229,9 +229,22 @@ def format_user_response(user: User) -> dict:
         "inherit_role_permissions": user.inherit_role_permissions,
         "last_login_at": user.last_login_at,
         "created_at": user.created_at,
+        "updated_at": user.updated_at,
         "deleted_at": user.deleted_at,
         "role": user.role.name if user.role else None,
         "role_label": UserRole(user.role.name).label() if user.role else None,
         "is_super_admin": user.is_super_admin,
         "permissions": user.get_all_permissions(),
+        "roles": [
+            {
+                "id": r.id,
+                "name": r.name,
+                "guard_name": r.guard_name,
+                "permissions": [
+                    {"id": p.id, "name": p.name, "guard_name": p.guard_name}
+                    for p in (r.permissions or [])
+                ],
+            }
+            for r in (user.roles or [])
+        ],
     }

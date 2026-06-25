@@ -1,5 +1,5 @@
 from datetime import datetime, date
-from sqlalchemy import Column, Integer, String, Text, DateTime, Date, ForeignKey, Enum as SAEnum
+from sqlalchemy import Column, Integer, String, Text, DateTime, Date, ForeignKey
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 from app.core.enums import MilestoneStatus
@@ -13,7 +13,7 @@ class Milestone(Base):
     description = Column(Text, nullable=True)
     due_date = Column(Date, nullable=True, index=True)
     completed_at = Column(Date, nullable=True)
-    status = Column(SAEnum(MilestoneStatus), default=MilestoneStatus.PENDING, nullable=False, index=True)
+    status = Column(String(50), default=MilestoneStatus.PENDING.value, nullable=False, index=True)
     project_id = Column(Integer, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False, index=True)
     author_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)

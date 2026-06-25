@@ -11,6 +11,7 @@ from app.core.exceptions import NotFoundException
 from app.milestones.models import Milestone
 from app.users.models import User
 from app.core.enums import MilestoneStatus
+from app.common_schemas import enum_label
 
 router = APIRouter()
 
@@ -149,8 +150,8 @@ def format_milestone(m: Milestone) -> dict:
         "description": m.description,
         "due_date": m.due_date.isoformat() if m.due_date else None,
         "completed_at": m.completed_at.isoformat() if m.completed_at else None,
-        "status": m.status.value if m.status else "pending",
-        "status_label": m.status.label() if m.status else "Pending",
+        "status": m.status if m.status else "pending",
+        "status_label": enum_label(m.status, MilestoneStatus, "Pending"),
         "project_id": m.project_id,
         "author": {"id": m.author.id, "name": m.author.name} if m.author else None,
         "created_at": m.created_at,

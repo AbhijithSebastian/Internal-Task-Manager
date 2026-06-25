@@ -56,11 +56,6 @@ export function Header({ onMenuClick }: HeaderProps) {
     navigate("/login");
   };
 
-  const goToNotifications = () => {
-    navigate("/work/notifications");
-    setNotifOpen(false);
-  };
-
   return (
     <header className="sticky top-0 z-sticky flex items-center h-14 px-6 bg-surface border-b border-default">
       <button onClick={onMenuClick} className="mr-3 p-1.5 rounded-md text-secondary hover:bg-hover lg:hidden" aria-label="Open sidebar menu">
@@ -90,7 +85,7 @@ export function Header({ onMenuClick }: HeaderProps) {
             className="relative p-2 rounded-md text-secondary hover:bg-hover transition-colors duration-fast"
           >
             <Bell className="h-4 w-4" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-semantic-danger" />
+            
           </button>
           {notifOpen && (
             <div className="absolute right-0 top-full mt-1 w-80 bg-surface border border-default rounded-lg shadow-dropdown z-dropdown">
@@ -103,12 +98,7 @@ export function Header({ onMenuClick }: HeaderProps) {
                   No new notifications
                 </div>
               </div>
-              <button
-                onClick={goToNotifications}
-                className="w-full px-4 py-2.5 text-sm text-center text-primary hover:bg-hover border-t border-subtle transition-colors duration-fast"
-              >
-                View all notifications
-              </button>
+              
             </div>
           )}
         </div>
@@ -127,12 +117,6 @@ export function Header({ onMenuClick }: HeaderProps) {
                 <p className="text-sm font-medium text-primary">{user?.name}</p>
                 <p className="text-xs text-tertiary">{user?.email}</p>
               </div>
-              <button
-                onClick={() => { navigate("/work/notifications"); setProfileOpen(false); }}
-                className="w-full text-left px-4 py-2 text-sm text-primary hover:bg-hover transition-colors duration-fast"
-              >
-                Notifications
-              </button>
               <button
                 onClick={handleLogout}
                 className="w-full text-left px-4 py-2 text-sm text-semantic-danger hover:bg-hover transition-colors duration-fast"
