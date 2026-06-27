@@ -183,14 +183,6 @@ export interface Announcement {
   is_pinned?: boolean;
 }
 
-export interface Notification {
-  id: string;
-  type: string;
-  data: Record<string, unknown>;
-  read_at?: string;
-  is_read: boolean;
-  created_at: string;
-}
 
 export interface Attachment {
   id: number;

@@ -1,4 +1,5 @@
 import { api } from "@/services/api";
+import type { PaginatedResponse } from "@/types";
 
 export interface ReportsQueryParams {
   tab: string;
@@ -15,13 +16,8 @@ export interface ReportsQueryParams {
   sort_dir?: string;
 }
 
-export interface PaginatedResponse<T> {
-  items: T[];
-  total: number;
-  page: number;
-  per_page: number;
-  total_pages: number;
-}
+
+export type { PaginatedResponse };
 
 export interface MemberInfo {
   id: number;

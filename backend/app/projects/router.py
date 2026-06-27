@@ -9,6 +9,8 @@ from app.core.deps import get_current_user, require_permissions
 from app.core.activity import log_activity
 from app.core.exceptions import NotFoundException, ForbiddenError
 from app.projects.models import Project, ProjectMember
+from app.tasks.models import Task
+from app.meetings.models import MeetingLog
 from app.users.models import User
 from app.core.enums import ProjectStatus, ProjectPriority, ProjectMemberRole, TaskStatus
 from app.common_schemas import enum_label
@@ -260,10 +262,15 @@ def get_members(project_id: int, db: Session = Depends(get_db),
     members = db.query(ProjectMember).filter(ProjectMember.project_id == project_id).all()
     return [
         {
-            "id": m.user.id,
-            "name": m.user.name,
-            "email": m.user.email,
-            "pivot_role": m.role if m.role else "member",
+            "id": m.id,
+            "user_id": m.user_id,
+            "project_id": m.project_id,
+            "role": m.role if m.role else "member",
+            "user": {
+                "id": m.user.id,
+                "name": m.user.name,
+                "email": m.user.email,
+            },
         }
         for m in members
     ]
@@ -320,6 +327,63 @@ def remove_member(project_id: int, user_id: int, db: Session = Depends(get_db),
     db.delete(pm)
     db.commit()
     return {"message": "Member removed successfully"}
+
+
+@router.get("/{project_id}/tasks")
+def get_project_tasks(project_id: int, per_page: int = Query(50, ge=1, le=200),
+                      db: Session = Depends(get_db),
+                      current_user: User = Depends(get_current_user)):
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        raise NotFoundException("Project", project_id)
+    tasks = db.query(Task).filter(Task.project_id == project_id, Task.deleted_at.is_(None)).limit(per_page).all()
+    return {
+        "items": [
+            {"id": t.id, "title": t.title, "status": t.status, "priority": t.priority,
+             "due_date": t.due_date.isoformat() if t.due_date else None,
+             "created_at": t.created_at.isoformat() if t.created_at else None}
+            for t in tasks
+        ],
+        "total": len(tasks),
+    }
+
+
+@router.get("/{project_id}/meetings")
+def get_project_meetings(project_id: int, per_page: int = Query(20, ge=1, le=100),
+                         db: Session = Depends(get_db),
+                         current_user: User = Depends(get_current_user)):
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        raise NotFoundException("Project", project_id)
+    meetings = db.query(MeetingLog).filter(MeetingLog.project_id == project_id).limit(per_page).all()
+    return {
+        "items": [
+            {"id": m.id, "title": m.title, "meeting_date": m.meeting_date.isoformat() if m.meeting_date else None,
+             "location": m.location, "summary": m.summary, "created_at": m.created_at.isoformat() if m.created_at else None}
+            for m in meetings
+        ],
+        "total": len(meetings),
+    }
+
+
+@router.get("/{project_id}/activity")
+def get_project_activity(project_id: int, db: Session = Depends(get_db),
+                         current_user: User = Depends(get_current_user)):
+    from app.activity_logs.models import ActivityLog
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        raise NotFoundException("Project", project_id)
+    activities = db.query(ActivityLog).filter(
+        ActivityLog.subject_type == "projects", ActivityLog.subject_id == project_id
+    ).order_by(ActivityLog.created_at.desc()).limit(50).all()
+    return {
+        "items": [
+            {"id": a.id, "description": a.description, "causer_id": a.causer_id,
+             "created_at": a.created_at.isoformat() if a.created_at else None}
+            for a in activities
+        ],
+        "total": len(activities),
+    }
 
 
 def format_project(p: Project, db: Session) -> dict:

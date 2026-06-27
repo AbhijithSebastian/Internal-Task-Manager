@@ -78,6 +78,15 @@ def list_announcements(
     }
 
 
+@router.get("/{announcement_id}")
+def get_announcement(announcement_id: int, db: Session = Depends(get_db),
+                    current_user: User = Depends(get_current_user)):
+    announcement = db.query(Announcement).filter(Announcement.id == announcement_id, Announcement.deleted_at.is_(None)).first()
+    if not announcement:
+        raise NotFoundException("Announcement", announcement_id)
+    return format_announcement(announcement)
+
+
 @router.post("", status_code=201)
 def create_announcement(data: AnnouncementCreate, db: Session = Depends(get_db),
                         current_user: User = require_permissions(["announcements.create"])):

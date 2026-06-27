@@ -28,7 +28,10 @@ export function AttachmentsSection({
     queryFn: () =>
       api
         .get("/attachments", { params: { model_type: modelType, model_id: modelId } })
-        .then((r) => r.data?.data || r.data || []),
+        .then((r) => {
+          const raw = r.data?.data ?? r.data?.items ?? r.data;
+          return Array.isArray(raw) ? raw : [];
+        }),
     enabled: Boolean(modelId),
   });
 

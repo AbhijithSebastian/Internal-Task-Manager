@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { api } from "@/services/api";
 import { openDrawer } from "@/hooks/useDrawer";
 import { useNavigate } from "react-router-dom";
+import type { DashboardStats } from "@/types";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Avatar } from "@/components/ui/Avatar";
@@ -22,17 +23,6 @@ import {
   Building2,
   ListChecks,
 } from "lucide-react";
-
-interface DashboardStats {
-  active_projects: number;
-  tasks_due_this_week: number;
-  pending_reviews: number;
-  trends: {
-    active_projects: number;
-    tasks_due_this_week: number;
-    pending_reviews: number;
-  };
-}
 
 interface DashboardActivity {
   id: number;
