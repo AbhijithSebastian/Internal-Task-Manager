@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from typing import Optional
 from datetime import datetime
+from pydantic import BaseModel
 
 from app.core.database import get_db
 from app.core.deps import get_current_user, require_permissions
@@ -12,9 +13,18 @@ from app.core.exceptions import NotFoundException
 from app.users.models import User
 from app.users.schemas import UserCreate, UserUpdate, UserResponse, UserBrief
 from app.roles.models import Role
+from app.permissions.models import Permission
 from app.core.enums import UserRole
 
 router = APIRouter()
+
+
+class AddRoleRequest(BaseModel):
+    role_id: int
+
+
+class SetPermissionsRequest(BaseModel):
+    permission_ids: list[int]
 
 
 @router.get("/search")
@@ -213,7 +223,120 @@ def toggle_active(user_id: int, db: Session = Depends(get_db),
     return {"message": f"User {status} successfully", "is_active": user.is_active}
 
 
+@router.get("/{user_id}/roles")
+def get_user_roles(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = require_permissions(["permissions.view"]),
+):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise NotFoundException("User", user_id)
+    return [
+        {
+            "id": r.id,
+            "name": r.name,
+            "guard_name": r.guard_name,
+            "description": r.description,
+            "color": r.color,
+            "icon": r.icon,
+            "is_active": r.is_active,
+            "is_system": r.is_system,
+            "permissions": [
+                {"id": p.id, "name": p.name, "guard_name": p.guard_name, "group": p.group, "label": p.label}
+                for p in r.permissions
+            ],
+        }
+        for r in user.roles
+    ]
+
+
+@router.post("/{user_id}/roles")
+def add_user_role(
+    user_id: int,
+    data: AddRoleRequest,
+    db: Session = Depends(get_db),
+    current_user: User = require_permissions(["permissions.manage"]),
+):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise NotFoundException("User", user_id)
+    role = db.query(Role).filter(Role.id == data.role_id).first()
+    if not role:
+        raise NotFoundException("Role", data.role_id)
+    if role in user.roles:
+        raise HTTPException(409, "User already has this role")
+    user.roles.append(role)
+    db.commit()
+    log_activity(db, "users", user.id, "Role added to user", causer_id=current_user.id,
+                 properties={"role_id": data.role_id, "role_name": role.name})
+    return {"message": f"Role '{role.name}' added to user successfully"}
+
+
+@router.delete("/{user_id}/roles/{role_id}")
+def remove_user_role(
+    user_id: int,
+    role_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = require_permissions(["permissions.manage"]),
+):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise NotFoundException("User", user_id)
+    role = db.query(Role).filter(Role.id == role_id).first()
+    if not role:
+        raise NotFoundException("Role", role_id)
+    if role not in user.roles:
+        raise HTTPException(404, "User does not have this role")
+    user.roles.remove(role)
+    db.commit()
+    log_activity(db, "users", user.id, "Role removed from user", causer_id=current_user.id,
+                 properties={"role_id": role_id, "role_name": role.name})
+    return {"message": f"Role '{role.name}' removed from user successfully"}
+
+
+@router.get("/{user_id}/permissions")
+def get_user_permissions(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = require_permissions(["permissions.view"]),
+):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise NotFoundException("User", user_id)
+    return {
+        "effective_permissions": user.get_all_permissions(),
+        "inherit_role_permissions": user.inherit_role_permissions,
+        "role_permissions": list(set(
+            p.name for role in user.roles for p in role.permissions
+        )),
+        "direct_permissions": [p.name for p in user.direct_permissions],
+    }
+
+
+@router.put("/{user_id}/permissions")
+def set_user_permissions(
+    user_id: int,
+    data: SetPermissionsRequest,
+    db: Session = Depends(get_db),
+    current_user: User = require_permissions(["permissions.manage"]),
+):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise NotFoundException("User", user_id)
+    permissions = db.query(Permission).filter(Permission.id.in_(data.permission_ids)).all()
+    if len(permissions) != len(data.permission_ids):
+        raise HTTPException(422, "One or more permission IDs are invalid")
+    user.direct_permissions = permissions
+    user.inherit_role_permissions = False
+    db.commit()
+    log_activity(db, "users", user.id, "User permissions set", causer_id=current_user.id,
+                 properties={"permission_ids": data.permission_ids})
+    return {"message": "User permissions updated successfully"}
+
+
 def format_user_response(user: User) -> dict:
+    role_obj = user.role if hasattr(user, "role") and user.role else None
     return {
         "id": user.id,
         "name": user.name,
@@ -231,17 +354,26 @@ def format_user_response(user: User) -> dict:
         "created_at": user.created_at,
         "updated_at": user.updated_at,
         "deleted_at": user.deleted_at,
-        "role": user.role.name if user.role else None,
-        "role_label": UserRole(user.role.name).label() if user.role else None,
+        "role": role_obj.name if role_obj else None,
+        "role_label": UserRole(role_obj.name).label() if role_obj and role_obj.name in [e.value for e in UserRole] else (role_obj.name if role_obj else None),
         "is_super_admin": user.is_super_admin,
         "permissions": user.get_all_permissions(),
+        "effective_permissions": user.get_all_permissions(),
         "roles": [
             {
                 "id": r.id,
                 "name": r.name,
                 "guard_name": r.guard_name,
+                "description": r.description,
+                "color": r.color,
+                "icon": r.icon,
+                "is_active": r.is_active,
+                "is_system": r.is_system,
                 "permissions": [
-                    {"id": p.id, "name": p.name, "guard_name": p.guard_name}
+                    {
+                        "id": p.id, "name": p.name, "guard_name": p.guard_name,
+                        "group": p.group, "label": p.label,
+                    }
                     for p in (r.permissions or [])
                 ],
             }

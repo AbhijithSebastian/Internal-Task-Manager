@@ -5,7 +5,7 @@ class TestAuthentication:
     def test_login_success(self, client: TestClient):
         resp = client.post(
             "/api/v1/auth/login",
-            json={"email": "abhijith@tool.com", "password": "newpassword123"},
+            json={"email": "abhijith@tool.com", "password": "password"},
         )
         assert resp.status_code == 200
         data = resp.json()
@@ -73,7 +73,7 @@ class TestAuthentication:
     def test_refresh_token(self, client: TestClient):
         login_resp = client.post(
             "/api/v1/auth/login",
-            json={"email": "abhijith@tool.com", "password": "newpassword123"},
+            json={"email": "abhijith@tool.com", "password": "password"},
         )
         refresh_token = login_resp.json()["refresh_token"]
 
@@ -171,8 +171,8 @@ class TestAuthentication:
             json={
                 "token": token2,
                 "email": "abhijith@tool.com",
-                "password": "newpassword123",
-                "password_confirmation": "newpassword123",
+                "password": "password",
+                "password_confirmation": "password",
             },
         )
 

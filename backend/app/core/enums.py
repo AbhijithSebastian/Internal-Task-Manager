@@ -7,6 +7,9 @@ class UserRole(str, Enum):
     TEAM_LEAD = "team-lead"
     DEVELOPER = "developer"
     DESIGNER = "designer"
+    HR = "hr"
+    QA_ENGINEER = "qa-engineer"
+    INTERN = "intern"
     EMPLOYEE = "employee"
 
     def label(self) -> str:
@@ -16,6 +19,9 @@ class UserRole(str, Enum):
             "team-lead": "Team Lead",
             "developer": "Developer",
             "designer": "Designer",
+            "hr": "HR",
+            "qa-engineer": "QA Engineer",
+            "intern": "Intern",
             "employee": "Employee",
         }
         return labels[self.value]

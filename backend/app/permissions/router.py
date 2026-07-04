@@ -16,48 +16,222 @@ router = APIRouter()
 
 
 class UpdateUserPermissions(BaseModel):
-    inherit_role_permissions: bool = True
-    permissions: Optional[list[str]] = None
+    permission_ids: list[int]
 
 
-class UpdateUserRole(BaseModel):
-    role: str
+class UpdateInheritPermissions(BaseModel):
+    inherit: bool
+
+
+PERMISSION_GROUPS = {
+    "users": {
+        "label": "Users",
+        "permissions": [
+            {"name": "users.view", "label": "View users"},
+            {"name": "users.create", "label": "Create users"},
+            {"name": "users.update", "label": "Update users"},
+            {"name": "users.delete", "label": "Delete users"},
+            {"name": "users.restore", "label": "Restore users"},
+            {"name": "users.deactivate", "label": "Deactivate users"},
+            {"name": "users.reset-password", "label": "Reset user passwords"},
+            {"name": "users.invite", "label": "Invite users"},
+        ],
+    },
+    "projects": {
+        "label": "Projects",
+        "permissions": [
+            {"name": "projects.view", "label": "View projects"},
+            {"name": "projects.create", "label": "Create projects"},
+            {"name": "projects.update", "label": "Update projects"},
+            {"name": "projects.delete", "label": "Delete projects"},
+            {"name": "projects.archive", "label": "Archive projects"},
+            {"name": "projects.manage-members", "label": "Manage project members"},
+            {"name": "projects.manage-settings", "label": "Manage project settings"},
+        ],
+    },
+    "tasks": {
+        "label": "Tasks",
+        "permissions": [
+            {"name": "tasks.view", "label": "View tasks"},
+            {"name": "tasks.create", "label": "Create tasks"},
+            {"name": "tasks.update", "label": "Update tasks"},
+            {"name": "tasks.delete", "label": "Delete tasks"},
+            {"name": "tasks.assign", "label": "Assign tasks"},
+            {"name": "tasks.approve", "label": "Approve tasks"},
+            {"name": "tasks.reject", "label": "Reject tasks"},
+            {"name": "tasks.review", "label": "Review tasks"},
+            {"name": "tasks.change-status", "label": "Change task status"},
+            {"name": "tasks.submit-approval", "label": "Submit tasks for approval"},
+        ],
+    },
+    "subtasks": {
+        "label": "Subtasks",
+        "permissions": [
+            {"name": "subtasks.view", "label": "View subtasks"},
+            {"name": "subtasks.create", "label": "Create subtasks"},
+            {"name": "subtasks.update", "label": "Update subtasks"},
+            {"name": "subtasks.delete", "label": "Delete subtasks"},
+            {"name": "subtasks.assign", "label": "Assign subtasks"},
+            {"name": "subtasks.change-status", "label": "Change subtask status"},
+            {"name": "subtasks.approve", "label": "Approve subtasks"},
+        ],
+    },
+    "dashboard": {
+        "label": "Dashboard",
+        "permissions": [
+            {"name": "dashboard.view", "label": "View dashboard"},
+            {"name": "dashboard.activity", "label": "View team activity"},
+            {"name": "dashboard.notifications", "label": "View notifications"},
+            {"name": "dashboard.announcements", "label": "View announcements"},
+        ],
+    },
+    "comments": {
+        "label": "Comments & Activities",
+        "permissions": [
+            {"name": "comments.view", "label": "View comments"},
+            {"name": "comments.create", "label": "Create comments"},
+            {"name": "comments.update", "label": "Update comments"},
+            {"name": "comments.delete", "label": "Delete comments"},
+            {"name": "comments.activity", "label": "View activity logs"},
+        ],
+    },
+    "reports": {
+        "label": "Reports",
+        "permissions": [
+            {"name": "reports.view", "label": "View reports"},
+            {"name": "reports.generate", "label": "Generate reports"},
+            {"name": "reports.export", "label": "Export reports"},
+            {"name": "reports.download", "label": "Download reports"},
+        ],
+    },
+    "attachments": {
+        "label": "Attachments",
+        "permissions": [
+            {"name": "attachments.view", "label": "View attachments"},
+            {"name": "attachments.upload", "label": "Upload attachments"},
+            {"name": "attachments.delete", "label": "Delete attachments"},
+            {"name": "attachments.download", "label": "Download attachments"},
+        ],
+    },
+    "announcements": {
+        "label": "Announcements",
+        "permissions": [
+            {"name": "announcements.view", "label": "View announcements"},
+            {"name": "announcements.create", "label": "Create announcements"},
+            {"name": "announcements.update", "label": "Update announcements"},
+            {"name": "announcements.delete", "label": "Delete announcements"},
+            {"name": "announcements.pin", "label": "Pin announcements"},
+        ],
+    },
+    "notifications": {
+        "label": "Notifications",
+        "permissions": [
+            {"name": "notifications.view", "label": "View notifications"},
+            {"name": "notifications.manage", "label": "Manage notification settings"},
+        ],
+    },
+    "permissions": {
+        "label": "Permissions",
+        "permissions": [
+            {"name": "permissions.view", "label": "View permissions"},
+            {"name": "permissions.manage", "label": "Manage permissions"},
+        ],
+    },
+    "meetings": {
+        "label": "Meetings",
+        "permissions": [
+            {"name": "meetings.view", "label": "View meetings"},
+            {"name": "meetings.create", "label": "Create meetings"},
+            {"name": "meetings.update", "label": "Update meetings"},
+            {"name": "meetings.delete", "label": "Delete meetings"},
+        ],
+    },
+    "milestones": {
+        "label": "Milestones",
+        "permissions": [
+            {"name": "milestones.view", "label": "View milestones"},
+            {"name": "milestones.create", "label": "Create milestones"},
+            {"name": "milestones.update", "label": "Update milestones"},
+            {"name": "milestones.delete", "label": "Delete milestones"},
+        ],
+    },
+}
+
+
+@router.get("")
+def list_permissions(
+    db: Session = Depends(get_db),
+    current_user: User = require_permissions(["permissions.view"]),
+):
+    groups = []
+    for group_key, group_data in PERMISSION_GROUPS.items():
+        permissions = []
+        for perm_def in group_data["permissions"]:
+            perm = db.query(Permission).filter(Permission.name == perm_def["name"]).first()
+            permissions.append({
+                "id": perm.id if perm else None,
+                "name": perm_def["name"],
+                "guard_name": perm.guard_name if perm else "web",
+                "group": group_key,
+                "label": perm_def["label"],
+            })
+        groups.append({
+            "group": group_key,
+            "label": group_data["label"],
+            "permissions": permissions,
+        })
+    return {"groups": groups}
 
 
 @router.get("/users/{user_id}")
-def get_user_permissions(user_id: int, db: Session = Depends(get_db),
-                         current_user: User = require_permissions(["permissions.view"])):
+def get_user_permissions(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = require_permissions(["permissions.view"]),
+):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise NotFoundException("User", user_id)
 
-    role_permissions = []
-    if user.roles:
-        role_permissions = [p.name for p in user.roles[0].permissions]
+    role_permissions = list({p.name: p for p in user.roles[0].permissions}.values()) if user.roles else []
+    direct_permissions = user.direct_permissions
 
-    direct_permissions = [p.name for p in user.direct_permissions]
+    if user.inherit_role_permissions:
+        effective_permissions = list({p.name: p for p in sum((r.permissions for r in user.roles), [])}.values()) if user.roles else []
+    else:
+        effective_permissions = direct_permissions
 
     return {
         "user": {
             "id": user.id,
             "name": user.name,
             "email": user.email,
-            "role": user.role.name if user.role else None,
-            "role_label": UserRole(user.role.name).label() if user.role else None,
             "is_active": user.is_active,
             "is_super_admin": user.is_super_admin,
             "inherit_role_permissions": user.inherit_role_permissions,
         },
-        "role_permissions": role_permissions,
-        "direct_permissions": direct_permissions,
-        "effective_permissions": role_permissions if user.inherit_role_permissions else direct_permissions,
-        "all_permissions": get_permission_groups(),
+        "inherit_role_permissions": user.inherit_role_permissions,
+        "role_permissions": [
+            {"id": p.id, "name": p.name, "group": p.group, "label": p.label}
+            for p in role_permissions
+        ],
+        "direct_permissions": [
+            {"id": p.id, "name": p.name, "group": p.group, "label": p.label}
+            for p in direct_permissions
+        ],
+        "effective_permissions": [
+            {"id": p.id, "name": p.name, "group": p.group, "label": p.label}
+            for p in effective_permissions
+        ],
+        "effective_permission_names": list(set(p.name for p in effective_permissions)),
+        "all_permission_groups": list(PERMISSION_GROUPS.keys()),
     }
 
 
 @router.put("/users/{user_id}")
 def update_user_permissions(
-    user_id: int, data: UpdateUserPermissions,
+    user_id: int,
+    data: UpdateUserPermissions,
     db: Session = Depends(get_db),
     current_user: User = require_permissions(["permissions.manage"]),
 ):
@@ -65,148 +239,38 @@ def update_user_permissions(
     if not user:
         raise NotFoundException("User", user_id)
 
-    user.inherit_role_permissions = data.inherit_role_permissions
+    permissions = db.query(Permission).filter(Permission.id.in_(data.permission_ids)).all()
+    if len(permissions) != len(data.permission_ids):
+        raise HTTPException(422, "One or more permission IDs are invalid")
 
-    if not data.inherit_role_permissions and data.permissions is not None:
-        perms = db.query(Permission).filter(Permission.name.in_(data.permissions)).all()
-        user.direct_permissions = perms
-    elif data.inherit_role_permissions:
+    user.direct_permissions = permissions
+    user.inherit_role_permissions = False
+    db.commit()
+
+    log_activity(db, "users", user.id, "Permission overrides updated", causer_id=current_user.id,
+                 properties={"permission_ids": data.permission_ids})
+    return {"message": "Permission overrides updated successfully"}
+
+
+@router.put("/users/{user_id}/inherit")
+def update_user_inherit_permissions(
+    user_id: int,
+    data: UpdateInheritPermissions,
+    db: Session = Depends(get_db),
+    current_user: User = require_permissions(["permissions.manage"]),
+):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise NotFoundException("User", user_id)
+
+    user.inherit_role_permissions = data.inherit
+    if data.inherit:
         user.direct_permissions = []
 
     db.commit()
-
-    log_activity(db, "users", user.id, "Permissions updated", causer_id=current_user.id,
-                 properties={"inherit_role_permissions": data.inherit_role_permissions})
-    return {"message": "Permissions updated successfully"}
-
-
-@router.put("/users/{user_id}/role")
-def update_user_role(
-    user_id: int, data: UpdateUserRole,
-    db: Session = Depends(get_db),
-    current_user: User = require_permissions(["permissions.manage"]),
-):
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user:
-        raise NotFoundException("User", user_id)
-
-    role = db.query(Role).filter(Role.name == data.role).first()
-    if not role:
-        raise HTTPException(422, "Invalid role")
-
-    user.roles = [role]
-    user.inherit_role_permissions = True
-    user.direct_permissions = []
-    db.commit()
-
-    log_activity(db, "users", user.id, "User role updated", causer_id=current_user.id,
-                 properties={"role": data.role})
-    return {"message": "User role updated successfully"}
-
-
-@router.get("")
-def list_permissions(db: Session = Depends(get_db),
-                     current_user: User = require_permissions(["permissions.view"])):
-    all_perms = db.query(Permission).order_by(Permission.name).all()
-    return [{"id": p.id, "name": p.name, "guard_name": p.guard_name} for p in all_perms]
-
-
-def get_permission_groups() -> dict:
-    PERMISSION_MAP = {
-        "users": ["users.view", "users.create", "users.update", "users.delete",
-                   "users.restore", "users.deactivate", "users.reset-password", "users.invite"],
-        "projects": ["projects.view", "projects.create", "projects.update", "projects.delete",
-                      "projects.archive", "projects.manage-members", "projects.manage-settings"],
-        "tasks": ["tasks.view", "tasks.create", "tasks.update", "tasks.delete",
-                   "tasks.assign", "tasks.approve", "tasks.reject", "tasks.review",
-                   "tasks.change-status", "tasks.submit-approval"],
-        "subtasks": ["subtasks.view", "subtasks.create", "subtasks.update", "subtasks.delete",
-                      "subtasks.assign", "subtasks.change-status", "subtasks.approve"],
-        "dashboard": ["dashboard.view", "dashboard.activity", "dashboard.notifications", "dashboard.announcements"],
-        "comments": ["comments.view", "comments.create", "comments.update", "comments.delete", "comments.activity"],
-        "reports": ["reports.view", "reports.generate", "reports.export", "reports.download"],
-        "attachments": ["attachments.view", "attachments.upload", "attachments.delete", "attachments.download"],
-        "announcements": ["announcements.view", "announcements.create", "announcements.update",
-                           "announcements.delete", "announcements.pin"],
-        "notifications": ["notifications.view", "notifications.manage"],
-        "permissions": ["permissions.view", "permissions.manage"],
+    log_activity(db, "users", user.id, "Permission inheritance updated", causer_id=current_user.id,
+                 properties={"inherit_role_permissions": data.inherit})
+    return {
+        "message": "Permission inheritance updated successfully",
+        "inherit_role_permissions": user.inherit_role_permissions,
     }
-
-    LABELS = {
-        "users": "Users", "projects": "Projects", "tasks": "Tasks", "subtasks": "Subtasks",
-        "dashboard": "Dashboard", "comments": "Comments & Activities", "reports": "Reports",
-        "attachments": "Attachments", "announcements": "Announcements",
-        "notifications": "Notifications", "permissions": "Permissions",
-    }
-
-    all_perms = [
-        {"value": "users.view", "label": "View users"},
-        {"value": "users.create", "label": "Create users"},
-        {"value": "users.update", "label": "Update users"},
-        {"value": "users.delete", "label": "Delete users"},
-        {"value": "users.restore", "label": "Restore users"},
-        {"value": "users.deactivate", "label": "Deactivate users"},
-        {"value": "users.reset-password", "label": "Reset user passwords"},
-        {"value": "users.invite", "label": "Invite users"},
-        {"value": "projects.view", "label": "View projects"},
-        {"value": "projects.create", "label": "Create projects"},
-        {"value": "projects.update", "label": "Update projects"},
-        {"value": "projects.delete", "label": "Delete projects"},
-        {"value": "projects.archive", "label": "Archive projects"},
-        {"value": "projects.manage-members", "label": "Assign project members"},
-        {"value": "projects.manage-settings", "label": "Manage project settings"},
-        {"value": "tasks.view", "label": "View tasks"},
-        {"value": "tasks.create", "label": "Create tasks"},
-        {"value": "tasks.update", "label": "Update tasks"},
-        {"value": "tasks.delete", "label": "Delete tasks"},
-        {"value": "tasks.assign", "label": "Assign tasks"},
-        {"value": "tasks.approve", "label": "Approve tasks"},
-        {"value": "tasks.reject", "label": "Reject tasks"},
-        {"value": "tasks.review", "label": "Review tasks"},
-        {"value": "tasks.change-status", "label": "Change task status"},
-        {"value": "tasks.submit-approval", "label": "Submit tasks for approval"},
-        {"value": "subtasks.view", "label": "View subtasks"},
-        {"value": "subtasks.create", "label": "Create subtasks"},
-        {"value": "subtasks.update", "label": "Update subtasks"},
-        {"value": "subtasks.delete", "label": "Delete subtasks"},
-        {"value": "subtasks.assign", "label": "Assign subtasks"},
-        {"value": "subtasks.change-status", "label": "Change subtask status"},
-        {"value": "subtasks.approve", "label": "Approve subtasks"},
-        {"value": "dashboard.view", "label": "View Dashboard"},
-        {"value": "dashboard.activity", "label": "View team activity"},
-        {"value": "dashboard.notifications", "label": "Dashboard notifications"},
-        {"value": "dashboard.announcements", "label": "Dashboard announcements"},
-        {"value": "comments.view", "label": "View comments"},
-        {"value": "comments.create", "label": "Create comments"},
-        {"value": "comments.update", "label": "Update comments"},
-        {"value": "comments.delete", "label": "Delete comments"},
-        {"value": "comments.activity", "label": "View activity logs"},
-        {"value": "reports.view", "label": "View reports"},
-        {"value": "reports.generate", "label": "Generate reports"},
-        {"value": "reports.export", "label": "Export reports"},
-        {"value": "reports.download", "label": "Download reports"},
-        {"value": "attachments.view", "label": "View attachments"},
-        {"value": "attachments.upload", "label": "Upload attachments"},
-        {"value": "attachments.delete", "label": "Delete attachments"},
-        {"value": "attachments.download", "label": "Download attachments"},
-        {"value": "announcements.view", "label": "View announcements"},
-        {"value": "announcements.create", "label": "Create announcements"},
-        {"value": "announcements.update", "label": "Update announcements"},
-        {"value": "announcements.delete", "label": "Delete announcements"},
-        {"value": "announcements.pin", "label": "Pin announcements"},
-        {"value": "notifications.view", "label": "View notifications"},
-        {"value": "notifications.manage", "label": "Manage notification settings"},
-        {"value": "permissions.view", "label": "View permissions"},
-        {"value": "permissions.manage", "label": "Manage permissions"},
-    ]
-
-    groups = []
-    for group_key, perm_names in PERMISSION_MAP.items():
-        perms = [p for p in all_perms if p["value"] in perm_names]
-        groups.append({
-            "key": group_key,
-            "label": LABELS.get(group_key, group_key.capitalize()),
-            "permissions": perms,
-        })
-
-    return groups

@@ -37,6 +37,8 @@ class PermissionBrief(BaseModel):
     id: int
     name: str
     guard_name: str
+    group: Optional[str] = None
+    label: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -46,6 +48,11 @@ class RoleBrief(BaseModel):
     id: int
     name: str
     guard_name: str
+    description: Optional[str] = None
+    color: Optional[str] = None
+    icon: Optional[str] = None
+    is_active: bool = True
+    is_system: bool = False
     permissions: list[PermissionBrief] = []
 
     class Config:
@@ -74,14 +81,12 @@ class UserResponse(BaseModel):
     role_label: Optional[str] = None
     is_super_admin: bool = False
     permissions: list[str] = []
+    effective_permissions: list[str] = []
     roles: list[RoleBrief] = []
 
     @classmethod
     def from_orm_user(cls, user) -> "UserResponse":
         role_obj = user.role if hasattr(user, "role") and user.role else None
-        reporting_manager_name = None
-        if user.reporting_manager:
-            reporting_manager_name = user.reporting_manager.name
         return cls(
             id=user.id,
             name=user.name,
@@ -101,16 +106,25 @@ class UserResponse(BaseModel):
             updated_at=getattr(user, "updated_at", None),
             deleted_at=getattr(user, "deleted_at", None),
             role=role_obj.name if role_obj else None,
-            role_label=UserRole(role_obj.name).label() if role_obj else None,
+            role_label=UserRole(role_obj.name).label() if role_obj and role_obj.name in [e.value for e in UserRole] else (role_obj.name if role_obj else None),
             is_super_admin=user.is_super_admin if hasattr(user, "is_super_admin") else False,
             permissions=user.get_all_permissions() if hasattr(user, "get_all_permissions") else [],
+            effective_permissions=user.get_all_permissions() if hasattr(user, "get_all_permissions") else [],
             roles=[
                 RoleBrief(
                     id=r.id,
                     name=r.name,
                     guard_name=r.guard_name,
+                    description=r.description,
+                    color=r.color,
+                    icon=r.icon,
+                    is_active=r.is_active,
+                    is_system=r.is_system,
                     permissions=[
-                        PermissionBrief(id=p.id, name=p.name, guard_name=p.guard_name)
+                        PermissionBrief(
+                            id=p.id, name=p.name, guard_name=p.guard_name,
+                            group=p.group, label=p.label,
+                        )
                         for p in (r.permissions or [])
                     ],
                 )

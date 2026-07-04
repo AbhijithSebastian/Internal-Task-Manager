@@ -17,6 +17,7 @@ export interface User {
   role_label?: string;
   is_super_admin: boolean;
   permissions?: string[];
+  effective_permissions?: string[];
   roles?: Role[];
   department?: string;
   designation?: string;
@@ -28,8 +29,14 @@ export interface Role {
   id: number;
   name: string;
   guard_name: string;
+  description?: string;
+  color?: string;
+  icon?: string;
+  is_active: boolean;
+  is_system: boolean;
   permissions?: Permission[];
   permission_ids?: number[];
+  user_count?: number;
   created_at: string;
 }
 

@@ -2,7 +2,7 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from app.core.database import get_db
 from app.core.security import decode_token
@@ -37,34 +37,38 @@ def get_current_user(
 
 
 class PermissionChecker:
-    def __init__(self, required_permissions: List[str]):
-        self.required_permissions = required_permissions
+    def __init__(self, permissions: list[str], logic: str = "AND"):
+        self.permissions = permissions
+        self.logic = logic
 
     def __call__(self, user: User = Depends(get_current_user)) -> User:
         if user.is_super_admin:
             return user
 
-        user_permissions = set()
-        if user.inherit_role_permissions:
-            for role in user.roles:
-                for perm in role.permissions:
-                    user_permissions.add(perm.name)
-        else:
-            for perm in user.direct_permissions:
-                user_permissions.add(perm.name)
+        user_permissions = set(user.get_all_permissions())
 
-        for required in self.required_permissions:
-            if required not in user_permissions:
+        if self.logic == "OR":
+            if not any(p in user_permissions for p in self.permissions):
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
-                    detail=f"Missing required permission: {required}",
+                    detail=f"Missing required permission: {' or '.join(self.permissions)}",
                 )
+        else:
+            for required in self.permissions:
+                if required not in user_permissions:
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail=f"Missing required permission: {required}",
+                    )
 
         return user
 
 
-def require_permissions(permissions: List[str]):
-    return Depends(PermissionChecker(permissions))
+def require_permissions(*permissions):
+    if len(permissions) == 1 and isinstance(permissions[0], list):
+        return Depends(PermissionChecker(permissions[0], logic="AND"))
+    else:
+        return Depends(PermissionChecker(list(permissions), logic="OR"))
 
 
 def require_active(user: User = Depends(get_current_user)) -> User:

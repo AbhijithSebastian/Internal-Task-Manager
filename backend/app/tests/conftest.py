@@ -58,11 +58,11 @@ def _clean_test_data():
         db.execute(text("DELETE FROM users WHERE email IN ('abhijith@tool.com', 'test_employee@example.com')"))
         db.commit()
 
-        # Seed admin user for tests (using newpassword123 as expected by auth tests)
+        # Seed admin user for tests (using password as expected by auth tests)
         admin = User(
             name="Super Admin",
             email="abhijith@tool.com",
-            password=get_password_hash("newpassword123"),
+            password=get_password_hash("password"),
             is_active=True,
         )
         db.add(admin)
@@ -96,7 +96,7 @@ def _clean_test_data():
 def admin_token(client, _clean_test_data):
     resp = client.post(
         "/api/v1/auth/login",
-        json={"email": "abhijith@tool.com", "password": "newpassword123"},
+        json={"email": "abhijith@tool.com", "password": "password"},
     )
     # If the reset password test modified it, try falling back to the reset password
     if resp.status_code != 200:

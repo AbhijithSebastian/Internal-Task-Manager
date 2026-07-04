@@ -14,6 +14,7 @@ import {
   Users,
   Pencil,
   AlertCircle,
+
 } from "lucide-react";
 import { formatRelative } from "@/utils/formatters";
 import type { Role, Permission, User } from "@/types";
@@ -72,6 +73,8 @@ export function RoleDetailDrawer({ roleId, onClose }: RoleDetailDrawerProps) {
     navigate("/work/admin/roles");
   };
 
+  const color = r?.color || "#6366f1";
+
   return (
     <Drawer
       open={Boolean(roleId)}
@@ -95,24 +98,38 @@ export function RoleDetailDrawer({ roleId, onClose }: RoleDetailDrawerProps) {
       ) : (
         <div className="space-y-6">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-primary-soft text-primary flex items-center justify-center">
+            <div
+              className="h-10 w-10 rounded-lg flex items-center justify-center shrink-0"
+              style={{ backgroundColor: `${color}20`, color }}
+            >
               <Shield className="h-5 w-5" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-primary">
-                {r.name}
-              </h3>
+              <div className="flex items-center gap-2">
+                <h3 className="text-lg font-semibold text-primary">
+                  {r.name}
+                </h3>
+                {r.is_system && <Badge variant="info" size="sm">System</Badge>}
+              </div>
               <div className="flex items-center gap-2 mt-0.5">
+                <Badge variant={r.is_active ? "success" : "neutral"} size="sm" dot>
+                  {r.is_active ? "Active" : "Inactive"}
+                </Badge>
                 <Badge variant="neutral" size="sm">
                   {r.guard_name}
                 </Badge>
                 <span className="text-xs text-tertiary">
-                  {perms.length} permission
-                  {perms.length !== 1 ? "s" : ""}
+                  {perms.length} permission{perms.length !== 1 ? "s" : ""}
                 </span>
               </div>
             </div>
           </div>
+
+          {r.description && (
+            <p className="text-sm text-secondary bg-subtle rounded-lg px-3 py-2">
+              {r.description}
+            </p>
+          )}
 
           <Card className="p-3.5 space-y-2">
             <p className="text-xs text-tertiary flex items-center gap-1.5">
@@ -178,7 +195,7 @@ export function RoleDetailDrawer({ roleId, onClose }: RoleDetailDrawerProps) {
           )}
 
           <Button onClick={handleEdit} className="w-full">
-            <Pencil className="h-4 w-4" /> Edit Permissions
+            <Pencil className="h-4 w-4" /> Manage Role
           </Button>
         </div>
       )}

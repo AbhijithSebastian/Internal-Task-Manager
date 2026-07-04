@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { api } from "@/services/api";
@@ -12,8 +12,8 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { Card } from "@/components/ui/Card";
 import { formatDate, formatRelative } from "@/utils/formatters";
 import { cn } from "@/lib/utils";
-import { Mail, Shield, Calendar, Clock, CheckCircle2, XCircle, Briefcase, Building2, UserCircle, Activity, Edit3, Check, Save, Search } from "lucide-react";
-import type { User, Project, Task, ActivityLog, Permission } from "@/types";
+import { Mail, Shield, Calendar, Clock, CheckCircle2, XCircle, Briefcase, Building2, UserCircle, Activity, Edit3, Check, Save, Search, Users } from "lucide-react";
+import type { User, Project, Task, ActivityLog, Permission, Role } from "@/types";
 
 interface UserDetailDrawerProps {
   userId: number | null;
@@ -64,13 +64,34 @@ export function UserDetailDrawer({ userId, onClose }: UserDetailDrawerProps) {
   const { data: allPerms, isLoading: permsLoading } = useQuery({
     queryKey: ["permissions"],
     queryFn: () =>
-      api.get("/permissions").then((r) => r.data?.items || r.data?.data || []),
+      api.get("/permissions").then((r) => r.data?.groups || r.data?.items || r.data?.data || []),
     enabled: Boolean(userId),
   });
 
-  const permissions = (Array.isArray(allPerms) ? allPerms : []) as Permission[];
+  const permissionGroups = useMemo(() => {
+    if (Array.isArray(allPerms)) {
+      if (allPerms.length > 0 && "group" in allPerms[0] && "permissions" in allPerms[0]) {
+        return allPerms as { group: string; permissions: Permission[] }[];
+      }
+      if (allPerms.length > 0 && "name" in allPerms[0]) {
+        const perms = allPerms as Permission[];
+        const map: Record<string, Permission[]> = {};
+        perms.forEach((p) => {
+          const g = p.group || "Other";
+          if (!map[g]) map[g] = [];
+          map[g].push(p);
+        });
+        return Object.entries(map).map(([group, permissions]) => ({ group, permissions }));
+      }
+    }
+    return [];
+  }, [allPerms]);
 
-  const u = user as User | undefined;
+  const allPermissions = useMemo(() => {
+    return permissionGroups.flatMap((g) => g.permissions);
+  }, [permissionGroups]);
+
+  const u = user as (User & { effective_permissions?: string[]; roles?: Role[]; inherit_role_permissions: boolean }) | undefined;
 
   useEffect(() => {
     if (u) {
@@ -80,8 +101,17 @@ export function UserDetailDrawer({ userId, onClose }: UserDetailDrawerProps) {
   }, [u]);
 
   const savePermsMutation = useMutation({
-    mutationFn: (data: { inherit_role_permissions: boolean; permissions: string[] }) =>
-      api.put(`/users/${userId}`, data).then((r) => r.data?.data || r.data),
+    mutationFn: ({ userId, permissionIds }: { userId: number; permissionIds: number[] }) =>
+      api.put(`/permissions/users/${userId}`, { permission_ids: permissionIds }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["user", userId] });
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+    },
+  });
+
+  const saveInheritMutation = useMutation({
+    mutationFn: ({ userId, inherit }: { userId: number; inherit: boolean }) =>
+      api.put(`/permissions/users/${userId}/inherit`, { inherit }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["user", userId] });
       queryClient.invalidateQueries({ queryKey: ["users"] });
@@ -98,10 +128,16 @@ export function UserDetailDrawer({ userId, onClose }: UserDetailDrawerProps) {
   };
 
   const handleSavePerms = () => {
-    savePermsMutation.mutate({
-      inherit_role_permissions: inheritPerms,
-      permissions: Array.from(customPerms),
-    });
+    if (!userId) return;
+    const permIds = allPermissions.filter((p) => customPerms.has(p.name)).map((p) => p.id);
+    savePermsMutation.mutate({ userId, permissionIds: permIds });
+  };
+
+  const handleToggleInherit = () => {
+    if (!userId) return;
+    const next = !inheritPerms;
+    setInheritPerms(next);
+    saveInheritMutation.mutate({ userId, inherit: next });
   };
 
   const hasPermsChanged = () => {
@@ -115,9 +151,29 @@ export function UserDetailDrawer({ userId, onClose }: UserDetailDrawerProps) {
     return false;
   };
 
+  const filteredPerms = useMemo(() => {
+    if (!permSearch) return permissionGroups;
+    const q = permSearch.toLowerCase();
+    return permissionGroups
+      .map((g) => ({
+        ...g,
+        permissions: g.permissions.filter(
+          (p) =>
+            p.name.toLowerCase().includes(q) ||
+            (p.label || "").toLowerCase().includes(q)
+        ),
+      }))
+      .filter((g) => g.permissions.length > 0);
+  }, [permissionGroups, permSearch]);
+
   const tasks = (Array.isArray(userTasks) ? userTasks : []) as Task[];
   const projects = (Array.isArray(userProjects) ? userProjects : []) as Project[];
   const activity = (Array.isArray(userActivity) ? userActivity : []) as ActivityLog[];
+
+  const roleColors: Record<string, string> = {};
+  (u?.roles || []).forEach((r) => {
+    roleColors[r.name] = (r as Role & { color?: string }).color || "#6366f1";
+  });
 
   return (
     <Drawer open={Boolean(userId)} onClose={onClose} title={u?.name || "User"}>
@@ -228,12 +284,61 @@ export function UserDetailDrawer({ userId, onClose }: UserDetailDrawerProps) {
             </Card>
           </div>
 
-          {hasPermission("user-edit") && (
+          {/* Roles section */}
+          {u.roles && u.roles.length > 0 && (
+            <div>
+              <h4 className="text-xs font-semibold uppercase text-tertiary tracking-wide mb-3">
+                <Users className="h-3.5 w-3.5 inline mr-1 -mt-0.5" />
+                Roles ({u.roles.length})
+              </h4>
+              <div className="flex flex-wrap gap-1.5">
+                {u.roles.map((r) => {
+                  const color = roleColors[r.name] || "#6366f1";
+                  return (
+                    <span
+                      key={r.id}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium"
+                      style={{
+                        backgroundColor: `${color}20`,
+                        color,
+                      }}
+                    >
+                      <Shield className="h-3 w-3" />
+                      {r.name}
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Effective Permissions */}
+          {u.effective_permissions && u.effective_permissions.length > 0 && (
+            <div>
+              <h4 className="text-xs font-semibold uppercase text-tertiary tracking-wide mb-3">
+                <Shield className="h-3.5 w-3.5 inline mr-1 -mt-0.5" />
+                Effective Permissions ({u.effective_permissions.length})
+              </h4>
+              <div className="flex flex-wrap gap-1">
+                {u.effective_permissions.slice(0, 20).map((p) => (
+                  <Badge key={p} variant="info" size="sm">
+                    {p.split(".").pop() || p}
+                  </Badge>
+                ))}
+                {u.effective_permissions.length > 20 && (
+                  <span className="text-xs text-tertiary">+{u.effective_permissions.length - 20} more</span>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Permission Overrides */}
+          {hasPermission("permissions.manage") && (
             <div>
               <div className="flex items-center justify-between mb-3">
                 <h4 className="text-xs font-semibold uppercase text-tertiary tracking-wide">
                   <Shield className="h-3.5 w-3.5 inline mr-1 -mt-0.5" />
-                  Permissions
+                  Permission Overrides
                 </h4>
                 {hasPermsChanged() && (
                   <Button size="sm" onClick={handleSavePerms} loading={savePermsMutation.isPending}>
@@ -245,10 +350,10 @@ export function UserDetailDrawer({ userId, onClose }: UserDetailDrawerProps) {
                 <label className="flex items-center justify-between cursor-pointer">
                   <div>
                     <p className="text-sm font-medium text-primary">Inherit role permissions</p>
-                    <p className="text-xs text-tertiary">When enabled, user inherits all permissions from their role</p>
+                    <p className="text-xs text-tertiary">When enabled, user inherits all permissions from their roles</p>
                   </div>
                   <button
-                    onClick={() => setInheritPerms(!inheritPerms)}
+                    onClick={handleToggleInherit}
                     className={cn(
                       "relative inline-flex h-5 w-9 items-center rounded-full transition-colors",
                       inheritPerms ? "bg-primary" : "bg-subtle"
@@ -281,28 +386,11 @@ export function UserDetailDrawer({ userId, onClose }: UserDetailDrawerProps) {
                         ))}
                       </div>
                     ) : (
-                      Object.entries(
-                        permissions
-                          .filter((p) => {
-                            if (!permSearch) return true;
-                            const q = permSearch.toLowerCase();
-                            return (
-                              p.name.toLowerCase().includes(q) ||
-                              (p.label || "").toLowerCase().includes(q) ||
-                              (p.group || "").toLowerCase().includes(q)
-                            );
-                          })
-                          .reduce<Record<string, Permission[]>>((acc, p) => {
-                            const g = p.group || "Other";
-                            if (!acc[g]) acc[g] = [];
-                            acc[g].push(p);
-                            return acc;
-                          }, {})
-                      ).map(([group, perms]) => (
+                      filteredPerms.map(({ group, permissions }) => (
                         <div key={group}>
                           <p className="text-[10px] font-semibold uppercase text-tertiary tracking-wide mb-1">{group}</p>
                           <div className="flex flex-wrap gap-1">
-                            {perms.map((p) => {
+                            {permissions.map((p) => {
                               const enabled = customPerms.has(p.name);
                               return (
                                 <button
@@ -447,3 +535,5 @@ export function UserDetailDrawer({ userId, onClose }: UserDetailDrawerProps) {
     </Drawer>
   );
 }
+
+
