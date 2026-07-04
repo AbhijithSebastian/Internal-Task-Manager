@@ -12,4 +12,5 @@ from app.integrations.models import Integration
 from app.notifications.models import Notification
 from app.activity_logs.models import ActivityLog
 from app.attachments.models import Attachment
+from app.resources.models import Resource, ResourceVersion, ResourceLink, ResourceActivity
 from app.users.models import User, user_roles, user_permissions, PasswordResetToken

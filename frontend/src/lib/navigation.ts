@@ -1,11 +1,11 @@
 import {
   LayoutDashboard,
-  CheckSquare,
   FolderKanban,
-  Users,
+  CheckSquare,
   Video,
   Megaphone,
   BarChart3,
+  Users,
   Shield,
   Settings,
   ListChecks,
@@ -15,6 +15,7 @@ import {
 export interface NavSection {
   label: string;
   items: NavItem[];
+  collapsible?: boolean;
 }
 
 export interface NavItem {
@@ -23,6 +24,7 @@ export interface NavItem {
   icon: LucideIcon;
   badge?: "notification";
   roles?: string[];
+  isProject?: boolean;
 }
 
 export const navSections: NavSection[] = [
@@ -33,11 +35,17 @@ export const navSections: NavSection[] = [
     ],
   },
   {
+    label: "Projects",
+    collapsible: true,
+    items: [
+      { label: "View All", href: "/work/projects", icon: FolderKanban },
+    ],
+  },
+  {
     label: "Work",
     items: [
       { label: "Tasks", href: "/work/tasks", icon: CheckSquare },
       { label: "Subtasks", href: "/work/subtasks", icon: ListChecks },
-      { label: "Projects", href: "/work/projects", icon: FolderKanban },
       { label: "Meetings", href: "/work/meetings", icon: Video },
     ],
   },

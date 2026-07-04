@@ -37,6 +37,7 @@ class Project(Base):
     milestones = relationship("Milestone", back_populates="project", lazy="selectin", cascade="all, delete-orphan")
     modules = relationship("Module", back_populates="project", lazy="selectin", cascade="all, delete-orphan")
     integrations = relationship("Integration", back_populates="project", lazy="selectin", cascade="all, delete-orphan")
+    resources = relationship("Resource", back_populates="project", lazy="selectin", cascade="all, delete-orphan")
 
     @property
     def members(self):

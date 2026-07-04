@@ -2,7 +2,8 @@ from fastapi import APIRouter
 from app.api.v1 import (
     auth, users, roles, permissions, projects, tasks,
     comments, meetings, announcements, reports, notifications,
-    attachments, activity, dashboard, milestones, integrations
+    attachments, activity, dashboard, milestones, integrations,
+    resources
 )
 from app.modules.router import router as modules_router
 from app.search.router import router as search_router
@@ -24,6 +25,7 @@ api_router.include_router(notifications.router, prefix="/notifications", tags=["
 api_router.include_router(attachments.router, prefix="/attachments", tags=["Attachments"])
 api_router.include_router(activity.router, prefix="/activity", tags=["Activity"])
 api_router.include_router(dashboard.router, prefix="/dashboard", tags=["Dashboard"])
+api_router.include_router(resources.router, prefix="/resources", tags=["Resources"])
 api_router.include_router(milestones.router, prefix="/milestones", tags=["Milestones"])
 api_router.include_router(modules_router, prefix="/modules", tags=["Modules"])
 api_router.include_router(integrations.router, prefix="/integrations", tags=["Integrations"])

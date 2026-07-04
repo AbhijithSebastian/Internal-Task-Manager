@@ -19,6 +19,28 @@ from app.core.enums import ProjectStatus, ProjectPriority, TaskStatus
 router = APIRouter()
 
 
+@router.get("/recent")
+def get_recent_projects(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    member_project_ids = [
+        pm.project_id for pm in db.query(ProjectMember).filter(
+            ProjectMember.user_id == current_user.id
+        ).all()
+    ]
+    if not member_project_ids:
+        return {"items": [], "total": 0}
+    projects = db.query(Project).filter(
+        Project.deleted_at.is_(None),
+        Project.id.in_(member_project_ids),
+    ).order_by(Project.updated_at.desc().nullslast()).limit(10).all()
+    return {
+        "items": [format_project(p, db) for p in projects],
+        "total": len(projects),
+    }
+
+
 @router.get("/search")
 def search_projects(
     q: str = Query(..., min_length=1, max_length=200),

@@ -20,11 +20,23 @@ import AdminSettingsPage from "@/features/admin/pages/AdminSettingsPage";
 
 const DashboardPage = lazy(() => import("@/features/dashboard/pages/DashboardPage"));
 const TaskListPage = lazy(() => import("@/features/tasks/pages/TaskListPage"));
-const ProjectWorkspacePage = lazy(() => import("@/features/projects/pages/ProjectWorkspacePage"));
 const MeetingListPage = lazy(() => import("@/features/meetings/pages/MeetingListPage"));
 const AnnouncementListPage = lazy(() => import("@/features/announcements/pages/AnnouncementListPage"));
 const ReportsPage = lazy(() => import("@/features/reports/pages/ReportsPage"));
 const RoleListPage = lazy(() => import("@/features/roles/pages/RoleListPage"));
+
+// Project Workspace — lazy loaded
+const ProjectWorkspaceLayout = lazy(() => import("@/features/projects/layouts/ProjectWorkspaceLayout"));
+const ProjectOverviewPage = lazy(() => import("@/features/projects/pages/ProjectOverviewPage"));
+const ProjectTasksPage = lazy(() => import("@/features/projects/pages/ProjectTasksPage"));
+const ProjectMembersPage = lazy(() => import("@/features/projects/pages/ProjectMembersPage"));
+const ProjectMeetingsPage = lazy(() => import("@/features/projects/pages/ProjectMeetingsPage"));
+const ProjectActivityPage = lazy(() => import("@/features/projects/pages/ProjectActivityPage"));
+const ProjectSettingsPage = lazy(() => import("@/features/projects/pages/ProjectSettingsPage"));
+const ProjectEndpointsPage = lazy(() => import("@/features/projects/pages/ProjectEndpointsPage"));
+const ProjectDesignPage = lazy(() => import("@/features/projects/pages/ProjectDesignPage"));
+const ProjectResourcesPage = lazy(() => import("@/features/projects/pages/ProjectResourcesPage"));
+const ProjectGitHubPage = lazy(() => import("@/features/projects/pages/ProjectGitHubPage"));
 
 function SuspenseWrapper({ children }: { children: ReactNode }) {
   return <Suspense fallback={<div className="p-8"><Skeleton variant="rect" className="h-full w-full" /></div>}>{children}</Suspense>;
@@ -82,11 +94,26 @@ export function AppRoutes() {
         {/* Subtasks */}
         <Route path="/work/subtasks" element={<SubtaskListPage />} />
 
-        {/* Projects */}
+        {/* Projects — list & form */}
         <Route path="/work/projects" element={<ProjectListPage />} />
         <Route path="/work/projects/new" element={<ProjectFormPage />} />
-        <Route path="/work/projects/:id" element={<SuspenseWrapper><ProjectWorkspacePage /></SuspenseWrapper>} />
-        <Route path="/work/projects/:id/edit" element={<ProjectFormPage />} />
+
+        {/* Project Workspace — nested routes */}
+        <Route path="/work/projects/:projectId" element={<SuspenseWrapper><ProjectWorkspaceLayout /></SuspenseWrapper>}>
+          <Route index element={<SuspenseWrapper><ProjectOverviewPage /></SuspenseWrapper>} />
+          <Route path="tasks" element={<SuspenseWrapper><ProjectTasksPage /></SuspenseWrapper>} />
+          <Route path="members" element={<SuspenseWrapper><ProjectMembersPage /></SuspenseWrapper>} />
+          <Route path="meetings" element={<SuspenseWrapper><ProjectMeetingsPage /></SuspenseWrapper>} />
+          <Route path="endpoints" element={<SuspenseWrapper><ProjectEndpointsPage /></SuspenseWrapper>} />
+          <Route path="design" element={<SuspenseWrapper><ProjectDesignPage /></SuspenseWrapper>} />
+          <Route path="resources" element={<SuspenseWrapper><ProjectResourcesPage /></SuspenseWrapper>} />
+          <Route path="activity" element={<SuspenseWrapper><ProjectActivityPage /></SuspenseWrapper>} />
+          <Route path="github" element={<SuspenseWrapper><ProjectGitHubPage /></SuspenseWrapper>} />
+          <Route path="settings" element={<SuspenseWrapper><ProjectSettingsPage /></SuspenseWrapper>} />
+        </Route>
+
+        {/* Project edit — sibling of workspace, not nested */}
+        <Route path="/work/projects/:projectId/edit" element={<ProjectFormPage />} />
 
         {/* Meetings */}
         <Route path="/work/meetings" element={<SuspenseWrapper><MeetingListPage /></SuspenseWrapper>} />
