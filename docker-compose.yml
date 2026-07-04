@@ -1,0 +1,82 @@
+x-postgres-config: &postgres-config
+  POSTGRES_USER: taskmanager
+  POSTGRES_PASSWORD: taskmanager
+  POSTGRES_DB: taskmanager
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      <<: *postgres-config
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U taskmanager"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      APP_NAME: "Internal Task Manager"
+      APP_ENV: development
+      APP_DEBUG: "true"
+      DATABASE_URL: postgresql+psycopg://taskmanager:taskmanager@postgres:5432/taskmanager
+      JWT_SECRET_KEY: super-secret-jwt-key-change-in-production
+      JWT_ALGORITHM: HS256
+      JWT_ACCESS_TOKEN_EXPIRE_MINUTES: "60"
+      JWT_REFRESH_TOKEN_EXPIRE_DAYS: "7"
+      CORS_ORIGINS: "http://localhost:5173,http://localhost:3000,http://localhost"
+      UPLOAD_DIR: /app/uploads
+      MAX_UPLOAD_SIZE_MB: "50"
+      RATE_LIMIT_PER_MINUTE: "0"
+      DB_POOL_SIZE: "10"
+      DB_MAX_OVERFLOW: "20"
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - uploads_data:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: >
+      sh -c "alembic upgrade head &&
+             python -c \"from app.database.seed import seed; from app.core.database import SessionLocal; db = SessionLocal(); seed(db); db.close()\" &&
+             uvicorn main:app --host 0.0.0.0 --port 8000 --reload"
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  postgres_data:
+  uploads_data:

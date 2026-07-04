@@ -1,0 +1,22 @@
+parameters:
+    level: 6
+    paths:
+        - app
+    excludePaths:
+        - app/Http/Controllers/Auth/*.php
+        - app/Providers/*.php
+    checkMissingIterableValueType: false
+    treatPhpDocTypesAsCertain: false
+    laravel:
+        load_extension: true
+    databaseMigrationsPath:
+        - database/migrations
+    scanFiles:
+        - vendor/barryvdh/laravel-ide-helper/helpers.php
+    featureFlags:
+        skipCheckGenericClasses: true
+    ignoreErrors:
+        - '#Undefined magic property#'
+        - '#PHPDoc tag @param has invalid value#'
+        - '#Call to an undefined method Illuminate\\Support\\Facades\\[a-zA-Z]+::#'
+        - '#Property .+ has no type specified#'
