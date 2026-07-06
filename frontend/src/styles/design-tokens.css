@@ -1,105 +1,91 @@
 /* ═══════════════════════════════════════════════════════════════════
-   Enterprise Design Tokens — Internal Task Manager
-   Philosophy: 85% Neutral · 10% Primary · 5% Semantic
-   Typography-driven hierarchy · Calm · Premium · Accessible
+   Modern Enterprise Design Tokens — Internal Task Manager
+   Philosophy: Clean · Minimal · Professional · User-Friendly
+   International-level UI with focus on clarity and usability
    ═══════════════════════════════════════════════════════════════════ */
 
-/* ─── 1. Neutral Palette ─────────────────────────────────────────────
-   85% of visible color. Creates calm, professional foundation.
-   App bg is soft neutral, not pure white. Cards are elevated white. */
-
 :root {
-  /* Backgrounds — layered depth */
-  --bg-app:          #f5f6f8;    /* Soft neutral — app foundation */
-  --bg-subtle:       #f0f1f3;    /* Hover areas, secondary sections */
-  --bg-surface:      #ffffff;    /* Cards, drawers, modals, dropdowns */
-  --bg-elevated:     #ffffff;    /* Floating elements, tooltips */
-  --bg-inset:        #eaecef;    /* Input backgrounds, code blocks */
-
+  /* ─── Backgrounds — Clean, layered depth ────────────────────────── */
+  --bg-app:          #fafbfc;    /* Ultra-light neutral base */
+  --bg-subtle:       #f6f8fa;    /* Subtle sections, hover areas */
+  --bg-surface:      #ffffff;    /* Cards, panels, modals */
+  --bg-elevated:     #ffffff;    /* Floating elements */
+  --bg-inset:        #f3f4f6;    /* Inputs, code blocks */
+  
   /* Interactive backgrounds */
-  --bg-hover:        #f3f4f6;    /* Row hover, card hover */
-  --bg-active:       #eef1fe;    /* Selected row, active nav item */
-  --bg-selected:     #eef1fe;    /* Multi-select highlight */
-
-  /* Borders — minimal, refined */
-  --border-default:  #e2e5ea;    /* Cards, containers */
-  --border-subtle:   #eef0f2;    /* Light dividers, table lines */
-  --border-hover:    #d0d5dd;    /* Hovered card/input border */
-  --border-divider:  #eef0f2;    /* Section dividers */
-
-  /* Text — maximum contrast, premium readability */
-  --text-primary:    #101216;    /* Headings, body, high-importance */
-  --text-secondary:  #5a5f6b;    /* Supporting text, metadata */
-  --text-tertiary:   #8b909e;    /* Placeholders, disabled text */
-  --text-inverse:    #ffffff;    /* On primary/dark backgrounds */
-  --text-link:       #4f6cf7;    /* Links, interactive text */
-
-  /* Shadows — extremely subtle, no heavy drops */
-  --shadow-card:     0 1px 2px rgba(0,0,0,0.04), 0 1px 1px rgba(0,0,0,0.02);
-  --shadow-elevated: 0 4px 12px rgba(0,0,0,0.06), 0 2px 4px rgba(0,0,0,0.03);
-  --shadow-dropdown: 0 8px 24px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.04);
-  --shadow-modal:    0 20px 48px rgba(0,0,0,0.12), 0 8px 16px rgba(0,0,0,0.06);
+  --bg-hover:        #f0f2f5;    /* Row/card hover states */
+  --bg-active:       #e8efff;    /* Active/selected items */
+  --bg-selected:     #e8efff;    /* Multi-select highlights */
+  
+  /* ─── Borders — Minimal and refined ─────────────────────────────── */
+  --border-default:  #e5e8eb;    /* Primary borders */
+  --border-subtle:   #f0f2f5;    /* Light dividers */
+  --border-hover:    #d1d5db;    /* Hover state borders */
+  --border-divider:  #f0f2f5;    /* Section separators */
+  
+  /* ─── Text — Optimal contrast for readability ───────────────────── */
+  --text-primary:    #0f172a;    /* Headings, primary content */
+  --text-secondary:  #64748b;    /* Supporting text, metadata */
+  --text-tertiary:   #94a3b8;    /* Placeholders, disabled */
+  --text-inverse:    #ffffff;    /* On dark/primary backgrounds */
+  --text-link:       #3b82f6;    /* Interactive links */
+  
+  /* ─── Shadows — Subtle elevation without heaviness ──────────────── */
+  --shadow-card:     0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02);
+  --shadow-elevated: 0 4px 16px rgba(0,0,0,0.06), 0 2px 6px rgba(0,0,0,0.03);
+  --shadow-dropdown: 0 8px 32px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04);
+  --shadow-modal:    0 24px 64px rgba(0,0,0,0.12), 0 8px 24px rgba(0,0,0,0.06);
   --shadow-drawer:   -6px 0 32px rgba(0,0,0,0.08), -2px 0 8px rgba(0,0,0,0.04);
 
-/* ─── 2. Primary Palette ────────────────────────────────────────────
-    10% of visible color. Only for interactive elements,
-    active states, and primary CTAs. Never decorative. */
+  /* ─── Primary Brand Color ───────────────────────────────────────── */
+  --primary:         #3b82f6;    /* Modern blue — actions, focus */
+  --primary-hover:   #2563eb;    /* Hover state */
+  --primary-active:  #1d4ed8;    /* Active/pressed */
+  --primary-soft:    #dbeafe;    /* Soft backgrounds */
+  --primary-soft-hover:#bfdbfe;  /* Soft hover */
+  --primary-ring:    rgba(59, 130, 246, 0.3);  /* Focus ring */
 
-  --primary:         #4f6cf7;    /* Primary buttons, links, focus */
-  --primary-hover:   #3b5ae8;    /* Button hover, link hover */
-  --primary-active:  #2f4ad4;    /* Button pressed */
-  --primary-soft:    #eef1fe;    /* Active nav, selected items, badges */
-  --primary-soft-hover:#e0e5fd;  /* Soft hover */
-  --primary-ring:    rgba(79, 108, 247, 0.3);  /* Focus ring 3px */
+  /* ─── Semantic Colors — Status indicators only ──────────────────── */
+  --success:         #16a34a;    /* Completed, healthy */
+  --success-soft:    #dcfce7;
+  --warning:         #d97706;    /* In progress, attention */
+  --warning-soft:    #fef3c7;
+  --danger:          #dc2626;    /* Errors, urgent */
+  --danger-soft:     #fee2e2;
+  --info:            #2563eb;    /* Information */
+  --info-soft:       #dbeafe;
 
-/* ─── 3. Semantic Palette ───────────────────────────────────────────
-    5% of visible color. Status indicators only.
-    Never used for primary actions. Always paired with text label. */
-
-  --success:         #16a34a;    /* Completed, approved, healthy */
-  --success-soft:    #e8faf0;    /* Success badges, toast bg */
-  --warning:         #d97706;    /* In progress, pending, attention */
-  --warning-soft:    #fef7e8;    /* Warning badges, toast bg */
-  --danger:          #dc2626;    /* Overdue, rejected, errors */
-  --danger-soft:     #fde8e8;    /* Error badges, toast bg */
-  --info:            #2563eb;    /* Neutral information */
-  --info-soft:       #e8f0fe;    /* Info badges, toast bg */
-
-/* ─── 4. Typography ─────────────────────────────────────────────────
-    Inter only. Typography creates hierarchy, not colors. */
-
+  /* ─── Typography — Inter font family ────────────────────────────── */
   --font-sans:  'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-mono:  'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  --font-mono:  'JetBrains Mono', 'Fira Code', monospace;
 
-  /* Size scale */
-  --text-display:    2.75rem;    /* 44px — Page title h1 */
-  --text-hero:       2.25rem;    /* 36px — Dashboard welcome */
-  --text-xxl:        1.75rem;    /* 28px — Section heading h2 */
-  --text-xl:         1.375rem;   /* 22px — Card heading h3 */
+  /* Font sizes */
+  --text-display:    2.5rem;     /* 40px — Page titles */
+  --text-hero:       2rem;       /* 32px — Welcome headers */
+  --text-xxl:        1.5rem;     /* 24px — Section headings */
+  --text-xl:         1.25rem;    /* 20px — Card titles */
   --text-lg:         1.125rem;   /* 18px — Large body */
   --text-base:       1rem;       /* 16px — Body text */
-  --text-sm:         0.875rem;   /* 14px — Body small, table cells */
+  --text-sm:         0.875rem;   /* 14px — Small body, tables */
   --text-xs:         0.75rem;    /* 12px — Labels, captions */
 
-  /* Weight */
-  --weight-bold:     700;        /* Page titles, display */
-  --weight-semibold: 600;        /* Section headings, card titles */
-  --weight-medium:   500;        /* Navigation, buttons, table headers */
-  --weight-normal:   400;        /* Body, descriptions */
+  /* Font weights */
+  --weight-bold:     700;
+  --weight-semibold: 600;
+  --weight-medium:   500;
+  --weight-normal:   400;
 
-  /* Line height */
-  --leading-tight:   1.15;      /* Headings */
-  --leading-normal:  1.5;       /* Body */
-  --leading-relaxed: 1.7;       /* Long-form */
+  /* Line heights */
+  --leading-tight:   1.2;
+  --leading-normal:  1.5;
+  --leading-relaxed: 1.7;
 
   /* Letter spacing */
-  --tracking-tight:  -0.02em;   /* Page titles */
-  --tracking-normal: 0;          /* Body */
-  --tracking-wide:   0.02em;     /* Labels, badges */
+  --tracking-tight:  -0.02em;
+  --tracking-normal: 0;
+  --tracking-wide:   0.02em;
 
-/* ─── 5. Spacing ────────────────────────────────────────────────────
-    4px grid system. Vertical rhythm is sacred. */
-
+  /* ─── Spacing — 4px grid system ─────────────────────────────────── */
   --space-0:   0px;
   --space-1:   4px;
   --space-2:   8px;
@@ -115,17 +101,15 @@
   --space-20:  80px;
   --space-24:  96px;
 
-/* ─── 6. Border Radius ───────────────────────────────────────────── */
-
-  --radius-sm:   4px;      /* Inputs, badges */
+  /* ─── Border Radius — Modern rounded corners ────────────────────── */
+  --radius-sm:   6px;      /* Inputs, badges */
   --radius-md:   8px;      /* Buttons, cards */
   --radius-lg:   12px;     /* Modals, drawers */
-  --radius-xl:   16px;     /* Large containers, cards */
+  --radius-xl:   16px;     /* Large containers */
   --radius-2xl:  20px;     /* Hero sections */
   --radius-full: 9999px;   /* Pills, avatars */
 
-/* ─── 7. Elevation ────────────────────────────────────────────────── */
-
+  /* ─── Z-Index Layers ────────────────────────────────────────────── */
   --z-dropdown:       100;
   --z-sticky:         200;
   --z-drawer-bg:      300;
@@ -135,8 +119,7 @@
   --z-toast:          500;
   --z-tooltip:        600;
 
-/* ─── 8. Motion ───────────────────────────────────────────────────── */
-
+  /* ─── Motion — Smooth, purposeful animations ────────────────────── */
   --duration-fast:    150ms;
   --duration-normal:  200ms;
   --duration-slow:    300ms;
@@ -145,46 +128,46 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   Dark Theme
+   Dark Theme Support
    ═══════════════════════════════════════════════════════════════════ */
 
 [data-theme="dark"] {
-  --bg-app:          #0d0f14;
-  --bg-subtle:       #14171f;
-  --bg-surface:      #1a1d28;
-  --bg-elevated:     #1e2130;
-  --bg-inset:        #11131a;
-
-  --bg-hover:        #232738;
-  --bg-active:       #1f2340;
-  --bg-selected:     #1f2340;
-
-  --border-default:  #2d3140;
-  --border-subtle:   #262a3c;
-  --border-hover:    #3a3f52;
-  --border-divider:  #262a3c;
-
-  --text-primary:    #e8eaed;
-  --text-secondary:  #9ca0ab;
-  --text-tertiary:   #6b7084;
-  --text-inverse:    #0d0f14;
-  --text-link:       #6b86f7;
-
-  --primary:         #5b76f7;
-  --primary-hover:   #6b86f7;
-  --primary-soft:    #1f2340;
-  --primary-soft-hover:#262a50;
-  --primary-ring:    rgba(91, 118, 247, 0.4);
-
-  --shadow-card:     0 1px 2px rgba(0,0,0,0.3);
-  --shadow-elevated: 0 4px 12px rgba(0,0,0,0.4);
-  --shadow-dropdown: 0 8px 24px rgba(0,0,0,0.5);
-  --shadow-modal:    0 20px 48px rgba(0,0,0,0.6);
+  --bg-app:          #0f172a;
+  --bg-subtle:       #1e293b;
+  --bg-surface:      #1e293b;
+  --bg-elevated:     #334155;
+  --bg-inset:        #0f172a;
+  
+  --bg-hover:        #334155;
+  --bg-active:       #1e3a5f;
+  --bg-selected:     #1e3a5f;
+  
+  --border-default:  #334155;
+  --border-subtle:   #1e293b;
+  --border-hover:    #475569;
+  --border-divider:  #1e293b;
+  
+  --text-primary:    #f1f5f9;
+  --text-secondary:  #94a3b8;
+  --text-tertiary:   #64748b;
+  --text-inverse:    #0f172a;
+  --text-link:       #60a5fa;
+  
+  --primary:         #60a5fa;
+  --primary-hover:   #93c5fd;
+  --primary-soft:    #1e3a5f;
+  --primary-soft-hover:#1e4a7f;
+  --primary-ring:    rgba(96, 165, 250, 0.4);
+  
+  --shadow-card:     0 1px 3px rgba(0,0,0,0.3);
+  --shadow-elevated: 0 4px 16px rgba(0,0,0,0.4);
+  --shadow-dropdown: 0 8px 32px rgba(0,0,0,0.5);
+  --shadow-modal:    0 24px 64px rgba(0,0,0,0.6);
   --shadow-drawer:   -6px 0 32px rgba(0,0,0,0.5);
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   Reduced Motion
+   Reduced Motion Preference
    ═══════════════════════════════════════════════════════════════════ */
 
 @media (prefers-reduced-motion: reduce) {
@@ -194,13 +177,3 @@
     --duration-slow:   0ms;
   }
 }
-
-/* ═══════════════════════════════════════════════════════════════════
-   Breakpoints (for reference — used in component specs)
-   ═══════════════════════════════════════════════════════════════════
-
-   --bp-mobile:  768px
-   --bp-tablet:  1024px
-   --bp-desktop: 1280px
-   --bp-wide:    1536px
-*/
