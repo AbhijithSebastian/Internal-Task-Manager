@@ -1,0 +1,179 @@
+{
+  "results": [
+    {
+      "component": "SearchModal",
+      "screen": "Dashboard",
+      "status": "Testing",
+      "detail": ""
+    },
+    {
+      "component": "SearchModal",
+      "screen": "Dashboard",
+      "status": "PASS",
+      "detail": "modal visible: true, box: {\"x\":0,\"y\":0,\"width\":1440,\"height\":900}"
+    },
+    {
+      "component": "SearchModal",
+      "screen": "Dashboard",
+      "status": "PASS",
+      "detail": "closed via Escape"
+    },
+    {
+      "component": "UserDetailDrawer",
+      "screen": "Users",
+      "status": "Testing",
+      "detail": ""
+    },
+    {
+      "component": "UserDetailDrawer",
+      "screen": "Users",
+      "status": "PASS",
+      "detail": "drawer at x=880, w=560, visible"
+    },
+    {
+      "component": "UserDetailDrawer",
+      "screen": "Users",
+      "status": "PASS",
+      "detail": "closed via Escape"
+    },
+    {
+      "component": "RoleDetailPanel",
+      "screen": "Roles",
+      "status": "Testing",
+      "detail": ""
+    },
+    {
+      "component": "RoleDetailPanel",
+      "screen": "Roles",
+      "status": "PASS",
+      "detail": "detail panel opened showing permissions"
+    },
+    {
+      "component": "TaskDetailDrawer",
+      "screen": "Tasks",
+      "status": "Testing",
+      "detail": ""
+    },
+    {
+      "component": "TaskDetailDrawer",
+      "screen": "Tasks",
+      "status": "PASS",
+      "detail": "drawer at x=768, w=672, visible"
+    },
+    {
+      "component": "TaskDetailDrawer",
+      "screen": "Tasks",
+      "status": "PASS",
+      "detail": "closed via Escape"
+    },
+    {
+      "component": "SubtaskModal",
+      "screen": "Subtasks",
+      "status": "Testing",
+      "detail": ""
+    },
+    {
+      "component": "SubtaskModal",
+      "screen": "Subtasks",
+      "status": "PASS",
+      "detail": "modal visible: true, box: {\"x\":0,\"y\":0,\"width\":1440,\"height\":900}"
+    },
+    {
+      "component": "SubtaskModal",
+      "screen": "Subtasks",
+      "status": "PASS",
+      "detail": "closed via Escape"
+    },
+    {
+      "component": "MeetingDetailDrawer",
+      "screen": "Meetings",
+      "status": "Testing",
+      "detail": ""
+    },
+    {
+      "component": "MeetingDetailDrawer",
+      "screen": "Meetings",
+      "status": "PASS",
+      "detail": "drawer at x=880, w=560, visible"
+    },
+    {
+      "component": "MeetingDetailDrawer",
+      "screen": "Meetings",
+      "status": "PASS",
+      "detail": "closed via Escape"
+    },
+    {
+      "component": "AnnouncementDetailDrawer",
+      "screen": "Announcements",
+      "status": "Testing",
+      "detail": ""
+    },
+    {
+      "component": "AnnouncementDetailDrawer",
+      "screen": "Announcements",
+      "status": "PASS",
+      "detail": "drawer at x=880, w=560, visible"
+    },
+    {
+      "component": "AnnouncementDetailDrawer",
+      "screen": "Announcements",
+      "status": "PASS",
+      "detail": "closed via Escape"
+    },
+    {
+      "component": "ReportPreviewModal",
+      "screen": "Reports",
+      "status": "Testing",
+      "detail": ""
+    },
+    {
+      "component": "ReportPreviewModal",
+      "screen": "Reports",
+      "status": "PASS",
+      "detail": "modal visible: true, box: {\"x\":0,\"y\":0,\"width\":1440,\"height\":900}"
+    },
+    {
+      "component": "ReportPreviewModal",
+      "screen": "Reports",
+      "status": "PASS",
+      "detail": "closed via Escape"
+    },
+    {
+      "component": "ResourceUploadDialog",
+      "screen": "Resources",
+      "status": "Testing",
+      "detail": ""
+    },
+    {
+      "component": "ResourceUploadDialog",
+      "screen": "Resources",
+      "status": "PASS",
+      "detail": "modal visible: true, box: {\"x\":0,\"y\":0,\"width\":1440,\"height\":900}"
+    },
+    {
+      "component": "ResourceUploadDialog",
+      "screen": "Resources",
+      "status": "PASS",
+      "detail": "closed via Escape"
+    },
+    {
+      "component": "EndpointForm",
+      "screen": "Endpoints",
+      "status": "Testing",
+      "detail": ""
+    },
+    {
+      "component": "EndpointForm",
+      "screen": "Endpoints",
+      "status": "PASS",
+      "detail": "modal visible: true, box: {\"x\":0,\"y\":0,\"width\":1440,\"height\":900}"
+    },
+    {
+      "component": "EndpointForm",
+      "screen": "Endpoints",
+      "status": "PASS",
+      "detail": "closed via Escape"
+    }
+  ],
+  "errors": []
+}

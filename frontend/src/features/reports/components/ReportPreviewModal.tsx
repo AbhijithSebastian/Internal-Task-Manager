@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useQuery } from "@tanstack/react-query";
 import { reportsService } from "@/features/reports/services/reports";
 import { X, Calendar, User, Tag, Clock, Activity, MessageSquare, Paperclip, FileText, Download } from "lucide-react";
@@ -20,6 +21,12 @@ export function ReportPreviewModal({ reportType, itemId, onClose }: Props) {
   });
   const [exporting, setExporting] = useState<"pdf" | "docx" | null>(null);
 
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [onClose]);
+
   const preview = data?.data;
   const reportLabel = reportType === "projects" ? "Project" : reportType === "tasks" ? "Task" : reportType === "subtasks" ? "Subtask" : "Employee";
 
@@ -39,10 +46,10 @@ export function ReportPreviewModal({ reportType, itemId, onClose }: Props) {
     setExporting(null);
   };
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-modal flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white border border-gray-200 rounded-xl shadow-elevated w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+      <div className="relative bg-surface border border-default rounded-xl shadow-modal w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden animate-scale-in duration-200">
         <div className="flex items-center justify-between px-6 py-3 border-b border-gray-200 shrink-0 bg-gray-50">
           <div className="flex items-center gap-2">
             <FileText className="h-4 w-4 text-blue-600" />
@@ -93,7 +100,8 @@ export function ReportPreviewModal({ reportType, itemId, onClose }: Props) {
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

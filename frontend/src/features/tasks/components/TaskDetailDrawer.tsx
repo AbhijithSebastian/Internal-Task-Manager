@@ -101,7 +101,7 @@ function UserSearchPopover({
         />
       </div>
       {open && query.length >= 1 && (
-        <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-surface border border-default rounded-lg shadow-elevated max-h-48 overflow-y-auto">
+        <div className="absolute top-full left-0 right-0 mt-1 z-dropdown bg-surface border border-default rounded-lg shadow-elevated max-h-48 overflow-y-auto">
           {isLoading ? (
             <div className="p-3 text-sm text-tertiary text-center">Searching...</div>
           ) : filtered.length === 0 ? (

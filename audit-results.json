@@ -1,0 +1,83 @@
+{
+  "results": [
+    {
+      "component": "Sidebar",
+      "screen": "Dashboard",
+      "status": "PASS",
+      "detail": "sidebar visible"
+    },
+    {
+      "component": "SearchModal",
+      "screen": "Dashboard",
+      "status": "PASS",
+      "detail": "opened via Cmd+K"
+    },
+    {
+      "component": "SearchModal",
+      "screen": "Dashboard",
+      "status": "PASS",
+      "detail": "closed via Escape"
+    },
+    {
+      "component": "UserDetailDrawer",
+      "screen": "Users",
+      "status": "PASS",
+      "detail": "drawer opened"
+    },
+    {
+      "component": "RoleDetailDrawer",
+      "screen": "Roles",
+      "status": "PASS",
+      "detail": "drawer opened"
+    },
+    {
+      "component": "Drawer (project detail)",
+      "screen": "Projects",
+      "status": "PASS",
+      "detail": "detail drawer opened"
+    },
+    {
+      "component": "TaskDetailDrawer",
+      "screen": "Tasks",
+      "status": "PASS",
+      "detail": "drawer opened"
+    },
+    {
+      "component": "SubtaskModal",
+      "screen": "Subtasks",
+      "status": "PASS",
+      "detail": "modal opened"
+    },
+    {
+      "component": "MeetingDetailDrawer",
+      "screen": "Meetings",
+      "status": "PASS",
+      "detail": "drawer opened"
+    },
+    {
+      "component": "AnnouncementDetailDrawer",
+      "screen": "Announcements",
+      "status": "PASS",
+      "detail": "drawer opened"
+    },
+    {
+      "component": "ReportPreviewModal",
+      "screen": "Reports",
+      "status": "PASS",
+      "detail": "preview modal opened"
+    },
+    {
+      "component": "ResourceUploadDialog",
+      "screen": "Resources",
+      "status": "PASS",
+      "detail": "upload dialog opened"
+    },
+    {
+      "component": "EndpointForm",
+      "screen": "Endpoints",
+      "status": "PASS",
+      "detail": "form dialog opened"
+    }
+  ],
+  "errors": []
+}

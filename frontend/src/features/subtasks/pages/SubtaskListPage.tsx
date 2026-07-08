@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/services/api";
 import { openDrawer } from "@/hooks/useDrawer";
@@ -177,9 +178,10 @@ export default function SubtaskListPage() {
         }
       />
 
-      {showModal && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 bg-black/40" onClick={() => setShowModal(false)}>
-          <div className="w-full max-w-md bg-surface rounded-xl shadow-elevated border border-default" onClick={(e) => e.stopPropagation()}>
+      {showModal && createPortal(
+        <div className="fixed inset-0 z-modal flex items-start justify-center pt-20" onClick={() => setShowModal(false)}>
+          <div className="absolute inset-0 bg-black/40" />
+          <div className="relative w-full max-w-md bg-surface rounded-xl shadow-elevated border border-default" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-5 py-4 border-b border-subtle">
               <h2 className="text-base font-semibold text-primary">New Subtask</h2>
               <button type="button" onClick={() => setShowModal(false)} className="p-1 rounded text-tertiary hover:text-primary hover:bg-hover transition-colors">
@@ -255,7 +257,8 @@ export default function SubtaskListPage() {
               </Button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

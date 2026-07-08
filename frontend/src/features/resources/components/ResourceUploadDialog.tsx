@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
@@ -80,9 +81,10 @@ export function ResourceUploadDialog({ projectId, open, onClose }: ResourceUploa
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
-      <div className="w-full max-w-lg rounded-lg bg-surface p-6 shadow-lg" onClick={(e) => e.stopPropagation()}>
+  return createPortal(
+    <div className="fixed inset-0 z-modal flex items-center justify-center" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/50" />
+      <div className="relative w-full max-w-lg rounded-lg bg-surface p-6 shadow-modal" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-primary">Add Resource</h3>
           <button onClick={onClose} className="p-1 rounded-md text-secondary hover:bg-hover">
@@ -201,6 +203,7 @@ export function ResourceUploadDialog({ projectId, open, onClose }: ResourceUploa
           </Button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
