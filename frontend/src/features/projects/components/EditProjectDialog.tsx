@@ -17,7 +17,7 @@ interface EditProjectDialogProps {
 export function EditProjectDialog({ open, onClose, project }: EditProjectDialogProps) {
   const [form, setForm] = useState({
     name: "", description: "", status: "active", priority: "medium",
-    start_date: "", deadline: "", figma_url: "", github_url: "", docs_url: "", pm_id: "",
+    start_date: "", end_date: "", deadline: "", figma_url: "", github_url: "", docs_url: "", pm_id: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -37,6 +37,7 @@ export function EditProjectDialog({ open, onClose, project }: EditProjectDialogP
       status: (p.status as string) || "active",
       priority: (p.priority as string) || "medium",
       start_date: ((p.start_date as string) || "").split("T")[0] || "",
+      end_date: ((p.end_date as string) || "").split("T")[0] || "",
       deadline: ((p.deadline as string) || "").split("T")[0] || "",
       figma_url: (p.figma_url as string) || "",
       github_url: (p.github_url as string) || "",
@@ -56,6 +57,7 @@ export function EditProjectDialog({ open, onClose, project }: EditProjectDialogP
       pm_id: form.pm_id ? Number(form.pm_id) : undefined,
     };
     if (!payload.start_date) delete payload.start_date;
+    if (!payload.end_date) delete payload.end_date;
     if (!payload.deadline) delete payload.deadline;
 
     updateMutation.mutate(
@@ -104,8 +106,9 @@ export function EditProjectDialog({ open, onClose, project }: EditProjectDialogP
         </div>
         <div className="grid grid-cols-2 gap-4">
           <Input label="Start date" type="date" value={form.start_date} onChange={(e) => set("start_date", e.target.value)} />
-          <Input label="Deadline" type="date" value={form.deadline} onChange={(e) => set("deadline", e.target.value)} />
+          <Input label="End date" type="date" value={form.end_date} onChange={(e) => set("end_date", e.target.value)} />
         </div>
+        {form.deadline && <input type="hidden" value={form.deadline} />}
         <Select label="Owner" value={form.pm_id} onChange={(e) => set("pm_id", e.target.value)} options={[
           { value: "", label: "None" },
           ...users.map((u) => ({ value: String(u.id), label: u.name })),

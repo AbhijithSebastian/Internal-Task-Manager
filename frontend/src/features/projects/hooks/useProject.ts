@@ -80,6 +80,7 @@ export function useDeleteProject() {
     mutationFn: (id: number | string) => projectService.deleteProject(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["projects"] });
+      queryClient.invalidateQueries({ queryKey: ["projects", "recent"] });
       toast.success("Project deleted");
     },
     onError: () => toast.error("Failed to delete project"),
@@ -94,7 +95,10 @@ export function useAddProjectMember() {
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["project-members", variables.id] });
       queryClient.invalidateQueries({ queryKey: ["project", variables.id] });
+      queryClient.invalidateQueries({ queryKey: ["project-activity", variables.id] });
+      toast.success("Member added");
     },
+    onError: () => toast.error("Failed to add member"),
   });
 }
 
@@ -106,7 +110,10 @@ export function useRemoveProjectMember() {
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["project-members", variables.id] });
       queryClient.invalidateQueries({ queryKey: ["project", variables.id] });
+      queryClient.invalidateQueries({ queryKey: ["project-activity", variables.id] });
+      toast.success("Member removed");
     },
+    onError: () => toast.error("Failed to remove member"),
   });
 }
 
@@ -117,7 +124,25 @@ export function useUpdateProjectMember() {
       projectService.updateProjectMember(id, userId, { role }),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["project-members", variables.id] });
+      queryClient.invalidateQueries({ queryKey: ["project", variables.id] });
+      queryClient.invalidateQueries({ queryKey: ["project-activity", variables.id] });
+      toast.success("Role updated");
     },
+    onError: () => toast.error("Failed to update role"),
+  });
+}
+
+export function useDuplicateProject() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, name }: { id: number | string; name?: string }) =>
+      projectService.duplicateProject(id, name),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+      queryClient.invalidateQueries({ queryKey: ["projects", "recent"] });
+      toast.success("Project duplicated");
+    },
+    onError: () => toast.error("Failed to duplicate project"),
   });
 }
 

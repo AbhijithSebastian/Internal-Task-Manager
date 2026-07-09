@@ -3,6 +3,8 @@ import { useProjectMeetings } from "@/features/projects/hooks/useProject";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Avatar } from "@/components/ui/Avatar";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { EmptyState } from "@/components/shared/EmptyState";
 import { openDrawer } from "@/hooks/useDrawer";
 import { Plus, CalendarDays } from "lucide-react";
 import { formatDateTime } from "@/utils/formatters";
@@ -10,23 +12,31 @@ import { formatDateTime } from "@/utils/formatters";
 export default function ProjectMeetingsPage() {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
-  const { data: meetings } = useProjectMeetings(projectId);
+  const { data: meetings, isLoading } = useProjectMeetings(projectId);
   const meetingsData = meetings || [];
 
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <p className="text-xs text-tertiary">{meetingsData.length} meeting{meetingsData.length !== 1 ? "s" : ""}</p>
-        <Button size="sm" variant="secondary" onClick={() => navigate(`/work/meetings/new?project_id=${projectId}`)}>
+        <div>
+          <h2 className="text-lg font-semibold text-primary">Meetings</h2>
+          <p className="text-sm text-tertiary">{meetingsData.length} meeting{meetingsData.length !== 1 ? "s" : ""}</p>
+        </div>
+        <Button size="sm" onClick={() => navigate(`/work/meetings/new?project_id=${projectId}`)}>
           <Plus className="h-3.5 w-3.5" /> Log Meeting
         </Button>
       </div>
-      {meetingsData.length === 0 ? (
-        <div className="flex flex-col items-center py-10 text-center bg-surface border border-default rounded-lg">
-          <CalendarDays className="h-8 w-8 text-tertiary mb-2" />
-          <p className="text-sm text-tertiary">No meetings logged</p>
-          <Button size="sm" variant="secondary" className="mt-3" onClick={() => navigate(`/work/meetings/new?project_id=${projectId}`)}>Log Meeting</Button>
+      {isLoading ? (
+        <div className="space-y-2">
+          {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} variant="rect" className="h-16 w-full rounded-lg" />)}
         </div>
+      ) : meetingsData.length === 0 ? (
+        <EmptyState
+          icon={<CalendarDays className="h-12 w-12" />}
+          title="No meetings logged"
+          description="Log your first meeting to track discussions, decisions, and action items."
+          action={<Button size="sm" onClick={() => navigate(`/work/meetings/new?project_id=${projectId}`)}><Plus className="h-3.5 w-3.5" /> Log Meeting</Button>}
+        />
       ) : (
         <div className="space-y-1.5">
           {meetingsData.map((m) => (

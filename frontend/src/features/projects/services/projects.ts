@@ -40,4 +40,7 @@ export const projectService = {
 
   getRecentProjects: () =>
     api.get("/projects/recent").then((r) => r.data?.items || r.data?.data || r.data || []),
+
+  duplicateProject: (id: number | string, name?: string) =>
+    api.post(`/projects/${id}/duplicate`, name ? { name } : {}).then((r) => r.data),
 };

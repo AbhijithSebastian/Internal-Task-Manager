@@ -67,6 +67,11 @@ export interface Project {
   github_url?: string;
   docs_url?: string;
   meeting_url?: string;
+  penpot_url?: string;
+  framer_url?: string;
+  canva_url?: string;
+  adobe_xd_url?: string;
+  sketch_cloud_url?: string;
   created_at: string;
   updated_at?: string;
   deleted_at?: string;

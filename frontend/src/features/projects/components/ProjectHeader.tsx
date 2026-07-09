@@ -1,13 +1,13 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/store/auth";
-import { useUpdateProjectStatus, useDeleteProject } from "@/features/projects/hooks/useProject";
+import { useUpdateProjectStatus, useDeleteProject, useDuplicateProject } from "@/features/projects/hooks/useProject";
 import { EditProjectDialog } from "@/features/projects/components/EditProjectDialog";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Avatar } from "@/components/ui/Avatar";
-import { Drawer } from "@/components/ui/Drawer";
-import { ArrowLeft, Edit3, Trash2, MoreVertical, Archive } from "lucide-react";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import { ArrowLeft, Edit3, Trash2, MoreVertical, Archive, Copy } from "lucide-react";
 import { formatDate } from "@/utils/formatters";
 import type { Project } from "@/types";
 import { useQueryClient } from "@tanstack/react-query";
@@ -47,6 +47,7 @@ export function ProjectHeader({ project, progress }: { project: Project; progres
   const { hasPermission } = useAuth();
   const statusMutation = useUpdateProjectStatus();
   const deleteMutation = useDeleteProject();
+  const duplicateMutation = useDuplicateProject();
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -72,6 +73,11 @@ export function ProjectHeader({ project, progress }: { project: Project; progres
         navigate("/work/projects");
       },
     });
+  };
+
+  const handleDuplicate = () => {
+    duplicateMutation.mutate({ id: project.id });
+    setMenuOpen(false);
   };
 
   const memberAvatars = (project.members || []).slice(0, 5);
@@ -103,12 +109,15 @@ export function ProjectHeader({ project, progress }: { project: Project; progres
                 <MoreVertical className="h-3.5 w-3.5" />
               </Button>
               {menuOpen && (
-                <div className="absolute right-0 top-full mt-1 w-48 bg-surface border border-default rounded-lg shadow-dropdown z-dropdown py-1">
+                <div className="absolute right-0 top-full mt-1 w-52 bg-surface border border-default rounded-lg shadow-dropdown z-dropdown py-1">
                   {canEdit && (
                     <button onClick={() => { setEditOpen(true); setMenuOpen(false); }} className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-primary hover:bg-hover transition-colors text-left">
                       <Edit3 className="h-3.5 w-3.5 text-tertiary" /> Edit Project
                     </button>
                   )}
+                  <button onClick={handleDuplicate} className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-primary hover:bg-hover transition-colors text-left">
+                    <Copy className="h-3.5 w-3.5 text-tertiary" /> Duplicate Project
+                  </button>
                   {project.status !== "archived" && (
                     <button onClick={() => { statusMutation.mutate({ id: project.id, status: "archived" }); setMenuOpen(false); }} className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-primary hover:bg-hover transition-colors text-left">
                       <Archive className="h-3.5 w-3.5 text-tertiary" /> Archive Project
@@ -125,43 +134,51 @@ export function ProjectHeader({ project, progress }: { project: Project; progres
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-4 text-xs text-secondary">
-          {progress >= 0 && (
-            <div className="flex items-center gap-2">
-              <span className="text-tertiary">Progress</span>
-              <div className="w-24 h-1.5 bg-subtle rounded-full overflow-hidden">
-                <div className="h-full bg-primary rounded-full transition-all duration-fast" style={{ width: `${progress}%` }} />
-              </div>
-              <span className="text-primary font-medium">{progress}%</span>
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-secondary">
+          <div className="flex items-center gap-2">
+            <span className="text-tertiary">Progress</span>
+            <div className="w-24 h-1.5 bg-subtle rounded-full overflow-hidden">
+              <div className="h-full bg-primary rounded-full transition-all duration-fast" style={{ width: `${Math.min(progress, 100)}%` }} />
             </div>
-          )}
+            <span className="text-primary font-medium tabular-nums">{Math.min(progress, 100)}%</span>
+          </div>
 
-          {project.author && (
-            <div className="flex items-center gap-1.5">
-              <span className="text-tertiary">Owner</span>
-              <Avatar name={project.author.name} size="sm" />
-              <span>{project.author.name}</span>
-            </div>
-          )}
+          <div className="flex items-center gap-1.5">
+            <span className="text-tertiary">Owner</span>
+            {project.author ? (
+              <>
+                <Avatar name={project.author.name} size="sm" />
+                <span>{project.author.name}</span>
+              </>
+            ) : (
+              <span className="text-tertiary italic">—</span>
+            )}
+          </div>
 
-          {memberAvatars.length > 0 && (
-            <div className="flex items-center gap-1.5">
-              <span className="text-tertiary">Members</span>
-              <div className="flex -space-x-1.5">
-                {memberAvatars.map((m) => (
-                  <Avatar key={m.id} name={m.user?.name || "?"} size="sm" className="ring-2 ring-app" />
-                ))}
-              </div>
-              <span>{project.members_count || project.member_count || memberAvatars.length}</span>
-            </div>
-          )}
+          <div className="flex items-center gap-1.5">
+            <span className="text-tertiary">Members</span>
+            {memberAvatars.length > 0 ? (
+              <>
+                <div className="flex -space-x-1.5">
+                  {memberAvatars.map((m) => (
+                    <Avatar key={m.id} name={m.user?.name || "?"} size="sm" className="ring-2 ring-app" />
+                  ))}
+                </div>
+                <span className="tabular-nums">{project.members_count || project.member_count || memberAvatars.length}</span>
+              </>
+            ) : (
+              <span className="text-tertiary italic">—</span>
+            )}
+          </div>
 
-          {project.deadline && (
-            <div className="flex items-center gap-1">
-              <span className="text-tertiary">Due</span>
+          <div className="flex items-center gap-1">
+            <span className="text-tertiary">Due</span>
+            {project.deadline ? (
               <span>{formatDate(project.deadline)}</span>
-            </div>
-          )}
+            ) : (
+              <span className="text-tertiary italic">—</span>
+            )}
+          </div>
 
           <ProjectHealth progress={progress} overdueTasks={0} />
         </div>
@@ -169,17 +186,15 @@ export function ProjectHeader({ project, progress }: { project: Project; progres
 
       <EditProjectDialog open={editOpen} onClose={() => setEditOpen(false)} project={project} />
 
-      <Drawer open={deleteConfirm} onClose={() => setDeleteConfirm(false)} title="Delete project">
-        <div className="space-y-4">
-          <p className="text-sm text-secondary">
-            Delete <strong className="text-primary">{project.name}</strong>? This cannot be undone.
-          </p>
-          <div className="flex items-center gap-2">
-            <Button variant="danger" size="sm" onClick={handleDelete} loading={deleteMutation.isPending}>Delete</Button>
-            <Button variant="secondary" size="sm" onClick={() => setDeleteConfirm(false)}>Cancel</Button>
-          </div>
-        </div>
-      </Drawer>
+      <ConfirmDialog
+        open={deleteConfirm}
+        onCancel={() => setDeleteConfirm(false)}
+        onConfirm={handleDelete}
+        title="Delete project"
+        message={`Delete "${project.name}"? This cannot be undone.`}
+        confirmLabel="Delete"
+        loading={deleteMutation.isPending}
+      />
     </>
   );
 }

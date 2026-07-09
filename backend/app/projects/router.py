@@ -229,6 +229,48 @@ def update_project(project_id: int, data: ProjectUpdate, db: Session = Depends(g
     return format_project(project, db)
 
 
+class ProjectDuplicate(BaseModel):
+    name: Optional[str] = None
+
+
+@router.post("/{project_id}/duplicate", status_code=201)
+def duplicate_project(project_id: int, data: ProjectDuplicate = None,
+                      db: Session = Depends(get_db),
+                      current_user: User = require_permissions(["projects.create"])):
+    project = db.query(Project).filter(Project.id == project_id, Project.deleted_at.is_(None)).first()
+    if not project:
+        raise NotFoundException("Project", project_id)
+
+    if data is None:
+        data = ProjectDuplicate()
+
+    dup = Project(
+        name=data.name or f"{project.name} (Copy)",
+        description=project.description,
+        priority=project.priority or ProjectPriority.MEDIUM,
+        status=ProjectStatus.ACTIVE,
+        start_date=project.start_date,
+        end_date=project.end_date,
+        pm_id=current_user.id,
+        figma_url=project.figma_url,
+        github_url=project.github_url,
+        docs_url=project.docs_url,
+        author_id=current_user.id,
+    )
+    db.add(dup)
+    db.flush()
+
+    pm = ProjectMember(project_id=dup.id, user_id=current_user.id, role=ProjectMemberRole.OWNER)
+    db.add(pm)
+
+    db.commit()
+    db.refresh(dup)
+
+    log_activity(db, "projects", dup.id, "Project duplicated from #" + str(project_id),
+                 causer_id=current_user.id)
+    return format_project(dup, db)
+
+
 @router.delete("/{project_id}")
 def delete_project(project_id: int, db: Session = Depends(get_db),
                    current_user: User = require_permissions(["projects.delete"])):

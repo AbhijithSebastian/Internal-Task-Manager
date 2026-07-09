@@ -11,7 +11,7 @@ import { useEndpoint } from "../hooks/useEndpoints";
 import { EndpointReferencesSection } from "./EndpointReferences";
 import { EndpointActivitySection } from "./EndpointActivity";
 import { formatDate, formatRelative } from "@/utils/formatters";
-import { Tag, User, Clock } from "lucide-react";
+import { Tag, User, Clock, Copy, Check } from "lucide-react";
 import type { Endpoint, EndpointParameter } from "@/types/endpoints";
 
 interface EndpointDetailDrawerProps {
@@ -21,7 +21,7 @@ interface EndpointDetailDrawerProps {
   onDelete?: (e: Endpoint) => void;
 }
 
-type Tab = "overview" | "headers" | "auth" | "parameters" | "request" | "responses" | "examples" | "references" | "activity";
+type Tab = "overview" | "headers" | "auth" | "parameters" | "request" | "responses" | "examples" | "snippets" | "references" | "activity";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "overview", label: "Overview" },
@@ -31,9 +31,54 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "request", label: "Request Body" },
   { id: "responses", label: "Responses" },
   { id: "examples", label: "Examples" },
+  { id: "snippets", label: "Code Snippets" },
   { id: "references", label: "References" },
   { id: "activity", label: "Activity" },
 ];
+
+function copyToClipboard(text: string) {
+  navigator.clipboard.writeText(text);
+}
+
+function SnippetSection({ url, method, headers, requestBody }: { url: string; method: string; headers: EndpointParameter[]; requestBody?: Record<string, unknown> }) {
+  const [copied, setCopied] = useState("");
+
+  const copy = (id: string, text: string) => {
+    copyToClipboard(text);
+    setCopied(id);
+    setTimeout(() => setCopied(""), 2000);
+  };
+
+  const headerLines = headers.map((h) => `  -H "${h.name}: ${h.example || h.default || ""}"`).join("\n");
+  const bodyJson = requestBody ? JSON.stringify(requestBody, null, 2) : "";
+  const curlCmd = `curl -X ${method} "${url}"${headers.length > 0 ? `\n${headerLines}` : ""}${bodyJson ? `\n  -d '${bodyJson}'` : ""}`;
+  const fetchCode = `fetch("${url}", {\n  method: "${method}",${headers.length > 0 ? `\n  headers: {\n${headers.map((h) => `    "${h.name}": "${h.example || h.default || ""}"`).join(",\n")}\n  }` : ""}${bodyJson ? `,\n  body: JSON.stringify(${bodyJson.replace(/\n/g, "\n  ")})\n` : "\n"}});`;
+  const pythonCode = `import requests\n\nresponse = requests.${method.toLowerCase()}("${url}"${headers.length > 0 ? `,\n  headers={\n${headers.map((h) => `    "${h.name}": "${h.example || h.default || ""}"`).join(",\n")}\n  }` : ""}${bodyJson ? `,\n  json=${bodyJson.replace(/\n/g, "\n  ")}` : ""}\n)`;
+
+  const snippets = [
+    { id: "url", label: "URL", lang: "text", code: url },
+    { id: "curl", label: "cURL", lang: "bash", code: curlCmd },
+    { id: "fetch", label: "JavaScript (fetch)", lang: "javascript", code: fetchCode },
+    { id: "python", label: "Python (requests)", lang: "python", code: pythonCode },
+  ];
+
+  return (
+    <div className="space-y-3">
+      {snippets.map((s) => (
+        <div key={s.id} className="rounded-lg border border-subtle overflow-hidden">
+          <div className="flex items-center justify-between px-3 py-1.5 bg-soft border-b border-subtle">
+            <span className="text-xs font-medium text-secondary">{s.label}</span>
+            <button onClick={() => copy(s.id, s.code)} className="flex items-center gap-1 text-xs text-tertiary hover:text-primary transition-colors">
+              {copied === s.id ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+              {copied === s.id ? "Copied!" : "Copy"}
+            </button>
+          </div>
+          <pre className="p-3 text-xs font-mono text-primary overflow-x-auto whitespace-pre-wrap break-all">{s.code}</pre>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export function EndpointDetailDrawer({ endpointId, onClose, onEdit, onDelete }: EndpointDetailDrawerProps) {
   const { data: endpoint, isLoading } = useEndpoint(endpointId);
@@ -196,6 +241,9 @@ export function EndpointDetailDrawer({ endpointId, onClose, onEdit, onDelete }: 
               </div>
             )}
 
+            {tab === "snippets" && (
+              <SnippetSection url={e.url} method={e.method} headers={e.headers as EndpointParameter[]} requestBody={e.request_body} />
+            )}
             {tab === "references" && <EndpointReferencesSection endpointId={e.id} />}
             {tab === "activity" && <EndpointActivitySection endpointId={e.id} />}
           </div>
