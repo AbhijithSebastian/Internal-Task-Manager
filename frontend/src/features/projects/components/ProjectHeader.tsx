@@ -1,12 +1,13 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/store/auth";
 import { useUpdateProjectStatus, useDeleteProject } from "@/features/projects/hooks/useProject";
+import { EditProjectDialog } from "@/features/projects/components/EditProjectDialog";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Avatar } from "@/components/ui/Avatar";
 import { Drawer } from "@/components/ui/Drawer";
-import { ArrowLeft, Edit3, Trash2 } from "lucide-react";
+import { ArrowLeft, Edit3, Trash2, MoreVertical, Archive } from "lucide-react";
 import { formatDate } from "@/utils/formatters";
 import type { Project } from "@/types";
 import { useQueryClient } from "@tanstack/react-query";
@@ -47,6 +48,17 @@ export function ProjectHeader({ project, progress }: { project: Project; progres
   const statusMutation = useUpdateProjectStatus();
   const deleteMutation = useDeleteProject();
   const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const canEdit = hasPermission("project-edit");
   const canDelete = hasPermission("project-delete");
@@ -86,8 +98,30 @@ export function ProjectHeader({ project, progress }: { project: Project; progres
                 {s === "completed" ? "Mark Complete" : s === "archived" ? "Archive" : `Move to ${s.replace("_", " ")}`}
               </Button>
             ))}
-            {canEdit && <Button size="sm" variant="secondary" onClick={() => navigate(`/work/projects/${project.id}/edit`)}><Edit3 className="h-3.5 w-3.5" /></Button>}
-            {canDelete && <Button size="sm" variant="danger" onClick={() => setDeleteConfirm(true)}><Trash2 className="h-3.5 w-3.5" /></Button>}
+            <div ref={menuRef} className="relative">
+              <Button size="sm" variant="secondary" onClick={() => setMenuOpen(!menuOpen)}>
+                <MoreVertical className="h-3.5 w-3.5" />
+              </Button>
+              {menuOpen && (
+                <div className="absolute right-0 top-full mt-1 w-48 bg-surface border border-default rounded-lg shadow-dropdown z-dropdown py-1">
+                  {canEdit && (
+                    <button onClick={() => { setEditOpen(true); setMenuOpen(false); }} className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-primary hover:bg-hover transition-colors text-left">
+                      <Edit3 className="h-3.5 w-3.5 text-tertiary" /> Edit Project
+                    </button>
+                  )}
+                  {project.status !== "archived" && (
+                    <button onClick={() => { statusMutation.mutate({ id: project.id, status: "archived" }); setMenuOpen(false); }} className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-primary hover:bg-hover transition-colors text-left">
+                      <Archive className="h-3.5 w-3.5 text-tertiary" /> Archive Project
+                    </button>
+                  )}
+                  {canDelete && (
+                    <button onClick={() => { setDeleteConfirm(true); setMenuOpen(false); }} className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-semantic-danger hover:bg-danger-soft transition-colors text-left">
+                      <Trash2 className="h-3.5 w-3.5" /> Delete Project
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -132,6 +166,8 @@ export function ProjectHeader({ project, progress }: { project: Project; progres
           <ProjectHealth progress={progress} overdueTasks={0} />
         </div>
       </div>
+
+      <EditProjectDialog open={editOpen} onClose={() => setEditOpen(false)} project={project} />
 
       <Drawer open={deleteConfirm} onClose={() => setDeleteConfirm(false)} title="Delete project">
         <div className="space-y-4">

@@ -60,7 +60,7 @@ export function ResourceUploadDialog({ projectId, open, onClose }: ResourceUploa
       if (description) fd.append("description", description);
       fd.append("resource_type", resourceType);
       if (category) fd.append("category", category);
-      tags.forEach((t) => fd.append("tags", t));
+      if (tags.length > 0) fd.append("tags", tags.join(","));
       uploadResource.mutate(fd, { onSuccess: () => { reset(); onClose(); } });
     }
   };

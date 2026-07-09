@@ -32,7 +32,7 @@ const ProjectTasksPage = lazy(() => import("@/features/projects/pages/ProjectTas
 const ProjectMembersPage = lazy(() => import("@/features/projects/pages/ProjectMembersPage"));
 const ProjectMeetingsPage = lazy(() => import("@/features/projects/pages/ProjectMeetingsPage"));
 const ProjectActivityPage = lazy(() => import("@/features/projects/pages/ProjectActivityPage"));
-const ProjectSettingsPage = lazy(() => import("@/features/projects/pages/ProjectSettingsPage"));
+
 const ProjectEndpointsPage = lazy(() => import("@/features/projects/pages/ProjectEndpointsPage"));
 const ProjectDesignPage = lazy(() => import("@/features/projects/pages/ProjectDesignPage"));
 const ProjectResourcesPage = lazy(() => import("@/features/projects/pages/ProjectResourcesPage"));
@@ -109,7 +109,6 @@ export function AppRoutes() {
           <Route path="resources" element={<SuspenseWrapper><ProjectResourcesPage /></SuspenseWrapper>} />
           <Route path="activity" element={<SuspenseWrapper><ProjectActivityPage /></SuspenseWrapper>} />
           <Route path="github" element={<SuspenseWrapper><ProjectGitHubPage /></SuspenseWrapper>} />
-          <Route path="settings" element={<SuspenseWrapper><ProjectSettingsPage /></SuspenseWrapper>} />
         </Route>
 
         {/* Project edit — sibling of workspace, not nested */}

@@ -162,8 +162,7 @@ def list_resources(
     if search:
         term = f"%{search}%"
         query = query.filter(
-            db.query(Resource.name.ilike(term) | Resource.description.ilike(term))
-            .exists().correlate(Resource)
+            Resource.name.ilike(term) | Resource.description.ilike(term)
         )
 
     if resource_type:
