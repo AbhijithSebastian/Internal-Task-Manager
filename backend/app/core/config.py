@@ -62,9 +62,15 @@ class Settings(BaseSettings):
     def validate(self) -> list[str]:
         warnings: list[str] = []
         if self.jwt_secret_key == "change-me-to-a-long-random-string":
-            warnings.append("JWT_SECRET_KEY is still set to the default value. Change it in production.")
+            msg = "JWT_SECRET_KEY is still set to the default value. Change it immediately."
+            if self.is_production:
+                raise RuntimeError(msg)
+            warnings.append(msg)
         if not self.database_url or "postgres" not in self.database_url:
-            warnings.append("DATABASE_URL is not configured or not pointing to a PostgreSQL database.")
+            msg = "DATABASE_URL is not configured or not pointing to a PostgreSQL database."
+            if self.is_production:
+                raise RuntimeError(msg)
+            warnings.append(msg)
         if self.is_production:
             if self.app_debug:
                 warnings.append("APP_DEBUG is True in production. Set it to False.")
