@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Avatar } from "@/components/ui/Avatar";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import { EnterpriseEmptyState } from "@/components/shared/EnterpriseEmptyState";
 import { useAuth } from "@/store/auth";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/services/api";
@@ -172,10 +173,12 @@ export default function ProjectMembersPage() {
       ) : (
         <Table columns={columns} data={members} loading={false} keyExtractor={(m) => m.id}
           emptyState={
-            <div className="flex flex-col items-center py-10 text-center">
-              <Users className="h-8 w-8 text-tertiary mb-2" />
-              <p className="text-sm text-tertiary">No members yet</p>
-            </div>
+            <EnterpriseEmptyState
+              icon={<Users className="h-10 w-10" />}
+              title="No members yet"
+              description="Invite team members to collaborate on this project."
+              primaryAction={{ label: "Invite Members", onClick: () => setShowAddMember(true) }}
+            />
           } />
       )}
 

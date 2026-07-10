@@ -148,6 +148,8 @@ def list_resources(
     date_from: Optional[str] = Query(None),
     date_to: Optional[str] = Query(None),
     version: Optional[int] = Query(None),
+    linked_to: Optional[str] = Query(None, alias="linked_to"),
+    linked_id: Optional[int] = Query(None, alias="linked_id"),
     sort_by: str = Query("newest", regex="^(newest|oldest|recently_updated|alphabetical)$"),
     page: int = Query(1, ge=1),
     per_page: int = Query(20, ge=1, le=100),
@@ -173,6 +175,11 @@ def list_resources(
         query = query.filter(Resource.uploaded_by == uploaded_by)
     if version:
         query = query.filter(Resource.current_version == version)
+    if linked_to and linked_id is not None:
+        query = query.join(ResourceLink).filter(
+            ResourceLink.linked_type == linked_to,
+            ResourceLink.linked_id == linked_id,
+        )
 
     sort_map = {
         "newest": Resource.created_at.desc(),

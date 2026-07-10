@@ -6,7 +6,7 @@ import { EndpointFilters, type EndpointFiltersState } from "@/features/endpoints
 import { EndpointDetailDrawer } from "@/features/endpoints/components/EndpointDetailDrawer";
 import { EndpointForm } from "@/features/endpoints/components/EndpointForm";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
-import { EmptyState } from "@/components/shared/EmptyState";
+import { EnterpriseEmptyState } from "@/components/shared/EnterpriseEmptyState";
 import { Button } from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { Globe, Plus } from "lucide-react";
@@ -66,15 +66,12 @@ export default function ProjectEndpointsPage() {
           ))}
         </div>
       ) : endpoints.length === 0 ? (
-        <EmptyState
+        <EnterpriseEmptyState
           icon={<Globe className="h-12 w-12" />}
           title="No endpoints yet"
           description={filters.search || filters.method || filters.status ? "Try adjusting your filters" : "Create your first API endpoint"}
-          action={
-            <Button size="sm" onClick={() => { setEditTarget(null); setShowForm(true); }}>
-              <Plus className="h-4 w-4" /> Create Endpoint
-            </Button>
-          }
+          primaryAction={{ label: "Create Endpoint", onClick: () => { setEditTarget(null); setShowForm(true); } }}
+          helpLink={{ label: "Learn about endpoints", href: "https://docs.example.com/endpoints" }}
         />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

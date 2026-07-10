@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/services/api";
 import { useProject } from "@/features/projects/hooks/useProject";
-import { EmptyState } from "@/components/shared/EmptyState";
+import { EnterpriseEmptyState } from "@/components/shared/EnterpriseEmptyState";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -289,15 +289,12 @@ export default function ProjectGitHubPage() {
           {renderTabContent()}
         </>
       ) : (
-        <EmptyState
+        <EnterpriseEmptyState
           icon={<Github className="h-12 w-12" />}
           title="GitHub not connected"
           description="Connect a GitHub repository to see commits, pull requests, issues, and deployment information."
-          action={
-            <Button size="sm" onClick={() => setShowConnect(true)}>
-              <Github className="h-4 w-4" /> Connect GitHub
-            </Button>
-          }
+          primaryAction={{ label: "Connect GitHub", onClick: () => setShowConnect(true) }}
+          helpLink={{ label: "Learn about GitHub integration", href: "https://docs.example.com/github" }}
         />
       )}
     </div>

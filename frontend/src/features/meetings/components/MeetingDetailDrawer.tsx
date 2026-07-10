@@ -7,8 +7,10 @@ import { Button } from "@/components/ui/Button";
 import { Avatar } from "@/components/ui/Avatar";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { formatDateTime, formatRelative } from "@/utils/formatters";
-import { CalendarDays, MapPin, FileText, Trash2 } from "lucide-react";
+import { openDrawer } from "@/hooks/useDrawer";
+import { CalendarDays, MapPin, FileText, ListChecks, Trash2 } from "lucide-react";
 import { AttachmentsSection } from "@/components/shared/AttachmentsSection";
+import { RelatedItemsPanel } from "@/features/resources/components/RelatedItemsPanel";
 import type { Meeting } from "@/types";
 
 interface MeetingDetailDrawerProps {
@@ -111,9 +113,24 @@ export function MeetingDetailDrawer({ meetingId, open, onClose }: MeetingDetailD
               </div>
             )}
 
+            {m.related_task_id && (
+              <div className="border-t border-subtle pt-3">
+                <h4 className="text-xs font-semibold uppercase text-tertiary tracking-wide mb-1">Related Task</h4>
+                <button
+                  onClick={() => openDrawer("task", m.related_task_id!)}
+                  className="flex items-center gap-2 text-sm text-link hover:underline"
+                >
+                  <ListChecks className="h-3.5 w-3.5" />
+                  Task #{m.related_task_id}
+                </button>
+              </div>
+            )}
+
             <div className="border-t border-subtle pt-4">
               <AttachmentsSection modelType="meeting_log" modelId={m.id} />
             </div>
+
+            <RelatedItemsPanel projectId={m.project_id} linkedType="meeting" linkedId={m.id} />
 
             <div className="pt-4 border-t border-subtle space-y-1 text-xs text-tertiary">
               <p>Created {formatRelative(m.created_at)}</p>

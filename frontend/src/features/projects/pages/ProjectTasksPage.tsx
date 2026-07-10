@@ -8,6 +8,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { openDrawer } from "@/hooks/useDrawer";
+import { EnterpriseEmptyState } from "@/components/shared/EnterpriseEmptyState";
 import { Plus, CheckCircle2 } from "lucide-react";
 import { formatDate } from "@/utils/formatters";
 import type { Task } from "@/types";
@@ -57,11 +58,12 @@ export default function ProjectTasksPage() {
       {isLoading ? (
         <div className="space-y-2">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} variant="rect" className="h-10 w-full" />)}</div>
       ) : tasks.length === 0 ? (
-        <div className="flex flex-col items-center py-10 text-center bg-surface border border-default rounded-lg">
-          <CheckCircle2 className="h-8 w-8 text-tertiary mb-2" />
-          <p className="text-sm text-tertiary">No tasks yet</p>
-          <Button size="sm" variant="secondary" className="mt-3" onClick={() => navigate(`/work/tasks/new?project_id=${projectId}`)}>Add Task</Button>
-        </div>
+        <EnterpriseEmptyState
+          icon={<CheckCircle2 className="h-8 w-8" />}
+          title="No tasks yet"
+          description="Create a task to start tracking work in this project."
+          primaryAction={{ label: "Add Task", onClick: () => navigate(`/work/tasks/new?project_id=${projectId}`) }}
+        />
       ) : (
         <Table columns={columns} data={tasks} loading={false} keyExtractor={(t) => t.id}
           onRowClick={(t) => openDrawer("task", t.id)} />

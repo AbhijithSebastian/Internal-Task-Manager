@@ -6,7 +6,7 @@ import { ResourceFilters, type ResourceFiltersState } from "@/features/resources
 import { ResourceDetailDrawer } from "@/features/resources/components/ResourceDetailDrawer";
 import { ResourceUploadDialog } from "@/features/resources/components/ResourceUploadDialog";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
-import { EmptyState } from "@/components/shared/EmptyState";
+import { EnterpriseEmptyState } from "@/components/shared/EnterpriseEmptyState";
 import { Button } from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { Files, Plus } from "lucide-react";
@@ -56,15 +56,13 @@ export default function ProjectResourcesPage() {
           ))}
         </div>
       ) : resources.length === 0 ? (
-        <EmptyState
+        <EnterpriseEmptyState
           icon={<Files className="h-12 w-12" />}
           title="No resources yet"
           description={filters.search || filters.resource_type ? "Try adjusting your filters" : "Upload a file or add a link to get started"}
-          action={
-            <Button size="sm" onClick={() => setShowUpload(true)}>
-              <Plus className="h-4 w-4" /> Add Resource
-            </Button>
-          }
+          primaryAction={{ label: "Upload Resource", onClick: () => setShowUpload(true) }}
+          secondaryAction={{ label: "Link Existing", onClick: () => setShowUpload(true) }}
+          helpLink={{ label: "Learn about resource management", href: "https://docs.example.com/resources" }}
         />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

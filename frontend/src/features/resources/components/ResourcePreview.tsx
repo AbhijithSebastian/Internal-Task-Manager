@@ -1,5 +1,5 @@
+import { PreviewEngine } from "@/components/previews/PreviewEngine";
 import { resourceService } from "../services/resources";
-import { FilePreview } from "@/components/previews/FilePreview";
 import type { Resource } from "@/types/resources";
 
 interface ResourcePreviewProps {
@@ -11,10 +11,12 @@ export function ResourcePreview({ resource, className = "" }: ResourcePreviewPro
   const fileUrl = resource.file_path ? resourceService.getFileUrl(resource.id) : undefined;
 
   return (
-    <FilePreview
+    <PreviewEngine
       mimeType={resource.mime_type}
       fileName={resource.name}
       fileUrl={fileUrl}
+      fileSize={resource.file_size}
+      url={resource.url}
       className={className}
     />
   );

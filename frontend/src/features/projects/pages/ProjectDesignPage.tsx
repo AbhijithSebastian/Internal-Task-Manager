@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/services/api";
 import { useProject } from "@/features/projects/hooks/useProject";
 import { FigmaPreview } from "@/components/previews/FigmaPreview";
-import { EmptyState } from "@/components/shared/EmptyState";
+import { EnterpriseEmptyState } from "@/components/shared/EnterpriseEmptyState";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -378,10 +378,12 @@ export default function ProjectDesignPage() {
             {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} variant="rect" className="h-14 w-full rounded-lg" />)}
           </div>
         ) : assets.length === 0 ? (
-          <EmptyState
+          <EnterpriseEmptyState
             icon={<Palette className="h-10 w-10" />}
             title="No design assets"
-            description="Upload PNG, JPG, SVG, PDF, AI, PSD, EPS, or ZIP files."
+            description="Upload PNG, JPG, SVG, PDF, AI, PSD, EPS, or ZIP files, or connect a design provider."
+            primaryAction={{ label: "Upload", onClick: () => fileInputRef.current?.click() }}
+            helpLink={{ label: "Import your designs", href: "https://docs.example.com/design-import" }}
           />
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
