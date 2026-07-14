@@ -49,8 +49,6 @@ export default function ProjectDesignPage() {
 
   const assets = (assetsData || []) as Array<{ id: number; name: string; file_name: string; mime_type: string; size: number; url: string; created_at: string }>;
 
-  if (!projectId) return null;
-
   const connectMutation = useMutation({
     mutationFn: ({ id, url, urlKey }: { id: string; url: string; urlKey: string }) =>
       api.put(`/projects/${id}`, { [urlKey]: url }),
@@ -66,6 +64,8 @@ export default function ProjectDesignPage() {
       setConnectError("Failed to save. Please try again.");
     },
   });
+
+  if (!projectId) return null;
 
   const getConnectedUrl = (integrationId: string): string | undefined => {
     const int = DESIGN_INTEGRATIONS.find((i) => i.id === integrationId);

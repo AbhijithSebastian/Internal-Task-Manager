@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { api } from "@/services/api";
+import { proxyApi } from "@/services/api";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -45,7 +45,7 @@ export function FigmaPreview({ url, className = "" }: FigmaPreviewProps) {
     queryKey: ["figma-meta", meta?.fileId],
     queryFn: async () => {
       if (!meta?.fileId) throw new Error("Invalid Figma URL");
-      const res = await api.get(`/figma/files/${meta.fileId}`);
+      const res = await proxyApi.get(`/figma/files/${meta.fileId}`);
       return res.data as {
         name: string;
         owner?: { name?: string };

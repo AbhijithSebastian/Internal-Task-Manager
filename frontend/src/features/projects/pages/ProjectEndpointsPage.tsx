@@ -49,7 +49,7 @@ export default function ProjectEndpointsPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-primary">End Points</h2>
+          <h2 className="text-lg font-semibold text-primary">Endpoints</h2>
           <p className="text-sm text-tertiary">{total} endpoint{total !== 1 ? "s" : ""}</p>
         </div>
         <Button size="sm" onClick={() => { setEditTarget(null); setShowForm(true); }}>

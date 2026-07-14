@@ -1,6 +1,9 @@
+import logging
 import httpx
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -12,43 +15,31 @@ async def get_figma_file(file_key: str, request: Request):
     headers = {"User-Agent": "ProjectWorkspace/1.0"}
     auth = request.headers.get("Authorization")
     if auth:
-        headers["X-Figma-Token"] = auth.replace("Bearer ", "")
+        token = auth.replace("Bearer ", "", 1)
+        if token.strip():
+            headers["X-Figma-Token"] = token
+
+    url = f"{FIGMA_API}/v1/files/{file_key}"
+
+    logger.info(
+        "Figma proxy request: method=GET url=%s has_auth=%s",
+        url, "yes" if auth else "no",
+    )
 
     async with httpx.AsyncClient(timeout=30) as client:
-        resp = await client.get(f"{FIGMA_API}/v1/files/{file_key}", headers=headers)
+        resp = await client.get(url, headers=headers)
 
-    if resp.status_code == 404:
-        return JSONResponse(
-            status_code=404,
-            content={"error": "File not found", "code": "NOT_FOUND", "status": 404},
-        )
-    if resp.status_code in (401, 403):
-        return JSONResponse(
-            status_code=resp.status_code,
-            content={
-                "error": "Access denied" if resp.status_code == 403 else "Authentication failed",
-                "code": "FORBIDDEN" if resp.status_code == 403 else "UNAUTHORIZED",
-                "status": resp.status_code,
-                "message": "This file is private or requires authentication.",
-            },
-        )
-    if resp.status_code == 429:
-        return JSONResponse(
-            status_code=429,
-            content={"error": "Rate limited", "code": "RATE_LIMITED", "status": 429, "message": "Figma API rate limit exceeded."},
-        )
-    if resp.status_code >= 500:
-        return JSONResponse(
-            status_code=502,
-            content={"error": "Provider unavailable", "code": "PROVIDER_ERROR", "status": 502, "message": "Figma API returned a server error."},
-        )
+    logger.info(
+        "Figma proxy response: url=%s status=%d body=%s",
+        url, resp.status_code, resp.text,
+    )
 
-    data = resp.json()
-    return JSONResponse(content={
-        "name": data.get("name"),
-        "version": data.get("version"),
-        "lastModified": data.get("lastModified"),
-        "thumbnailUrl": data.get("thumbnailUrl"),
-        "owner": data.get("owner"),
-        "pages": data.get("document", {}).get("children", []),
-    })
+    try:
+        body = resp.json()
+    except Exception:
+        body = {"message": resp.text}
+
+    return JSONResponse(
+        status_code=resp.status_code,
+        content=body,
+    )

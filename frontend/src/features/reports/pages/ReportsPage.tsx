@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, lazy, Suspense } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { reportsService, type ReportsQueryParams } from "@/features/reports/services/reports";
 import { Button } from "@/components/ui/Button";
@@ -25,7 +25,8 @@ import { TaskReportsView } from "../components/TaskReportsView";
 import { SubtaskReportsView } from "../components/SubtaskReportsView";
 import { EmployeeReportsView } from "../components/EmployeeReportsView";
 import { ReportPreviewModal } from "../components/ReportPreviewModal";
-import { ReportsAnalytics } from "../components/ReportsAnalytics";
+
+const ReportsAnalytics = lazy(() => import("../components/ReportsAnalytics"));
 
 type TabId = "projects" | "tasks" | "subtasks" | "employees";
 
@@ -300,7 +301,9 @@ export default function ReportsPage() {
 
       {analyticsOpen && (
         <div className="animate-in slide-in-from-top-1 duration-200">
-          <ReportsAnalytics />
+          <Suspense fallback={<SkeletonTable rows={4} />}>
+            <ReportsAnalytics />
+          </Suspense>
         </div>
       )}
 

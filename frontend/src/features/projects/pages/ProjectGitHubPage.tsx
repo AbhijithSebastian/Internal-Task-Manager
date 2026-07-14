@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/services/api";
+import { api, proxyApi } from "@/services/api";
 import { useProject } from "@/features/projects/hooks/useProject";
 import { EnterpriseEmptyState } from "@/components/shared/EnterpriseEmptyState";
 import { Card } from "@/components/ui/Card";
@@ -45,14 +45,15 @@ export default function ProjectGitHubPage() {
 
       if (token) {
         try {
-          const test = await api.get(`/github/repos/${info.owner}/${info.repo}`, {
+          const test = await proxyApi.get(`/github/repos/${info.owner}/${info.repo}`, {
             headers: { Authorization: `Bearer ${token}` },
           });
           if (!test.data) throw new Error("Repository not found");
         } catch (e: unknown) {
-          const err = e as { response?: { status?: number } };
+          const err = e as { response?: { data?: { message?: string }; status?: number } };
+          const ghMessage = err.response?.data?.message;
+          if (ghMessage) throw new Error(`GitHub: ${ghMessage}`);
           if (err.response?.status === 404) throw new Error("Repository not found. Check the URL and your access permissions.");
-          if (err.response?.status === 401 || err.response?.status === 403) throw new Error("Authentication failed. Check your token permissions.");
           throw new Error("Could not validate repository access. The URL will still be saved.");
         }
       }
@@ -62,7 +63,7 @@ export default function ProjectGitHubPage() {
       queryClient.invalidateQueries({ queryKey: ["project", projectId] });
       queryClient.invalidateQueries({ queryKey: ["projects"] });
       queryClient.invalidateQueries({ queryKey: ["project-activity", projectId] });
-      if (token) localStorage.setItem(`github_token_${projectId}`, token);
+      if (token) sessionStorage.setItem(`github_token_${projectId}`, token);
       setShowConnect(false);
       setRepoUrl("");
       setToken("");
@@ -78,7 +79,7 @@ export default function ProjectGitHubPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["project", projectId] });
       queryClient.invalidateQueries({ queryKey: ["projects"] });
-      localStorage.removeItem(`github_token_${projectId}`);
+      sessionStorage.removeItem(`github_token_${projectId}`);
       setActiveTab("overview");
     },
   });
@@ -87,14 +88,14 @@ export default function ProjectGitHubPage() {
   const repoInfo = githubUrl ? parseGitHubUrl(githubUrl) : null;
   const isConnected = !!githubUrl && !!repoInfo;
 
-  const storedToken = isConnected ? localStorage.getItem(`github_token_${projectId}`) : null;
+  const storedToken = isConnected ? sessionStorage.getItem(`github_token_${projectId}`) : null;
   const authHeaders: Record<string, string> = storedToken ? { Authorization: `Bearer ${storedToken}` } : {};
 
   const { data: repoData, isLoading: repoLoading } = useQuery({
     queryKey: ["github-repo", repoInfo?.owner, repoInfo?.repo],
     queryFn: async () => {
       if (!repoInfo) return null;
-      const res = await api.get(`/github/repos/${repoInfo.owner}/${repoInfo.repo}`, { headers: authHeaders });
+      const res = await proxyApi.get(`/github/repos/${repoInfo.owner}/${repoInfo.repo}`, { headers: authHeaders });
       return res.data as {
         name: string;
         full_name: string;
@@ -119,7 +120,7 @@ export default function ProjectGitHubPage() {
     queryFn: async () => {
       if (!repoInfo) return null;
       const branch = repoData?.default_branch || "main";
-      const res = await api.get(`/github/repos/${repoInfo.owner}/${repoInfo.repo}/commits`, {
+      const res = await proxyApi.get(`/github/repos/${repoInfo.owner}/${repoInfo.repo}/commits`, {
         params: { sha: branch, per_page: 20 },
         headers: authHeaders,
       });
@@ -137,7 +138,7 @@ export default function ProjectGitHubPage() {
     queryKey: ["github-pulls", repoInfo?.owner, repoInfo?.repo],
     queryFn: async () => {
       if (!repoInfo) return null;
-      const res = await api.get(`/github/repos/${repoInfo.owner}/${repoInfo.repo}/pulls`, {
+      const res = await proxyApi.get(`/github/repos/${repoInfo.owner}/${repoInfo.repo}/pulls`, {
         params: { state: "open", per_page: 20 },
         headers: authHeaders,
       });
@@ -160,7 +161,7 @@ export default function ProjectGitHubPage() {
     queryKey: ["github-issues", repoInfo?.owner, repoInfo?.repo],
     queryFn: async () => {
       if (!repoInfo) return null;
-      const res = await api.get(`/github/repos/${repoInfo.owner}/${repoInfo.repo}/issues`, {
+      const res = await proxyApi.get(`/github/repos/${repoInfo.owner}/${repoInfo.repo}/issues`, {
         params: { state: "open", per_page: 20, filter: "all" },
         headers: authHeaders,
       });

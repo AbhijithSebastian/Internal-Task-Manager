@@ -1,13 +1,18 @@
 import axios from "axios";
 
+const baseURL = "/api/v1";
+
+// ── Internal API client ──────────────────────────────────────────────
+// Injects app JWT on every request. Handles 401 → token refresh.
+// Used for: auth, projects, tasks, meetings, users, etc.
 const api = axios.create({
-  baseURL: "/api/v1",
+  baseURL,
   headers: { "Content-Type": "application/json" },
 });
 
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("access_token");
-  if (token) {
+  if (token && config.headers) {
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
@@ -22,12 +27,14 @@ api.interceptors.response.use(
       const refreshToken = localStorage.getItem("refresh_token");
       if (refreshToken) {
         try {
-          const res = await axios.post("/api/v1/auth/refresh", {
+          const res = await axios.post(`${baseURL}/auth/refresh`, {
             refresh_token: refreshToken,
           });
           localStorage.setItem("access_token", res.data.access_token);
           localStorage.setItem("refresh_token", res.data.refresh_token);
-          originalRequest.headers.Authorization = `Bearer ${res.data.access_token}`;
+          if (originalRequest.headers) {
+            originalRequest.headers.Authorization = `Bearer ${res.data.access_token}`;
+          }
           return api(originalRequest);
         } catch {
           localStorage.removeItem("access_token");
@@ -42,5 +49,14 @@ api.interceptors.response.use(
   }
 );
 
-export { api };
+// ── External proxy client ────────────────────────────────────────────
+// NO interceptors. Caller is responsible for providing the correct
+// Authorization header (GitHub PAT, Figma PAT, etc.).
+// Used for: /api/v1/github/*, /api/v1/figma/*
+const proxyApi = axios.create({
+  baseURL,
+  headers: { "Content-Type": "application/json" },
+});
+
+export { api, proxyApi };
 export default api;

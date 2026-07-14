@@ -1,54 +1,61 @@
+import logging
 import httpx
-from fastapi import APIRouter, Query, Request
+from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
 GITHUB_API = "https://api.github.com"
 
+# Per GitHub API docs: https://docs.github.com/en/rest/overview/api-versions
+GITHUB_API_VERSION = "2022-11-28"
+
 
 async def _proxy(path: str, request: Request):
     headers = {
-        "Accept": "application/vnd.github.v3+json",
+        "Accept": "application/vnd.github+json",
         "User-Agent": "ProjectWorkspace/1.0",
+        "X-GitHub-Api-Version": GITHUB_API_VERSION,
     }
     auth = request.headers.get("Authorization")
     if auth:
-        headers["Authorization"] = auth
+        token = auth.replace("Bearer ", "", 1)
+        if token.strip():
+            headers["Authorization"] = auth
 
     params = dict(request.query_params)
     url = f"{GITHUB_API}{path}"
 
+    logger.info(
+        "GitHub proxy request: method=GET url=%s has_auth=%s",
+        url, "yes" if auth else "no",
+    )
+
     async with httpx.AsyncClient(timeout=30) as client:
         resp = await client.get(url, headers=headers, params=params)
 
-    if resp.status_code == 404:
-        return JSONResponse(
-            status_code=404,
-            content={"error": "Repository not found", "code": "NOT_FOUND", "status": 404},
-        )
-    if resp.status_code in (401, 403):
-        return JSONResponse(
-            status_code=resp.status_code,
-            content={
-                "error": "Access denied" if resp.status_code == 403 else "Authentication failed",
-                "code": "FORBIDDEN" if resp.status_code == 403 else "UNAUTHORIZED",
-                "status": resp.status_code,
-                "message": "Invalid or missing token. Check your GitHub Personal Access Token permissions.",
-            },
-        )
-    if resp.status_code == 429:
-        return JSONResponse(
-            status_code=429,
-            content={"error": "Rate limited", "code": "RATE_LIMITED", "status": 429, "message": "GitHub API rate limit exceeded. Wait and try again."},
-        )
-    if resp.status_code >= 500:
-        return JSONResponse(
-            status_code=502,
-            content={"error": "Provider unavailable", "code": "PROVIDER_ERROR", "status": 502, "message": "GitHub API returned a server error."},
-        )
+    logger.info(
+        "GitHub proxy response: url=%s status=%d headers=%s body=%s",
+        url, resp.status_code,
+        {k: v for k, v in resp.headers.items() if k.lower() in (
+            "content-type", "x-ratelimit-remaining", "x-ratelimit-limit",
+            "x-ratelimit-reset", "x-github-request-id", "x-github-api-version-selected",
+            "status",
+        )},
+        resp.text,
+    )
 
-    return JSONResponse(content=resp.json())
+    try:
+        body = resp.json()
+    except Exception:
+        body = {"message": resp.text}
+
+    return JSONResponse(
+        status_code=resp.status_code,
+        content=body,
+    )
 
 
 @router.get("/repos/{owner}/{repo}")

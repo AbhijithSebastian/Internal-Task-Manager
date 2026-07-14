@@ -53,11 +53,11 @@ function getIcon(description: string): LucideIcon {
 function getEntityLink(subjectType: string | undefined, subjectId: number | string | undefined, projectId: string): string | null {
   if (!subjectId) return null;
   switch (subjectType) {
-    case "projects": return `/projects/${projectId}`;
-    case "tasks": return `/projects/${projectId}/tasks/${subjectId}`;
-    case "resources": return `/projects/${projectId}/resources`;
-    case "endpoints": return `/projects/${projectId}/endpoints`;
-    case "meetings": return `/projects/${projectId}/meetings`;
+    case "projects": return `/work/projects/${projectId}`;
+    case "tasks": return `/work/projects/${projectId}/tasks/${subjectId}`;
+    case "resources": return `/work/projects/${projectId}/resources`;
+    case "endpoints": return `/work/projects/${projectId}/endpoints`;
+    case "meetings": return `/work/projects/${projectId}/meetings`;
     default: return null;
   }
 }

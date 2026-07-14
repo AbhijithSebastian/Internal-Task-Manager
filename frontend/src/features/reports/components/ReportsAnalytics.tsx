@@ -35,7 +35,7 @@ function EmptyChart() {
   );
 }
 
-export function ReportsAnalytics() {
+export default function ReportsAnalytics() {
   const { data, isLoading, isError } = useQuery({
     queryKey: ["reports-analytics"],
     queryFn: () => reportsService.getAnalytics(),
