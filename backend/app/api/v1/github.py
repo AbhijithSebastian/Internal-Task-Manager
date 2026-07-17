@@ -29,8 +29,9 @@ async def _proxy(path: str, request: Request):
     url = f"{GITHUB_API}{path}"
 
     logger.info(
-        "GitHub proxy request: method=GET url=%s has_auth=%s",
+        "GitHub proxy request: method=GET url=%s has_auth=%s auth_prefix=%s auth_length=%d",
         url, "yes" if auth else "no",
+        auth[:10] if auth else "none", len(auth) if auth else 0,
     )
 
     async with httpx.AsyncClient(timeout=30) as client:

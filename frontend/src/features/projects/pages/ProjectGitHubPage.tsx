@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, proxyApi } from "@/services/api";
@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Badge } from "@/components/ui/Badge";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { Github, ExternalLink, GitBranch, GitCommitHorizontal, GitPullRequest, AlertCircle, Star, GitFork, CheckCircle2, Eye, Unlink } from "lucide-react";
+import { Github, ExternalLink, GitBranch, GitCommitHorizontal, GitPullRequest, AlertCircle, Star, GitFork, CheckCircle2, Eye, Unlink, RefreshCw, Users, Code2, Package } from "lucide-react";
 import { formatRelative } from "@/utils/formatters";
 
 function parseGitHubUrl(url: string): { owner: string; repo: string } | null {
@@ -18,7 +18,7 @@ function parseGitHubUrl(url: string): { owner: string; repo: string } | null {
   return { owner: match[1], repo: match[2].replace(/\.git$/, "") };
 }
 
-type Tab = "overview" | "commits" | "pulls" | "issues";
+type Tab = "overview" | "commits" | "pulls" | "issues" | "branches" | "releases" | "contributors" | "languages";
 
 export default function ProjectGitHubPage() {
   const { projectId } = useParams<{ projectId: string }>();
@@ -29,6 +29,7 @@ export default function ProjectGitHubPage() {
   const [token, setToken] = useState("");
   const [activeTab, setActiveTab] = useState<Tab>("overview");
   const [connectError, setConnectError] = useState<string | null>(null);
+  const [selectedBranch, setSelectedBranch] = useState<string | null>(null);
 
   const connectMutation = useMutation({
     mutationFn: async (url: string) => {
@@ -63,7 +64,9 @@ export default function ProjectGitHubPage() {
       queryClient.invalidateQueries({ queryKey: ["project", projectId] });
       queryClient.invalidateQueries({ queryKey: ["projects"] });
       queryClient.invalidateQueries({ queryKey: ["project-activity", projectId] });
-      if (token) sessionStorage.setItem(`github_token_${projectId}`, token);
+      if (token) {
+        sessionStorage.setItem(`github_token_${projectId}`, token);
+      }
       setShowConnect(false);
       setRepoUrl("");
       setToken("");
@@ -116,10 +119,10 @@ export default function ProjectGitHubPage() {
   });
 
   const { data: commitsData, isLoading: commitsLoading } = useQuery({
-    queryKey: ["github-commits", repoInfo?.owner, repoInfo?.repo, repoData?.default_branch],
+    queryKey: ["github-commits", repoInfo?.owner, repoInfo?.repo, selectedBranch],
     queryFn: async () => {
       if (!repoInfo) return null;
-      const branch = repoData?.default_branch || "main";
+      const branch = selectedBranch || repoData?.default_branch || "main";
       const res = await proxyApi.get(`/github/repos/${repoInfo.owner}/${repoInfo.repo}/commits`, {
         params: { sha: branch, per_page: 20 },
         headers: authHeaders,
@@ -180,13 +183,94 @@ export default function ProjectGitHubPage() {
     staleTime: 30_000,
   });
 
+  const { data: branchesData, isLoading: branchesLoading } = useQuery({
+    queryKey: ["github-branches", repoInfo?.owner, repoInfo?.repo],
+    queryFn: async () => {
+      if (!repoInfo) return null;
+      const res = await proxyApi.get(`/github/repos/${repoInfo.owner}/${repoInfo.repo}/branches`, {
+        params: { per_page: 50 },
+        headers: authHeaders,
+      });
+      return res.data as Array<{
+        name: string;
+        commit: { sha: string };
+        protected: boolean;
+      }> | null;
+    },
+    enabled: !!repoInfo && activeTab === "branches",
+    staleTime: 30_000,
+  });
+
+  const { data: releasesData, isLoading: releasesLoading } = useQuery({
+    queryKey: ["github-releases", repoInfo?.owner, repoInfo?.repo],
+    queryFn: async () => {
+      if (!repoInfo) return null;
+      const res = await proxyApi.get(`/github/repos/${repoInfo.owner}/${repoInfo.repo}/releases`, {
+        params: { per_page: 20 },
+        headers: authHeaders,
+      });
+      return res.data as Array<{
+        id: number;
+        tag_name: string;
+        name: string | null;
+        body: string | null;
+        prerelease: boolean;
+        created_at: string;
+        html_url: string;
+      }> | null;
+    },
+    enabled: !!repoInfo && activeTab === "releases",
+    staleTime: 30_000,
+  });
+
+  const { data: contributorsData, isLoading: contributorsLoading } = useQuery({
+    queryKey: ["github-contributors", repoInfo?.owner, repoInfo?.repo],
+    queryFn: async () => {
+      if (!repoInfo) return null;
+      const res = await proxyApi.get(`/github/repos/${repoInfo.owner}/${repoInfo.repo}/contributors`, {
+        params: { per_page: 30 },
+        headers: authHeaders,
+      });
+      return res.data as Array<{
+        login: string;
+        avatar_url: string;
+        contributions: number;
+      }> | null;
+    },
+    enabled: !!repoInfo && activeTab === "contributors",
+    staleTime: 60_000,
+  });
+
+  const { data: languagesData, isLoading: languagesLoading } = useQuery({
+    queryKey: ["github-languages", repoInfo?.owner, repoInfo?.repo],
+    queryFn: async () => {
+      if (!repoInfo) return null;
+      const res = await proxyApi.get(`/github/repos/${repoInfo.owner}/${repoInfo.repo}/languages`, {
+        headers: authHeaders,
+      });
+      return res.data as Record<string, number> | null;
+    },
+    enabled: !!repoInfo && activeTab === "languages",
+    staleTime: 60_000,
+  });
+
+  useEffect(() => {
+    if (repoData?.default_branch) {
+      setSelectedBranch(repoData.default_branch);
+    }
+  }, [repoData?.default_branch]);
+
   if (!projectId) return null;
 
   const tabs: { id: Tab; label: string }[] = [
     { id: "overview", label: "Overview" },
     { id: "commits", label: "Commits" },
+    { id: "branches", label: "Branches" },
     { id: "pulls", label: "Pull Requests" },
     { id: "issues", label: "Issues" },
+    { id: "releases", label: "Releases" },
+    { id: "contributors", label: "Contributors" },
+    { id: "languages", label: "Languages" },
   ];
 
   const renderTabContent = () => {
@@ -202,11 +286,19 @@ export default function ProjectGitHubPage() {
       case "overview":
         return <RepoOverview repoInfo={repoInfo!} repoData={repoData} />;
       case "commits":
-        return <CommitsSection commits={commitsData} isLoading={commitsLoading} repoInfo={repoInfo!} />;
+        return <CommitsSection commits={commitsData} isLoading={commitsLoading} repoInfo={repoInfo!} branches={branchesData} selectedBranch={selectedBranch} onSelectBranch={setSelectedBranch} />;
+      case "branches":
+        return <BranchesSection branches={branchesData} isLoading={branchesLoading} repoInfo={repoInfo!} />;
       case "pulls":
         return <PullRequestSection pulls={pullsData} isLoading={pullsLoading} repoInfo={repoInfo!} />;
       case "issues":
         return <IssueSection issues={issuesData} isLoading={issuesLoading} repoInfo={repoInfo!} />;
+      case "releases":
+        return <ReleasesSection releases={releasesData} isLoading={releasesLoading} />;
+      case "contributors":
+        return <ContributorsSection contributors={contributorsData} isLoading={contributorsLoading} />;
+      case "languages":
+        return <LanguagesSection languages={languagesData} isLoading={languagesLoading} />;
     }
   };
 
@@ -222,8 +314,14 @@ export default function ProjectGitHubPage() {
         <div className="flex items-center gap-2">
           {isConnected && (
             <>
+              <Button size="sm" variant="secondary" onClick={() => { queryClient.invalidateQueries({ predicate: (q) => String(q.queryKey[0]).startsWith("github") }); }}>
+                <RefreshCw className="h-3.5 w-3.5" /> Sync
+              </Button>
               <Button size="sm" variant="secondary" onClick={() => window.open(githubUrl, "_blank")}>
                 <ExternalLink className="h-3.5 w-3.5" /> Open on GitHub
+              </Button>
+              <Button size="sm" variant="secondary" onClick={() => { setShowConnect(true); setRepoUrl(githubUrl || ""); setToken(storedToken || ""); setConnectError(null); }}>
+                <Github className="h-3.5 w-3.5" /> Change
               </Button>
               <Button size="sm" variant="secondary" onClick={() => disconnectMutation.mutate()} loading={disconnectMutation.isPending}>
                 <Unlink className="h-3.5 w-3.5" /> Disconnect
@@ -238,9 +336,14 @@ export default function ProjectGitHubPage() {
         </div>
       </div>
 
-      {showConnect && !isConnected && (
+      {showConnect && (
         <Card>
-          <h3 className="text-sm font-semibold text-primary mb-3">Connect GitHub Repository</h3>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-primary">{isConnected ? "Update GitHub Repository" : "Connect GitHub Repository"}</h3>
+            <Button size="sm" variant="secondary" onClick={() => { setShowConnect(false); setConnectError(null); }}>
+              Cancel
+            </Button>
+          </div>
           <div className="space-y-3">
             <Input
               label="Repository URL"
@@ -262,9 +365,14 @@ export default function ProjectGitHubPage() {
                 {connectError}
               </p>
             )}
-            <Button size="sm" onClick={() => connectMutation.mutate(repoUrl)} loading={connectMutation.isPending} disabled={!repoUrl.trim()}>
-              <Github className="h-4 w-4" /> Connect
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button size="sm" onClick={() => connectMutation.mutate(repoUrl)} loading={connectMutation.isPending} disabled={!repoUrl.trim()}>
+                <Github className="h-4 w-4" /> {isConnected ? "Update" : "Connect"}
+              </Button>
+              {isConnected && (
+                <p className="text-xs text-tertiary">Leave token blank to use existing stored token.</p>
+              )}
+            </div>
           </div>
         </Card>
       )}
@@ -347,10 +455,13 @@ function RepoOverview({ repoInfo, repoData }: {
   );
 }
 
-function CommitsSection({ commits, isLoading, repoInfo }: {
+function CommitsSection({ commits, isLoading, repoInfo, branches, selectedBranch, onSelectBranch }: {
   commits: Array<{ sha: string; commit: { message: string; author: { name: string; date: string } }; author: { login: string; avatar_url: string } | null }> | null | undefined;
   isLoading: boolean;
   repoInfo: { owner: string; repo: string };
+  branches: Array<{ name: string; commit: { sha: string }; protected: boolean }> | null | undefined;
+  selectedBranch: string | null;
+  onSelectBranch: (b: string) => void;
 }) {
   if (isLoading) {
     return (
@@ -360,37 +471,52 @@ function CommitsSection({ commits, isLoading, repoInfo }: {
     );
   }
 
-  if (!commits || commits.length === 0) {
-    return (
-      <div className="flex flex-col items-center py-10 text-center">
-        <GitCommitHorizontal className="h-8 w-8 text-tertiary mb-2" />
-        <p className="text-sm text-tertiary">No commits found. Add a Personal Access Token to fetch commits from private repositories.</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-1">
-      {commits.map((c) => (
-        <a
-          key={c.sha}
-          href={`https://github.com/${repoInfo.owner}/${repoInfo.repo}/commit/${c.sha}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-3 p-2.5 rounded-lg border border-default bg-surface hover:bg-hover transition-colors no-underline"
-        >
-          <GitCommitHorizontal className="h-4 w-4 text-tertiary shrink-0" />
-          <div className="flex-1 min-w-0">
-            <p className="text-sm text-primary truncate">{c.commit.message.split("\n")[0]}</p>
-            <div className="flex items-center gap-2 text-xs text-tertiary">
-              <span>{c.author?.login || c.commit.author.name}</span>
-              <span>{c.sha.slice(0, 7)}</span>
-              <span>{formatRelative(c.commit.author.date)}</span>
-            </div>
-          </div>
-          <ExternalLink className="h-3.5 w-3.5 text-tertiary shrink-0" />
-        </a>
-      ))}
+    <div className="space-y-3">
+      {branches && branches.length > 0 && (
+        <div className="flex items-center gap-2">
+          <GitBranch className="h-4 w-4 text-tertiary" />
+          <select
+            value={selectedBranch || ""}
+            onChange={(e) => onSelectBranch(e.target.value)}
+            className="text-sm border border-default rounded-lg bg-surface px-2.5 py-1.5 text-primary"
+          >
+            {branches.map((b) => (
+              <option key={b.name} value={b.name}>{b.name}</option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {!commits || commits.length === 0 ? (
+        <div className="flex flex-col items-center py-10 text-center">
+          <GitCommitHorizontal className="h-8 w-8 text-tertiary mb-2" />
+          <p className="text-sm text-tertiary">No commits found. Add a Personal Access Token to fetch commits from private repositories.</p>
+        </div>
+      ) : (
+        <div className="space-y-1">
+          {commits.map((c) => (
+            <a
+              key={c.sha}
+              href={`https://github.com/${repoInfo.owner}/${repoInfo.repo}/commit/${c.sha}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-3 p-2.5 rounded-lg border border-default bg-surface hover:bg-hover transition-colors no-underline"
+            >
+              <GitCommitHorizontal className="h-4 w-4 text-tertiary shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm text-primary truncate">{c.commit.message.split("\n")[0]}</p>
+                <div className="flex items-center gap-2 text-xs text-tertiary">
+                  <span>{c.author?.login || c.commit.author.name}</span>
+                  <span>{c.sha.slice(0, 7)}</span>
+                  <span>{formatRelative(c.commit.author.date)}</span>
+                </div>
+              </div>
+              <ExternalLink className="h-3.5 w-3.5 text-tertiary shrink-0" />
+            </a>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -506,6 +632,197 @@ function IssueSection({ issues, isLoading, repoInfo }: {
           </div>
         </a>
       ))}
+    </div>
+  );
+}
+
+function BranchesSection({ branches, isLoading, repoInfo }: {
+  branches: Array<{ name: string; commit: { sha: string }; protected: boolean }> | null | undefined;
+  isLoading: boolean;
+  repoInfo: { owner: string; repo: string };
+}) {
+  if (isLoading) {
+    return (
+      <div className="space-y-2">
+        {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} variant="rect" className="h-10 w-full rounded-lg" />)}
+      </div>
+    );
+  }
+
+  if (!branches || branches.length === 0) {
+    return (
+      <div className="flex flex-col items-center py-10 text-center">
+        <GitBranch className="h-8 w-8 text-tertiary mb-2" />
+        <p className="text-sm text-tertiary">No branches found.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-1">
+      {branches.map((b) => (
+        <a
+          key={b.name}
+          href={`https://github.com/${repoInfo.owner}/${repoInfo.repo}/tree/${b.name}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-3 p-2.5 rounded-lg border border-default bg-surface hover:bg-hover transition-colors no-underline"
+        >
+          <GitBranch className="h-4 w-4 text-tertiary shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm text-primary font-medium">{b.name}</p>
+            <p className="text-xs text-tertiary">{b.commit.sha.slice(0, 7)}</p>
+          </div>
+          {b.protected && <Badge size="sm" variant="info">protected</Badge>}
+          <ExternalLink className="h-3.5 w-3.5 text-tertiary shrink-0" />
+        </a>
+      ))}
+    </div>
+  );
+}
+
+function ReleasesSection({ releases, isLoading }: {
+  releases: Array<{ id: number; tag_name: string; name: string | null; body: string | null; prerelease: boolean; created_at: string; html_url: string }> | null | undefined;
+  isLoading: boolean;
+}) {
+  if (isLoading) {
+    return (
+      <div className="space-y-2">
+        {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} variant="rect" className="h-16 w-full rounded-lg" />)}
+      </div>
+    );
+  }
+
+  if (!releases || releases.length === 0) {
+    return (
+      <div className="flex flex-col items-center py-10 text-center">
+        <Package className="h-8 w-8 text-tertiary mb-2" />
+        <p className="text-sm text-tertiary">No releases found.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-1">
+      {releases.map((r) => (
+        <a
+          key={r.id}
+          href={r.html_url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex flex-col gap-1 p-3 rounded-lg border border-default bg-surface hover:bg-hover transition-colors no-underline"
+        >
+          <div className="flex items-center gap-2">
+            <Package className="h-4 w-4 text-tertiary shrink-0" />
+            <span className="text-sm text-primary font-medium">{r.name || r.tag_name}</span>
+            {r.prerelease && <Badge size="sm" variant="warning">pre-release</Badge>}
+          </div>
+          <div className="flex items-center gap-2 text-xs text-tertiary ml-6">
+            <span>{r.tag_name}</span>
+            <span>{formatRelative(r.created_at)}</span>
+          </div>
+          {r.body && (
+            <p className="text-xs text-tertiary ml-6 line-clamp-2">{r.body}</p>
+          )}
+        </a>
+      ))}
+    </div>
+  );
+}
+
+function ContributorsSection({ contributors, isLoading }: {
+  contributors: Array<{ login: string; avatar_url: string; contributions: number }> | null | undefined;
+  isLoading: boolean;
+}) {
+  if (isLoading) {
+    return (
+      <div className="space-y-2">
+        {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} variant="rect" className="h-12 w-full rounded-lg" />)}
+      </div>
+    );
+  }
+
+  if (!contributors || contributors.length === 0) {
+    return (
+      <div className="flex flex-col items-center py-10 text-center">
+        <Users className="h-8 w-8 text-tertiary mb-2" />
+        <p className="text-sm text-tertiary">No contributors found.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-1">
+      {contributors.map((c) => (
+        <a
+          key={c.login}
+          href={`https://github.com/${c.login}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-3 p-2.5 rounded-lg border border-default bg-surface hover:bg-hover transition-colors no-underline"
+        >
+          <img src={c.avatar_url} alt={c.login} className="w-8 h-8 rounded-full shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm text-primary font-medium">{c.login}</p>
+          </div>
+          <span className="text-xs text-tertiary tabular-nums">{c.contributions} commit{c.contributions !== 1 ? "s" : ""}</span>
+        </a>
+      ))}
+    </div>
+  );
+}
+
+function LanguagesSection({ languages, isLoading }: {
+  languages: Record<string, number> | null | undefined;
+  isLoading: boolean;
+}) {
+  if (isLoading) {
+    return (
+      <div className="space-y-2">
+        {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} variant="rect" className="h-10 w-full rounded-lg" />)}
+      </div>
+    );
+  }
+
+  if (!languages || Object.keys(languages).length === 0) {
+    return (
+      <div className="flex flex-col items-center py-10 text-center">
+        <Code2 className="h-8 w-8 text-tertiary mb-2" />
+        <p className="text-sm text-tertiary">No language data available.</p>
+      </div>
+    );
+  }
+
+  const total = Object.values(languages).reduce((a, b) => a + b, 0);
+
+  return (
+    <div className="space-y-2">
+      <div className="flex h-2 rounded-full overflow-hidden bg-subtle">
+        {Object.entries(languages).map(([lang, bytes]) => (
+          <div
+            key={lang}
+            style={{ width: `${(bytes / total) * 100}%` }}
+            className="h-full bg-primary"
+            title={`${lang}: ${((bytes / total) * 100).toFixed(1)}%`}
+          />
+        ))}
+      </div>
+      <div className="space-y-1.5">
+        {Object.entries(languages)
+          .sort(([, a], [, b]) => b - a)
+          .map(([lang, bytes]) => {
+            const pct = ((bytes / total) * 100).toFixed(1);
+            return (
+              <div key={lang} className="flex items-center justify-between p-2 rounded-lg border border-default bg-surface">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-primary" />
+                  <span className="text-sm text-primary">{lang}</span>
+                </div>
+                <span className="text-xs text-tertiary tabular-nums">{pct}%</span>
+              </div>
+            );
+          })}
+      </div>
     </div>
   );
 }
