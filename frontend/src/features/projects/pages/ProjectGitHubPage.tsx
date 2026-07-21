@@ -34,9 +34,8 @@ export default function ProjectGitHubPage() {
   const connectMutation = useMutation({
     mutationFn: async (url: string) => {
       if (!url.trim()) throw new Error("URL is required");
-      let parsed;
       try {
-        parsed = new URL(url);
+        const parsed = new URL(url);
         if (!parsed.hostname.includes("github.com")) throw new Error("Not a GitHub URL");
       } catch (e) {
         throw new Error((e as Error).message.includes("Not a") ? "Not a GitHub URL" : "Invalid URL format");
@@ -197,7 +196,7 @@ export default function ProjectGitHubPage() {
         protected: boolean;
       }> | null;
     },
-    enabled: !!repoInfo && activeTab === "branches",
+    enabled: !!repoInfo && (activeTab === "branches" || activeTab === "commits"),
     staleTime: 30_000,
   });
 
@@ -258,7 +257,7 @@ export default function ProjectGitHubPage() {
     if (repoData?.default_branch) {
       setSelectedBranch(repoData.default_branch);
     }
-  }, [repoData?.default_branch]);
+  }, [repoInfo?.owner, repoInfo?.repo, repoData?.default_branch]);
 
   if (!projectId) return null;
 
@@ -403,7 +402,6 @@ export default function ProjectGitHubPage() {
           title="GitHub not connected"
           description="Connect a GitHub repository to see commits, pull requests, issues, and deployment information."
           primaryAction={{ label: "Connect GitHub", onClick: () => setShowConnect(true) }}
-          helpLink={{ label: "Learn about GitHub integration", href: "https://docs.example.com/github" }}
         />
       )}
     </div>
@@ -491,7 +489,7 @@ function CommitsSection({ commits, isLoading, repoInfo, branches, selectedBranch
       {!commits || commits.length === 0 ? (
         <div className="flex flex-col items-center py-10 text-center">
           <GitCommitHorizontal className="h-8 w-8 text-tertiary mb-2" />
-          <p className="text-sm text-tertiary">No commits found. Add a Personal Access Token to fetch commits from private repositories.</p>
+          <p className="text-sm text-tertiary">No commits found on this branch.</p>
         </div>
       ) : (
         <div className="space-y-1">

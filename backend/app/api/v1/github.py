@@ -1,4 +1,5 @@
 import logging
+
 import httpx
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
@@ -8,8 +9,6 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 GITHUB_API = "https://api.github.com"
-
-# Per GitHub API docs: https://docs.github.com/en/rest/overview/api-versions
 GITHUB_API_VERSION = "2022-11-28"
 
 
@@ -20,33 +19,25 @@ async def _proxy(path: str, request: Request):
         "X-GitHub-Api-Version": GITHUB_API_VERSION,
     }
     auth = request.headers.get("Authorization")
-    if auth:
-        token = auth.replace("Bearer ", "", 1)
-        if token.strip():
-            headers["Authorization"] = auth
+    if auth and auth.replace("Bearer ", "", 1).strip():
+        headers["Authorization"] = auth
 
     params = dict(request.query_params)
     url = f"{GITHUB_API}{path}"
 
-    logger.info(
-        "GitHub proxy request: method=GET url=%s has_auth=%s auth_prefix=%s auth_length=%d",
-        url, "yes" if auth else "no",
-        auth[:10] if auth else "none", len(auth) if auth else 0,
-    )
+    logger.debug("GitHub proxy request: url=%s has_auth=%s", url, "yes" if auth else "no")
 
     async with httpx.AsyncClient(timeout=30) as client:
         resp = await client.get(url, headers=headers, params=params)
 
-    logger.info(
-        "GitHub proxy response: url=%s status=%d headers=%s body=%s",
-        url, resp.status_code,
-        {k: v for k, v in resp.headers.items() if k.lower() in (
+    relevant_headers = {
+        k: v for k, v in resp.headers.items()
+        if k.lower() in (
             "content-type", "x-ratelimit-remaining", "x-ratelimit-limit",
-            "x-ratelimit-reset", "x-github-request-id", "x-github-api-version-selected",
-            "status",
-        )},
-        resp.text,
-    )
+            "x-ratelimit-reset", "x-github-request-id",
+        )
+    }
+    logger.debug("GitHub proxy response: url=%s status=%d headers=%s", url, resp.status_code, relevant_headers)
 
     try:
         body = resp.json()
