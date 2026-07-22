@@ -179,11 +179,11 @@ test.describe("GitHub Integration – Full Workflow", () => {
 
     const tabNames = ["Overview", "Commits", "Branches", "Pull Requests", "Issues", "Releases", "Contributors", "Languages"];
     for (const tab of tabNames) {
-      await expect(page.getByRole("button", { name: tab })).toBeVisible();
+      await expect(page.getByRole("tab", { name: tab })).toBeVisible();
     }
     // Click each tab — verify tab switching doesn't crash
     for (const tab of tabNames) {
-      await page.getByRole("button", { name: tab }).click();
+      await page.getByRole("tab", { name: tab }).click();
       await page.waitForTimeout(500);
     }
   });
