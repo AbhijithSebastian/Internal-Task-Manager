@@ -588,6 +588,7 @@ def get_resource_activity(
 @router.get("/{resource_id}/file")
 def download_resource_file(
     resource_id: int,
+    inline: bool = Query(False),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -602,5 +603,6 @@ def download_resource_file(
     return FileResponse(
         path=resource.file_path,
         media_type=resource.mime_type or "application/octet-stream",
-        filename=resource.name,
+        filename=None if inline else resource.name,
+        headers={"Content-Disposition": f"inline; filename=\"{resource.name}\""} if inline else {},
     )

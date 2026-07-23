@@ -119,6 +119,7 @@ async def upload_attachment(
 @router.get("/download/{attachment_id}")
 def download_attachment(
     attachment_id: int,
+    inline: bool = Query(False),
     db: Session = Depends(get_db),
     current_user: User = require_permissions(["attachments.download"]),
 ):
@@ -134,7 +135,8 @@ def download_attachment(
     return FileResponse(
         path=str(file_path),
         media_type=attachment.mime_type or "application/octet-stream",
-        filename=attachment.name,
+        filename=None if inline else attachment.name,
+        headers={"Content-Disposition": f"inline; filename=\"{attachment.name}\""} if inline else {},
     )
 
 

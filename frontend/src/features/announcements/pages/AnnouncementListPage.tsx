@@ -10,9 +10,11 @@ import { Badge } from "@/components/ui/Badge";
 import { Avatar } from "@/components/ui/Avatar";
 import { Skeleton, SkeletonKpiRow } from "@/components/ui/Skeleton";
 import { FilterBar } from "@/components/ui/FilterBar";
+import { Pagination } from "@/components/ui/Pagination";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { formatDate, formatRelative } from "@/utils/formatters";
-import { Plus, Megaphone, Pin, ChevronLeft, ChevronRight } from "lucide-react";
+import { getStatusVariant, getPriorityVariant } from "@/utils/badgeVariants";
+import { Plus, Megaphone, Pin } from "lucide-react";
 import type { Announcement, PaginatedResponse } from "@/types";
 
 const STATUS_OPTIONS = [
@@ -81,23 +83,7 @@ export default function AnnouncementListPage() {
     onSuccess: invalidate,
   });
 
-  const statusBadgeVariant = (status: string) => {
-    switch (status) {
-      case "published": return "success";
-      case "scheduled": return "info";
-      case "draft": return "warning";
-      case "archived": return "neutral";
-      default: return "default";
-    }
-  };
 
-  const priorityBadgeVariant = (priority: string) => {
-    switch (priority) {
-      case "urgent": case "high": return "danger";
-      case "low": return "neutral";
-      default: return "info";
-    }
-  };
 
   const statusChipLabel = (s: string) => {
     if (!s) return "";
@@ -197,11 +183,11 @@ export default function AnnouncementListPage() {
                         )}
                       </div>
                       <div className="flex items-center gap-2 mt-0.5">
-                        <Badge variant={statusBadgeVariant(a.status)} size="sm" dot>
+                        <Badge variant={getStatusVariant(a.status)} size="sm" dot>
                           {a.status}
                         </Badge>
                         {a.priority && (
-                          <Badge variant={priorityBadgeVariant(a.priority)} size="sm">
+                          <Badge variant={getPriorityVariant(a.priority)} size="sm">
                             {a.priority}
                           </Badge>
                         )}
@@ -286,40 +272,7 @@ export default function AnnouncementListPage() {
           <p className="text-xs text-tertiary">
             Page {page} of {totalPages} ({totalItems} total)
           </p>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page <= 1}
-              className="p-1.5 rounded text-tertiary hover:text-primary hover:bg-hover transition-colors disabled:opacity-40 disabled:pointer-events-none"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </button>
-            {Array.from({ length: Math.min(totalPages, 5) }).map((_, i) => {
-              const start = Math.max(1, page - 2);
-              const p = start + i;
-              if (p > totalPages) return null;
-              return (
-                <button
-                  key={p}
-                  onClick={() => setPage(p)}
-                  className={`h-7 w-7 rounded text-xs font-medium transition-colors ${
-                    p === page
-                      ? "bg-primary text-inverse"
-                      : "text-secondary hover:bg-hover hover:text-primary"
-                  }`}
-                >
-                  {p}
-                </button>
-              );
-            })}
-            <button
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page >= totalPages}
-              className="p-1.5 rounded text-tertiary hover:text-primary hover:bg-hover transition-colors disabled:opacity-40 disabled:pointer-events-none"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </button>
-          </div>
+          <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
         </div>
       )}
 

@@ -1,3 +1,5 @@
+import type { PaginatedResponse } from "./index";
+
 export const RESOURCE_TYPES = [
   "image", "document", "zip", "apk", "video",
   "figma", "github", "url", "other",
@@ -61,10 +63,4 @@ export interface ResourceActivity {
   created_at: string;
 }
 
-export interface PaginatedResources {
-  items: Resource[];
-  total: number;
-  page: number;
-  per_page: number;
-  total_pages: number;
-}
+export type PaginatedResources = PaginatedResponse<Resource>;

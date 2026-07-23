@@ -4,13 +4,15 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/services/api";
 import { useProject } from "@/features/projects/hooks/useProject";
 import { FigmaPreview } from "@/components/previews/FigmaPreview";
+import { PreviewEngine } from "@/components/previews/PreviewEngine";
 import { EnterpriseEmptyState } from "@/components/shared/EnterpriseEmptyState";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { Palette, Upload, Link, Figma, FileImage, FileText, FileArchive, Download, Trash2, ExternalLink, Unlink, Wrench, X, AlertCircle } from "lucide-react";
+import { Palette, Upload, Link, Figma, FileImage, Download, Trash2, ExternalLink, Unlink, Wrench, X, AlertCircle, Eye } from "lucide-react";
 import { formatFileSize } from "@/utils/formatters";
+import { toast } from "sonner";
 
 const DESIGN_INTEGRATIONS = [
   { id: "figma", name: "Figma", icon: Figma, color: "text-[#a259ff]", urlKey: "figma_url", validate: (u: string) => /figma\.com\/(file|proto|design)\//.test(u) },
@@ -34,6 +36,7 @@ export default function ProjectDesignPage() {
 
   const [connectingInt, setConnectingInt] = useState<string | null>(null);
   const [connectUrl, setConnectUrl] = useState("");
+  const [connectToken, setConnectToken] = useState("");
   const [connectError, setConnectError] = useState<string | null>(null);
 
   const { data: assetsData, isLoading: assetsLoading } = useQuery({
@@ -50,15 +53,17 @@ export default function ProjectDesignPage() {
   const assets = (assetsData || []) as Array<{ id: number; name: string; file_name: string; mime_type: string; size: number; url: string; created_at: string }>;
 
   const connectMutation = useMutation({
-    mutationFn: ({ id, url, urlKey }: { id: string; url: string; urlKey: string }) =>
-      api.put(`/projects/${id}`, { [urlKey]: url }),
+    mutationFn: ({ id, data }: { id: string; data: Record<string, string> }) =>
+      api.put(`/projects/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["project", projectId] });
       queryClient.invalidateQueries({ queryKey: ["projects"] });
       queryClient.invalidateQueries({ queryKey: ["project-activity", projectId] });
       setConnectingInt(null);
       setConnectUrl("");
+      setConnectToken("");
       setConnectError(null);
+      toast.success("Integration updated");
     },
     onError: () => {
       setConnectError("Failed to save. Please try again.");
@@ -77,12 +82,14 @@ export default function ProjectDesignPage() {
     const existing = getConnectedUrl(integrationId);
     setConnectingInt(integrationId);
     setConnectUrl(existing || "");
+    setConnectToken((project as unknown as Record<string, string>)?.figma_token || "");
     setConnectError(null);
   };
 
   const handleCancelConnect = () => {
     setConnectingInt(null);
     setConnectUrl("");
+    setConnectToken("");
     setConnectError(null);
   };
 
@@ -108,33 +115,46 @@ export default function ProjectDesignPage() {
     }
 
     setConnectError(null);
-    connectMutation.mutate({ id: projectId, url: url.trim(), urlKey: integration.urlKey });
+    const data: Record<string, string> = { [integration.urlKey]: url.trim() };
+    if (integrationId === "figma" && connectToken.trim()) {
+      data.figma_token = connectToken.trim();
+    }
+    connectMutation.mutate({ id: projectId, data });
   };
 
   const handleDisconnect = (integrationId: string) => {
     const integration = DESIGN_INTEGRATIONS.find((i) => i.id === integrationId);
     if (!integration || !projectId) return;
-    connectMutation.mutate({ id: projectId, url: "", urlKey: integration.urlKey });
+    const data: Record<string, string> = { [integration.urlKey]: "" };
+    if (integrationId === "figma") data.figma_token = "";
+    connectMutation.mutate({ id: projectId, data });
   };
 
   const handleUpload = async (files: FileList | File[] | null) => {
     if (!files || files.length === 0) return;
     setUploading(true);
+    let successCount = 0;
+    let failCount = 0;
     try {
       const fileArray = Array.from(files);
       for (const file of fileArray) {
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append("model_type", "project");
-        formData.append("model_id", String(projectId));
-        formData.append("collection_name", "design");
-        await api.post("/attachments/upload", formData, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
+        try {
+          const formData = new FormData();
+          formData.append("file", file);
+          formData.append("model_type", "project");
+          formData.append("model_id", String(projectId));
+          formData.append("collection_name", "design");
+          await api.post("/attachments/upload", formData, {
+            headers: { "Content-Type": "multipart/form-data" },
+          });
+          successCount++;
+        } catch {
+          failCount++;
+        }
       }
       queryClient.invalidateQueries({ queryKey: ["design-assets", projectId] });
-    } catch {
-      // handled silently
+      if (successCount > 0) toast.success(`${successCount} file${successCount > 1 ? "s" : ""} uploaded`);
+      if (failCount > 0) toast.error(`${failCount} file${failCount > 1 ? "s" : ""} failed to upload`);
     } finally {
       setUploading(false);
     }
@@ -146,20 +166,27 @@ export default function ProjectDesignPage() {
     handleUpload(e.dataTransfer.files);
   };
 
-  const handleAddLink = () => {
+  const handleAddLink = async () => {
     if (!addLinkUrl.trim()) return;
-    fetch(addLinkUrl.trim(), { mode: "no-cors" }).catch(() => {});
-    queryClient.invalidateQueries({ queryKey: ["design-assets", projectId] });
+    try {
+      const safeName = addLinkUrl.trim().replace(/^https?:\/\//, "").substring(0, 100);
+      const formData = new FormData();
+      const blob = new Blob([addLinkUrl.trim()], { type: "text/plain" });
+      formData.append("file", new File([blob], `${safeName}.url`, { type: "text/plain" }));
+      formData.append("model_type", "project");
+      formData.append("model_id", String(projectId));
+      formData.append("collection_name", "design");
+      await api.post("/attachments/upload", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      queryClient.invalidateQueries({ queryKey: ["design-assets", projectId] });
+      toast.success("Link added");
+    } catch {
+      toast.error("Failed to add link");
+    }
     setAddLinkOpen(false);
     setAddLinkUrl("");
   };
-
-  const isImage = (mime?: string) => mime?.startsWith("image/");
-  const isPdf = (mime?: string) => mime?.includes("pdf");
-  const isZip = (mime?: string) => mime?.includes("zip") || mime?.includes("rar");
-  const isPsd = (name?: string) => name?.endsWith(".psd");
-  const isAi = (name?: string) => name?.endsWith(".ai");
-  const isEps = (name?: string) => name?.endsWith(".eps");
 
   return (
     <div className="space-y-5">
@@ -199,6 +226,15 @@ export default function ProjectDesignPage() {
                       </Button>
                       <button onClick={handleCancelConnect} className="p-1 text-tertiary hover:text-primary"><X className="h-3.5 w-3.5" /></button>
                     </div>
+                    {integration.id === "figma" && (
+                      <input
+                        value={connectToken}
+                        onChange={(e) => setConnectToken(e.target.value)}
+                        placeholder="Figma API token (optional, for private files)..."
+                        type="password"
+                        className="w-full h-8 px-2 rounded text-xs bg-surface border border-default text-primary placeholder:text-tertiary focus:outline-none focus:ring-1 focus:ring-primary-ring"
+                      />
+                    )}
                     {connectError && (
                       <div className="flex items-center gap-1.5 text-xs text-danger">
                         <AlertCircle className="h-3 w-3" />
@@ -259,7 +295,7 @@ export default function ProjectDesignPage() {
             <h3 className="text-sm font-semibold text-primary">Figma Preview</h3>
             <Badge variant="success" size="sm" dot>Connected</Badge>
           </div>
-          <FigmaPreview url={project.figma_url} />
+          <FigmaPreview url={project.figma_url} token={(project as unknown as Record<string, string>)?.figma_token} />
         </Card>
       )}
 
@@ -329,7 +365,7 @@ export default function ProjectDesignPage() {
               type="file"
               className="hidden"
               multiple
-              accept=".png,.jpg,.jpeg,.svg,.pdf,.ai,.psd,.eps,.zip"
+              accept=".png,.jpg,.jpeg,.gif,.webp,.svg,.pdf,.ai,.psd,.eps,.fig,.xd,.sketch,.zip,.rar,.7z"
               onChange={(e) => { handleUpload(e.target.files); if (e.target) e.target.value = ""; }}
             />
           </div>
@@ -368,7 +404,7 @@ export default function ProjectDesignPage() {
             <>
               <Upload className="h-6 w-6 text-tertiary mb-2" />
               <p className="text-sm text-secondary">Drop design files here or click to upload</p>
-              <p className="text-xs text-tertiary mt-1">PNG, JPG, SVG, PDF, AI, PSD, EPS, ZIP</p>
+              <p className="text-xs text-tertiary mt-1">PNG, JPG, GIF, WebP, SVG, PDF, AI, PSD, EPS, FIG, XD, ZIP</p>
             </>
           )}
         </div>
@@ -388,34 +424,26 @@ export default function ProjectDesignPage() {
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
             {assets.map((file) => {
-              const fileIcon = isPsd(file.name || file.file_name)
-                ? <FileImage className="h-5 w-5 text-[#001e36]" />
-                : isAi(file.name || file.file_name)
-                ? <FileImage className="h-5 w-5 text-[#ff9a00]" />
-                : isEps(file.name || file.file_name)
-                ? <FileText className="h-5 w-5 text-[#ff6600]" />
-                : isPdf(file.mime_type)
-                ? <FileText className="h-5 w-5 text-danger" />
-                : isZip(file.mime_type)
-                ? <FileArchive className="h-5 w-5 text-warning" />
-                : <FileImage className="h-5 w-5 text-tertiary" />;
-
+              const previewUrl = file.url?.includes("/attachments/download/") ? `${file.url}?inline=true` : file.url;
               return (
                 <div key={file.id} className="group relative rounded-lg border border-default bg-surface hover:bg-hover transition-colors overflow-hidden">
-                  {isImage(file.mime_type) ? (
-                    <div className="aspect-video bg-subtle overflow-hidden">
-                      <img src={file.url} alt={file.name || file.file_name} className="w-full h-full object-cover" />
-                    </div>
-                  ) : (
-                    <div className="aspect-video bg-subtle flex items-center justify-center">
-                      {fileIcon}
-                    </div>
-                  )}
+                  <div className="aspect-video bg-subtle overflow-hidden">
+                    <PreviewEngine
+                      mimeType={file.mime_type}
+                      fileName={file.name || file.file_name}
+                      fileUrl={previewUrl}
+                      fileSize={file.size}
+                      className="h-full"
+                    />
+                  </div>
                   <div className="p-2">
                     <p className="text-xs text-primary truncate">{file.name || file.file_name}</p>
                     <p className="text-xs text-tertiary">{formatFileSize(file.size)}</p>
                   </div>
                   <div className="absolute top-1 right-1 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button onClick={() => window.open(previewUrl, "_blank")} className="p-1 rounded bg-surface/90 text-tertiary hover:text-primary" title="Preview">
+                      <Eye className="h-3.5 w-3.5" />
+                    </button>
                     <button onClick={() => window.open(file.url, "_blank")} className="p-1 rounded bg-surface/90 text-tertiary hover:text-primary" title="Download">
                       <Download className="h-3.5 w-3.5" />
                     </button>

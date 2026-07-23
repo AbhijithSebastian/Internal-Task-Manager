@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/Button";
 import { openDrawer } from "@/hooks/useDrawer";
 import { Link2, ListTodo, CalendarDays, Globe, Users, Target, ChevronRight, FileText, Github, Palette, Plus, ExternalLink } from "lucide-react";
 import { formatDate, formatRelative, formatDateTime, formatFileSize } from "@/utils/formatters";
+import { getStatusVariant, getPriorityVariant } from "@/utils/badgeVariants";
 import type { ProjectMember } from "@/types";
 
 export default function ProjectOverviewPage() {
@@ -241,8 +242,8 @@ export default function ProjectOverviewPage() {
           <Card>
             <h3 className="text-xs font-semibold uppercase tracking-wider text-tertiary mb-3">Details</h3>
             <div className="space-y-2.5 text-sm">
-              <Row label="Status" value={project.status ? <Badge variant={statusVariant(project.status)} dot>{statusLabel(project.status)}</Badge> : "—"} />
-              <Row label="Priority" value={project.priority ? <Badge variant={priorityVariant(project.priority)} size="sm">{priorityLabel(project.priority)}</Badge> : "—"} />
+              <Row label="Status" value={project.status ? <Badge variant={getStatusVariant(project.status)} dot>{statusLabel(project.status)}</Badge> : "—"} />
+              <Row label="Priority" value={project.priority ? <Badge variant={getPriorityVariant(project.priority)} size="sm">{priorityLabel(project.priority)}</Badge> : "—"} />
               <Row label="Start" value={project.start_date ? formatDate(project.start_date) : "—"} />
               <Row label="Deadline" value={project.deadline ? formatDate(project.deadline) : "—"} />
               <Row label="Progress" value={<span className="tabular-nums">{progress}%</span>} />
@@ -385,21 +386,9 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
   );
 }
 
-function statusVariant(s: string): "success" | "warning" | "danger" | "neutral" {
-  const m: Record<string, "success" | "warning" | "danger" | "neutral"> = {
-    active: "success", on_hold: "warning", completed: "neutral", archived: "neutral",
-  };
-  return m[s] || "neutral";
-}
-
 function statusLabel(s: string): string {
   const m: Record<string, string> = { active: "Active", on_hold: "On Hold", completed: "Completed", archived: "Archived" };
   return m[s] || s;
-}
-
-function priorityVariant(s: string): "success" | "warning" | "danger" | "neutral" {
-  const m: Record<string, "success" | "warning" | "danger" | "neutral"> = { low: "neutral", medium: "warning", high: "danger", urgent: "danger" };
-  return m[s] || "neutral";
 }
 
 function priorityLabel(s: string): string {

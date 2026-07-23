@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/services/api";
+import { queryKeys } from "@/services/queryKeys";
 import { useAuth } from "@/store/auth";
 import { Button } from "@/components/ui/Button";
 import { Avatar } from "@/components/ui/Avatar";
@@ -24,29 +25,29 @@ export function CommentsSection({ taskId, projectId }: Props) {
   const [replyBody, setReplyBody] = useState("");
 
   const { data: comments, isLoading } = useQuery({
-    queryKey: ["comments", taskId],
+    queryKey: queryKeys.comments.list(taskId),
     queryFn: () => api.get("/comments", { params: { task_id: taskId } }).then((r) => r.data?.data || r.data || []),
     enabled: Boolean(taskId),
   });
 
   const addMutation = useMutation({
     mutationFn: (text: string) => api.post("/comments", { task_id: taskId, project_id: projectId, body: text }).then((r) => r.data),
-    onSuccess: () => { setBody(""); queryClient.invalidateQueries({ queryKey: ["comments", taskId] }); queryClient.invalidateQueries({ queryKey: ["task", taskId] }); },
+    onSuccess: () => { setBody(""); queryClient.invalidateQueries({ queryKey: queryKeys.comments.list(taskId) }); queryClient.invalidateQueries({ queryKey: queryKeys.tasks.detail(taskId) }); },
   });
 
   const replyMutation = useMutation({
     mutationFn: ({ parentId, text }: { parentId: number; text: string }) => api.post("/comments", { task_id: taskId, project_id: projectId, body: text, parent_id: parentId }).then((r) => r.data),
-    onSuccess: () => { setReplyBody(""); setReplyingTo(null); queryClient.invalidateQueries({ queryKey: ["comments", taskId] }); },
+    onSuccess: () => { setReplyBody(""); setReplyingTo(null); queryClient.invalidateQueries({ queryKey: queryKeys.comments.list(taskId) }); },
   });
 
   const editMutation = useMutation({
     mutationFn: ({ id, text }: { id: number; text: string }) => api.put(`/comments/${id}`, { body: text }).then((r) => r.data),
-    onSuccess: () => { setEditingId(null); setEditBody(""); queryClient.invalidateQueries({ queryKey: ["comments", taskId] }); },
+    onSuccess: () => { setEditingId(null); setEditBody(""); queryClient.invalidateQueries({ queryKey: queryKeys.comments.list(taskId) }); },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => api.delete(`/comments/${id}`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["comments", taskId] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.comments.list(taskId) }),
   });
 
   const isOwn = (c: Comment) => c.author?.id === user?.id;

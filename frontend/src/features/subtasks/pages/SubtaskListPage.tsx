@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { FilterBar } from "@/components/ui/FilterBar";
 import { Table, type TableColumn } from "@/components/ui/Table";
 import { SkeletonKpiRow } from "@/components/ui/Skeleton";
-import { EmptyState } from "@/components/shared/EmptyState";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { CheckCircle2, Circle, ListChecks, Trash2, ListTodo, Plus, X, Search } from "lucide-react";
 import type { Task } from "@/types";
 

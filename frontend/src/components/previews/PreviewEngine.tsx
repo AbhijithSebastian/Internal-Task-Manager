@@ -4,6 +4,8 @@ import { OfficePreview } from "./OfficePreview";
 import { MediaPreview } from "./MediaPreview";
 import { FallbackPreview } from "./FallbackPreview";
 import { UrlPreview } from "./UrlPreview";
+import { FigmaPreview } from "./FigmaPreview";
+import { GitHubPreview } from "./GitHubPreview";
 
 interface PreviewEngineProps {
   mimeType?: string;
@@ -26,11 +28,17 @@ export function PreviewEngine({
   const ext = (fileName?.split(".").pop() || "").toLowerCase();
 
   if (url && !fileUrl) {
+    if (url.includes("figma.com")) {
+      return <FigmaPreview url={url} className={className} />;
+    }
+    if (url.includes("github.com")) {
+      return <GitHubPreview url={url} className={className} />;
+    }
     return <UrlPreview url={url} className={className} />;
   }
 
   if (fileUrl) {
-    if (mime.startsWith("image/") || ["png", "jpg", "jpeg", "svg", "webp", "gif", "bmp", "ico"].includes(ext)) {
+    if (mime.startsWith("image/") || ["png", "jpg", "jpeg", "svg", "webp", "gif", "bmp", "ico", "tiff", "tif"].includes(ext)) {
       return <ImagePreview src={fileUrl} alt={fileName} className={className} />;
     }
 
@@ -77,6 +85,10 @@ export function PreviewEngine({
       ["doc", "docx", "xls", "xlsx", "ppt", "pptx"].includes(ext)
     ) {
       return <OfficePreview mimeType={mimeType} fileName={fileName} fileUrl={fileUrl} className={className} />;
+    }
+
+    if (["ai", "psd", "eps", "fig", "xd", "sketch"].includes(ext) || mime.includes("illustrator") || mime.includes("photoshop") || mime.includes("postscript")) {
+      return <FallbackPreview mimeType={mimeType} fileName={fileName} fileUrl={fileUrl} fileSize={fileSize} className={className} />;
     }
   }
 

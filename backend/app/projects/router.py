@@ -69,6 +69,7 @@ class ProjectCreate(BaseModel):
     pm_id: Optional[int] = None
     lead_id: Optional[int] = None
     figma_url: Optional[str] = None
+    figma_token: Optional[str] = None
     github_url: Optional[str] = None
     docs_url: Optional[str] = None
     meeting_url: Optional[str] = None
@@ -85,6 +86,7 @@ class ProjectUpdate(BaseModel):
     pm_id: Optional[int] = None
     lead_id: Optional[int] = None
     figma_url: Optional[str] = None
+    figma_token: Optional[str] = None
     github_url: Optional[str] = None
     docs_url: Optional[str] = None
     meeting_url: Optional[str] = None
@@ -165,6 +167,7 @@ def create_project(data: ProjectCreate, db: Session = Depends(get_db),
         pm_id=data.pm_id,
         lead_id=data.lead_id,
         figma_url=data.figma_url,
+        figma_token=data.figma_token,
         github_url=data.github_url,
         docs_url=data.docs_url,
         meeting_url=data.meeting_url,
@@ -215,6 +218,8 @@ def update_project(project_id: int, data: ProjectUpdate, db: Session = Depends(g
         project.lead_id = data.lead_id
     if data.figma_url is not None:
         project.figma_url = data.figma_url
+    if data.figma_token is not None:
+        project.figma_token = data.figma_token
     if data.github_url is not None:
         project.github_url = data.github_url
     if data.docs_url is not None:
@@ -468,6 +473,7 @@ def format_project(p: Project, db: Session) -> dict:
         "project_manager": {"id": p.project_manager.id, "name": p.project_manager.name} if p.project_manager else None,
         "team_lead": {"id": p.team_lead.id, "name": p.team_lead.name} if p.team_lead else None,
         "figma_url": p.figma_url,
+        "figma_token": p.figma_token,
         "github_url": p.github_url,
         "docs_url": p.docs_url,
         "meeting_url": p.meeting_url,

@@ -64,6 +64,7 @@ export interface Project {
   pm_id?: number;
   lead_id?: number;
   figma_url?: string;
+  figma_token?: string;
   github_url?: string;
   docs_url?: string;
   meeting_url?: string;

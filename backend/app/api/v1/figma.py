@@ -1,6 +1,6 @@
 import logging
 import httpx
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, Query
 from fastapi.responses import JSONResponse
 
 logger = logging.getLogger(__name__)
@@ -11,27 +11,35 @@ FIGMA_API = "https://api.figma.com"
 
 
 @router.get("/files/{file_key}")
-async def get_figma_file(file_key: str, request: Request):
+async def get_figma_file(
+    file_key: str,
+    request: Request,
+    token: str = Query(None, description="Figma API token"),
+):
     headers = {"User-Agent": "ProjectWorkspace/1.0"}
-    auth = request.headers.get("Authorization")
-    if auth:
-        token = auth.replace("Bearer ", "", 1)
-        if token.strip():
-            headers["X-Figma-Token"] = token
+    
+    figma_token = token
+    if not figma_token:
+        auth = request.headers.get("Authorization")
+        if auth:
+            figma_token = auth.replace("Bearer ", "", 1).strip()
+    
+    if figma_token:
+        headers["X-Figma-Token"] = figma_token
 
     url = f"{FIGMA_API}/v1/files/{file_key}"
 
     logger.info(
         "Figma proxy request: method=GET url=%s has_auth=%s",
-        url, "yes" if auth else "no",
+        url, "yes" if figma_token else "no",
     )
 
     async with httpx.AsyncClient(timeout=30) as client:
         resp = await client.get(url, headers=headers)
 
     logger.info(
-        "Figma proxy response: url=%s status=%d body=%s",
-        url, resp.status_code, resp.text,
+        "Figma proxy response: url=%s status=%d",
+        url, resp.status_code,
     )
 
     try:

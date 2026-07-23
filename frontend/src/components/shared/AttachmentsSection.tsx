@@ -2,8 +2,9 @@ import { useState, useRef, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/services/api";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { PreviewEngine } from "@/components/previews/PreviewEngine";
 import { 
-  Paperclip, Upload, FileText, Trash2, Download 
+  Paperclip, Upload, Trash2, Download 
 } from "lucide-react";
 import { formatFileSize } from "@/utils/formatters";
 import type { Attachment } from "@/types";
@@ -124,7 +125,15 @@ export function AttachmentsSection({
         <ul className="space-y-1">
           {files.map((file) => (
             <li key={file.id} className="flex items-center gap-3 py-2 px-3 rounded-md hover:bg-hover group transition-colors">
-              <FileText className="h-4 w-4 text-tertiary shrink-0" />
+              <div className="shrink-0 w-8 h-8 rounded bg-subtle overflow-hidden flex items-center justify-center">
+                <PreviewEngine
+                  mimeType={file.mime_type}
+                  fileName={file.name || file.file_name}
+                  fileUrl={`${file.url}?inline=true`}
+                  fileSize={file.size}
+                  className="w-8 h-8"
+                />
+              </div>
               <div className="flex-1 min-w-0">
                 <a
                   href={file.url}

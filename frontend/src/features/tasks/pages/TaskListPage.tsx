@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { tasksService } from "@/features/tasks/services/tasks";
+import { queryKeys } from "@/services/queryKeys";
 import { useAuth } from "@/store/auth";
 import { Button } from "@/components/ui/Button";
 import { FilterBar, type ViewMode } from "@/components/ui/FilterBar";
@@ -53,7 +54,7 @@ export default function TaskListPage() {
   const [selectedKeys, setSelectedKeys] = useState<Set<string | number>>(new Set());
 
   const { data, isLoading } = useQuery({
-    queryKey: ["tasks", page, search, status, priority, assignee, sortBy, sortDirection],
+    queryKey: queryKeys.tasks.list({ page, search, status, priority, assignee, sort_by: sortBy, sort_direction: sortDirection }),
     queryFn: () => tasksService.list({
       page,
       search: search || undefined,

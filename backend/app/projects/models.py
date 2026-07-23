@@ -19,6 +19,7 @@ class Project(Base):
     pm_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
     lead_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
     figma_url = Column(String(2048), nullable=True)
+    figma_token = Column(String(512), nullable=True)
     github_url = Column(String(2048), nullable=True)
     docs_url = Column(String(2048), nullable=True)
     meeting_url = Column(String(2048), nullable=True)

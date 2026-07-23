@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/services/api";
+import { queryKeys } from "@/services/queryKeys";
 import { Button } from "@/components/ui/Button";
 import { TaskStatusBadge } from "@/features/tasks/components/TaskStatusBadge";
 import { Link2, Plus, X } from "lucide-react";
@@ -18,12 +19,12 @@ export function DependenciesSection({ taskId, task }: Props) {
 
   const createMutation = useMutation({
     mutationFn: (depId: number) => api.post(`/tasks/${taskId}/dependencies`, { dependency_id: depId }).then((r) => r.data),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["task", taskId] }); setShowAdd(false); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: queryKeys.tasks.detail(taskId) }); setShowAdd(false); },
   });
 
   const removeMutation = useMutation({
     mutationFn: (depId: number) => api.delete(`/tasks/${taskId}/dependencies/${depId}`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["task", taskId] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.tasks.detail(taskId) }),
   });
 
   const blockedBy = (task.dependencies ?? []) as TaskBrief[];

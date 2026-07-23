@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/services/api";
+import { queryKeys } from "@/services/queryKeys";
 import { Drawer } from "@/components/ui/Drawer";
 import { Button } from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -21,7 +22,7 @@ export function TaskDetailDrawer({ taskId, onClose }: TaskDetailDrawerProps) {
   const [activeTab, setActiveTab] = useState<TabKey>("details");
 
   const { data: task, isLoading, error } = useQuery({
-    queryKey: ["task", taskId],
+    queryKey: queryKeys.tasks.detail(taskId ?? 0),
     queryFn: () => api.get(`/tasks/${taskId}`).then((r) => r.data?.data || r.data),
     enabled: Boolean(taskId),
   });

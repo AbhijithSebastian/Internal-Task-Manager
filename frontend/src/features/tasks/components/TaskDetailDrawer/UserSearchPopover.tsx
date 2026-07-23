@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/services/api";
+import { queryKeys } from "@/services/queryKeys";
 import { Avatar } from "@/components/ui/Avatar";
 import { Search } from "lucide-react";
 import type { UserBrief } from "@/types";
@@ -17,7 +18,7 @@ export function UserSearchPopover({ onSelect, excludeIds = [], placeholder = "Se
   const ref = useRef<HTMLDivElement>(null);
 
   const { data: results, isLoading } = useQuery({
-    queryKey: ["users-search", query],
+    queryKey: queryKeys.users.searchDetail(query),
     queryFn: () =>
       api.get("/users/search", { params: { q: query } }).then((r) => r.data?.data || r.data || []),
     enabled: query.length >= 1,

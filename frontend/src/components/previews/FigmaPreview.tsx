@@ -9,6 +9,7 @@ import { formatRelative } from "@/utils/formatters";
 
 interface FigmaPreviewProps {
   url: string;
+  token?: string;
   className?: string;
 }
 
@@ -36,7 +37,7 @@ function parseFigmaUrl(url: string): FigmaMeta | null {
   }
 }
 
-export function FigmaPreview({ url, className = "" }: FigmaPreviewProps) {
+export function FigmaPreview({ url, token, className = "" }: FigmaPreviewProps) {
   const meta = parseFigmaUrl(url);
   const typeLabel = meta?.isDevMode ? "Dev Mode" : meta?.isPrototype ? "Prototype" : meta?.isFrame ? "Frame" : "File";
   const embedUrl = meta?.fileId ? `https://www.figma.com/embed?embed_host=opencode&url=${encodeURIComponent(url)}` : null;
@@ -45,7 +46,10 @@ export function FigmaPreview({ url, className = "" }: FigmaPreviewProps) {
     queryKey: ["figma-meta", meta?.fileId],
     queryFn: async () => {
       if (!meta?.fileId) throw new Error("Invalid Figma URL");
-      const res = await proxyApi.get(`/figma/files/${meta.fileId}`);
+      const params = new URLSearchParams();
+      if (token) params.set("token", token);
+      const qs = params.toString();
+      const res = await proxyApi.get(`/figma/files/${meta.fileId}${qs ? `?${qs}` : ""}`);
       return res.data as {
         name: string;
         owner?: { name?: string };
@@ -136,7 +140,9 @@ export function FigmaPreview({ url, className = "" }: FigmaPreviewProps) {
             <p className="text-sm font-medium text-primary">Preview Unavailable</p>
             <p className="text-xs text-tertiary mt-0.5">
               {embedError?.message?.includes("403") || embedError?.message?.includes("401")
-                ? "This file is private or requires authentication. Configure a Figma API token in Settings."
+                ? token
+                  ? "Authentication failed. The token may be invalid or expired."
+                  : "This file is private or requires authentication. Add a Figma API token in the project settings."
                 : embedError?.message?.includes("404")
                 ? "This file was not found. It may have been deleted or the URL is incorrect."
                 : embedError?.message?.includes("429")

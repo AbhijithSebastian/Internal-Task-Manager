@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/services/api";
+import { invalidateTask } from "@/services/queryKeys";
 import { Button } from "@/components/ui/Button";
 import { STATUS_OPTIONS, PRIORITY_OPTIONS } from "./constants";
 import { AssigneeSelector } from "./AssigneeSelector";
@@ -23,7 +24,7 @@ export function DetailsSection({ task, taskId }: Props) {
 
   useEffect(() => { setLocalStatus(task.status); setLocalPriority(task.priority); }, [task.status, task.priority]);
 
-  const invalidate = () => { queryClient.invalidateQueries({ queryKey: ["task", taskId] }); queryClient.invalidateQueries({ queryKey: ["tasks"] }); };
+  const invalidate = () => { invalidateTask(queryClient, taskId); };
 
   const updateMutation = useMutation({ mutationFn: (data: Record<string, unknown>) => api.put(`/tasks/${taskId}`, data).then((r) => r.data), onSuccess: invalidate });
   const statusChangeMutation = useMutation({ mutationFn: (s: string) => api.patch(`/tasks/${taskId}/status`, { status: s }).then((r) => r.data), onSuccess: invalidate });

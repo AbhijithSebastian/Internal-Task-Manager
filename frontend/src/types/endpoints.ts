@@ -1,3 +1,5 @@
+import type { PaginatedResponse } from "./index";
+
 export const HTTP_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"] as const;
 export type HttpMethod = (typeof HTTP_METHODS)[number];
 
@@ -72,10 +74,4 @@ export interface EndpointActivity {
   created_at: string;
 }
 
-export interface PaginatedEndpoints {
-  items: Endpoint[];
-  total: number;
-  page: number;
-  per_page: number;
-  total_pages: number;
-}
+export type PaginatedEndpoints = PaginatedResponse<Endpoint>;

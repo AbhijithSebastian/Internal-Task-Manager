@@ -23,7 +23,7 @@ class Settings(BaseSettings):
 
     upload_dir: str = "uploads"
     max_upload_size_mb: int = 50
-    allowed_upload_extensions: str = "jpg,jpeg,png,gif,webp,svg,pdf,doc,docx,xls,xlsx,csv,txt,zip,rar,7z,tar,gz,apk,mp4,mov,avi,mkv,webm,mp3,wav,ppt,pptx,json,xml,md"
+    allowed_upload_extensions: str = "jpg,jpeg,png,gif,webp,svg,pdf,doc,docx,xls,xlsx,csv,txt,zip,rar,7z,tar,gz,apk,mp4,mov,avi,mkv,webm,mp3,wav,flac,aac,ogg,m4a,ppt,pptx,json,xml,md,tiff,tif,bmp,ico,ai,psd,eps,fig,xd,sketch"
 
     redis_url: str = ""
 

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, proxyApi } from "@/services/api";
@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Badge } from "@/components/ui/Badge";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { useClipboard } from "@/hooks/useClipboard";
 import {
   Github, ExternalLink, GitBranch, GitCommitHorizontal, GitPullRequest,
   AlertCircle, Star, GitFork, Eye, Unlink, RefreshCw,
@@ -16,7 +17,7 @@ import {
   Shield, Tag, Globe, HardDrive, Clock, MessageSquare,
   AlertTriangle,
 } from "lucide-react";
-import { formatRelative } from "@/utils/formatters";
+import { formatRelative, formatNum, formatFileSize } from "@/utils/formatters";
 
 function parseGitHubUrl(url: string): { owner: string; repo: string } | null {
   const match = url.match(/github\.com\/([^/]+)\/([^/\s?#]+)/);
@@ -27,19 +28,6 @@ function parseGitHubUrl(url: string): { owner: string; repo: string } | null {
 type Tab = "overview" | "commits" | "branches" | "pulls" | "issues" | "releases" | "contributors" | "languages";
 
 const PER_PAGE = 20;
-
-function useClipboard() {
-  const [copied, setCopied] = useState(false);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const copy = useCallback((text: string) => {
-    navigator.clipboard.writeText(text).then(() => {
-      setCopied(true);
-      if (timerRef.current) clearTimeout(timerRef.current);
-      timerRef.current = setTimeout(() => setCopied(false), 2000);
-    });
-  }, []);
-  return { copied, copy };
-}
 
 export default function ProjectGitHubPage() {
   const { projectId } = useParams<{ projectId: string }>();
@@ -389,12 +377,12 @@ function RepoOverview({ repoInfo, repoData }: { repoInfo: { owner: string; repo:
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-        <StatCard icon={Star} label="Stars" value={formatNum(d?.stargazers_count)} />
-        <StatCard icon={GitFork} label="Forks" value={formatNum(d?.forks_count)} />
-        <StatCard icon={Eye} label="Watchers" value={formatNum(d?.subscribers_count)} />
-        <StatCard icon={AlertCircle} label="Open Issues" value={formatNum(d?.open_issues_count)} />
-        <StatCard icon={GitBranch} label="Default Branch" value={String(d?.default_branch || "—")} />
-        <StatCard icon={HardDrive} label="Size" value={d?.size ? `${Math.round((d.size as number) / 1024)} MB` : "—"} />
+        <GitHubStatCard icon={Star} label="Stars" value={formatNum(d?.stargazers_count)} />
+        <GitHubStatCard icon={GitFork} label="Forks" value={formatNum(d?.forks_count)} />
+        <GitHubStatCard icon={Eye} label="Watchers" value={formatNum(d?.subscribers_count)} />
+        <GitHubStatCard icon={AlertCircle} label="Open Issues" value={formatNum(d?.open_issues_count)} />
+        <GitHubStatCard icon={GitBranch} label="Default Branch" value={String(d?.default_branch || "—")} />
+        <GitHubStatCard icon={HardDrive} label="Size" value={d?.size ? `${Math.round((d.size as number) / 1024)} MB` : "—"} />
       </div>
 
       <Card>
@@ -469,7 +457,7 @@ function CommitsSection({ commits, isLoading, error, repoInfo, branches, selecte
       )}
 
       {!commits || commits.length === 0 ? (
-        <EmptyState icon={GitCommitHorizontal} message="No commits found on this branch." />
+        <GitHubEmptyState icon={GitCommitHorizontal} message="No commits found on this branch." />
       ) : (
         <>
           <div className="space-y-1">
@@ -508,7 +496,7 @@ function CommitsSection({ commits, isLoading, error, repoInfo, branches, selecte
               </div>
             ))}
           </div>
-          <Pagination page={pageNum} onPageChange={onPageChange} />
+          <GitHubPagination page={pageNum} onPageChange={onPageChange} />
         </>
       )}
     </div>
@@ -526,7 +514,7 @@ function BranchesSection({ branches, isLoading, error, repoInfo, defaultBranch, 
 }) {
   if (error) return <GitHubErrorBanner type="error" message="Failed to load branches" onRetry={() => {}} />;
   if (isLoading) return <div className="space-y-2">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} variant="rect" className="h-10 w-full rounded-lg" />)}</div>;
-  if (!branches || branches.length === 0) return <EmptyState icon={GitBranch} message="No branches found." />;
+  if (!branches || branches.length === 0) return <GitHubEmptyState icon={GitBranch} message="No branches found." />;
 
   return (
     <div className="space-y-1">
@@ -543,7 +531,7 @@ function BranchesSection({ branches, isLoading, error, repoInfo, defaultBranch, 
           <ExternalLink className="h-3.5 w-3.5 text-tertiary opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
         </a>
       ))}
-      <Pagination page={pageNum} onPageChange={onPageChange} />
+      <GitHubPagination page={pageNum} onPageChange={onPageChange} />
     </div>
   );
 }
@@ -559,7 +547,7 @@ function PullRequestSection({ pulls, isLoading, error, repoInfo, page: pageNum, 
 }) {
   if (error) return <GitHubErrorBanner type="error" message="Failed to load pull requests" onRetry={() => {}} />;
   if (isLoading) return <div className="space-y-2">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} variant="rect" className="h-14 w-full rounded-lg" />)}</div>;
-  if (!pulls || pulls.length === 0) return <EmptyState icon={GitPullRequest} message="No pull requests found." />;
+  if (!pulls || pulls.length === 0) return <GitHubEmptyState icon={GitPullRequest} message="No pull requests found." />;
 
   return (
     <div className="space-y-1">
@@ -600,7 +588,7 @@ function PullRequestSection({ pulls, isLoading, error, repoInfo, page: pageNum, 
           <ExternalLink className="h-3.5 w-3.5 text-tertiary opacity-0 group-hover:opacity-100 transition-opacity shrink-0 mt-1" />
         </a>
       ))}
-      <Pagination page={pageNum} onPageChange={onPageChange} />
+      <GitHubPagination page={pageNum} onPageChange={onPageChange} />
     </div>
   );
 }
@@ -618,7 +606,7 @@ function IssueSection({ issues, isLoading, error, repoInfo, page: pageNum, onPag
   if (isLoading) return <div className="space-y-2">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} variant="rect" className="h-14 w-full rounded-lg" />)}</div>;
 
   const actualIssues = issues?.filter((i) => !i.pull_request) || [];
-  if (actualIssues.length === 0) return <EmptyState icon={AlertCircle} message="No open issues." />;
+  if (actualIssues.length === 0) return <GitHubEmptyState icon={AlertCircle} message="No open issues." />;
 
   return (
     <div className="space-y-1">
@@ -654,7 +642,7 @@ function IssueSection({ issues, isLoading, error, repoInfo, page: pageNum, onPag
           <ExternalLink className="h-3.5 w-3.5 text-tertiary opacity-0 group-hover:opacity-100 transition-opacity shrink-0 mt-1" />
         </a>
       ))}
-      <Pagination page={pageNum} onPageChange={onPageChange} />
+      <GitHubPagination page={pageNum} onPageChange={onPageChange} />
     </div>
   );
 }
@@ -670,7 +658,7 @@ function ReleasesSection({ releases, isLoading, error, page: pageNum, onPageChan
 }) {
   if (error) return <GitHubErrorBanner type="error" message="Failed to load releases" onRetry={() => {}} />;
   if (isLoading) return <div className="space-y-2">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} variant="rect" className="h-16 w-full rounded-lg" />)}</div>;
-  if (!releases || releases.length === 0) return <EmptyState icon={Package} message="No releases found." />;
+  if (!releases || releases.length === 0) return <GitHubEmptyState icon={Package} message="No releases found." />;
 
   return (
     <div className="space-y-1">
@@ -701,7 +689,7 @@ function ReleasesSection({ releases, isLoading, error, page: pageNum, onPageChan
           )}
         </a>
       ))}
-      <Pagination page={pageNum} onPageChange={onPageChange} />
+      <GitHubPagination page={pageNum} onPageChange={onPageChange} />
     </div>
   );
 }
@@ -717,7 +705,7 @@ function ContributorsSection({ contributors, isLoading, error, page: pageNum, on
 }) {
   if (error) return <GitHubErrorBanner type="error" message="Failed to load contributors" onRetry={() => {}} />;
   if (isLoading) return <div className="space-y-2">{Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} variant="rect" className="h-12 w-full rounded-lg" />)}</div>;
-  if (!contributors || contributors.length === 0) return <EmptyState icon={Users} message="No contributors found." />;
+  if (!contributors || contributors.length === 0) return <GitHubEmptyState icon={Users} message="No contributors found." />;
 
   const maxContributions = Math.max(...contributors.map((c) => c.contributions));
 
@@ -739,7 +727,7 @@ function ContributorsSection({ contributors, isLoading, error, page: pageNum, on
           <ExternalLink className="h-3.5 w-3.5 text-tertiary opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
         </a>
       ))}
-      <Pagination page={pageNum} onPageChange={onPageChange} />
+      <GitHubPagination page={pageNum} onPageChange={onPageChange} />
     </div>
   );
 }
@@ -754,7 +742,7 @@ function LanguagesSection({ languages, isLoading, error }: {
 }) {
   if (error) return <GitHubErrorBanner type="error" message="Failed to load languages" onRetry={() => {}} />;
   if (isLoading) return <div className="space-y-2">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} variant="rect" className="h-10 w-full rounded-lg" />)}</div>;
-  if (!languages || Object.keys(languages).length === 0) return <EmptyState icon={Code2} message="No language data available." />;
+  if (!languages || Object.keys(languages).length === 0) return <GitHubEmptyState icon={Code2} message="No language data available." />;
 
   const total = Object.values(languages).reduce((a, b) => a + b, 0);
   const sorted = Object.entries(languages).sort(([, a], [, b]) => b - a);
@@ -797,7 +785,7 @@ function LanguagesSection({ languages, isLoading, error }: {
 // SHARED COMPONENTS
 // ═══════════════════════════════════════════════════════════════
 
-function StatCard({ icon: Icon, label, value }: { icon: typeof Github; label: string; value: string }) {
+function GitHubStatCard({ icon: Icon, label, value }: { icon: typeof Github; label: string; value: string }) {
   return (
     <Card className="p-3">
       <div className="flex items-center gap-2">
@@ -811,7 +799,7 @@ function StatCard({ icon: Icon, label, value }: { icon: typeof Github; label: st
   );
 }
 
-function EmptyState({ icon: Icon, message }: { icon: typeof Github; message: string }) {
+function GitHubEmptyState({ icon: Icon, message }: { icon: typeof Github; message: string }) {
   return (
     <div className="flex flex-col items-center py-10 text-center">
       <Icon className="h-8 w-8 text-tertiary mb-2" />
@@ -820,7 +808,7 @@ function EmptyState({ icon: Icon, message }: { icon: typeof Github; message: str
   );
 }
 
-function Pagination({ page, onPageChange }: { page: number; onPageChange: (p: number) => void }) {
+function GitHubPagination({ page, onPageChange }: { page: number; onPageChange: (p: number) => void }) {
   return (
     <div className="flex items-center justify-between pt-2 border-t border-default">
       <p className="text-xs text-tertiary">Page {page}</p>
@@ -874,14 +862,6 @@ function GitHubErrorBanner({ type, message, onRetry }: { type: "rate-limit" | "e
 // UTILITIES
 // ═══════════════════════════════════════════════════════════════
 
-function formatNum(v: unknown): string {
-  if (typeof v !== "number") return "—";
-  if (v >= 1000) return `${(v / 1000).toFixed(1)}k`;
-  return String(v);
-}
-
 function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  return formatFileSize(bytes);
 }

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/services/api";
+import { invalidateTask } from "@/services/queryKeys";
 import { Button } from "@/components/ui/Button";
 import { Avatar } from "@/components/ui/Avatar";
 import { ListChecks, Circle, CheckCircle2, Plus, Trash2 } from "lucide-react";
@@ -21,19 +22,19 @@ export function SubtasksSection({ taskId, subtasks }: Props) {
       api.post(`/tasks/${taskId}/subtasks`, { title: t }).then((r) => r.data),
     onSuccess: () => {
       setTitle(""); setShowAdd(false);
-      queryClient.invalidateQueries({ queryKey: ["task", taskId] });
+      invalidateTask(queryClient, taskId);
     },
   });
 
   const toggleMutation = useMutation({
     mutationFn: ({ id, currentStatus }: { id: number; currentStatus: string }) =>
       api.patch(`/tasks/${id}/status`, { status: currentStatus === "done" ? "todo" : "done" }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["task", taskId] }),
+    onSuccess: () => invalidateTask(queryClient, taskId),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => api.delete(`/tasks/${taskId}/subtasks/${id}`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["task", taskId] }),
+    onSuccess: () => invalidateTask(queryClient, taskId),
   });
 
   const doneCount = subtasks?.filter((s) => s.status === "done").length ?? 0;

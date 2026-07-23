@@ -1,4 +1,5 @@
 import { File, FileText, FileImage, FileArchive, FileCode, Download, ExternalLink } from "lucide-react";
+import { formatFileSize } from "@/utils/formatters";
 
 interface FallbackPreviewProps {
   mimeType?: string;
@@ -6,18 +7,6 @@ interface FallbackPreviewProps {
   fileUrl?: string;
   fileSize?: number;
   className?: string;
-}
-
-function formatSize(bytes?: number): string {
-  if (!bytes) return "";
-  const units = ["B", "KB", "MB", "GB"];
-  let size = bytes;
-  let unit = 0;
-  while (size >= 1024 && unit < units.length - 1) {
-    size /= 1024;
-    unit++;
-  }
-  return `${size.toFixed(1)} ${units[unit]}`;
 }
 
 function getFileIcon(mime: string, ext: string) {
@@ -30,6 +19,7 @@ function getFileIcon(mime: string, ext: string) {
   if (mime.includes("spreadsheet") || mime.includes("excel")) return FileText;
   if (mime.includes("word") || mime.includes("document")) return FileText;
   if (mime.includes("presentation")) return FileText;
+  if (["ai", "psd", "eps", "fig", "xd", "sketch"].includes(ext)) return FileImage;
   return File;
 }
 
@@ -48,7 +38,7 @@ export function FallbackPreview({ mimeType, fileName, fileUrl, fileSize, classNa
       )}
       <div className="flex items-center gap-3 mt-1 text-xs text-tertiary">
         <span>{mimeType || ext.toUpperCase() || "Unknown file type"}</span>
-        {fileSize && <span>{formatSize(fileSize)}</span>}
+        {fileSize && <span>{formatFileSize(fileSize)}</span>}
       </div>
       {fileUrl && (
         <div className="flex items-center gap-2 mt-4">

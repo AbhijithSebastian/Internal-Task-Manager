@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/services/api";
+import { queryKeys } from "@/services/queryKeys";
 import { Avatar } from "@/components/ui/Avatar";
 import { UserPlus } from "lucide-react";
 import { UserSearchPopover } from "./UserSearchPopover";
@@ -19,7 +20,7 @@ export function AssigneeSelector({ assignees, taskId }: Props) {
     mutationFn: (userId: number) =>
       api.post(`/tasks/${taskId}/assign`, { user_id: userId }).then((r) => r.data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["task", taskId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.detail(taskId) });
       setShowSearch(false);
     },
   });

@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/services/api";
+import { queryKeys } from "@/services/queryKeys";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { formatRelative } from "@/utils/formatters";
 import { Activity as ActivityIcon } from "lucide-react";
@@ -11,7 +12,7 @@ interface Props {
 
 export function ActivitySection({ taskId }: Props) {
   const { data: activity, isLoading } = useQuery({
-    queryKey: ["activity", taskId],
+    queryKey: queryKeys.activity.list("task", taskId),
     queryFn: () => api.get("/activity", { params: { subject_type: "task", subject_id: taskId } }).then((r) => r.data?.data || r.data || []),
     enabled: Boolean(taskId),
   });
