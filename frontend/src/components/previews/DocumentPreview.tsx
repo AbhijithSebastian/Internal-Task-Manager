@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { FileText, Download, AlertCircle } from "lucide-react";
+import { FileText, AlertCircle } from "lucide-react";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { useAuthenticatedResource } from "@/hooks/useAuthenticatedResource";
 
 interface DocumentPreviewProps {
   mimeType?: string;
@@ -73,10 +74,6 @@ function MarkdownViewer({ content }: { content: string }) {
 }
 
 export function DocumentPreview({ mimeType, fileUrl, fileName, className = "" }: DocumentPreviewProps) {
-  const [content, setContent] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
   const mime = mimeType?.toLowerCase() || "";
   const ext = (fileName?.split(".").pop() || "").toLowerCase();
   const isPdf = mime.includes("pdf") || ext === "pdf";
@@ -85,11 +82,19 @@ export function DocumentPreview({ mimeType, fileUrl, fileName, className = "" }:
   const isTxt = mime.includes("text") || ext === "txt";
   const isCsv = ext === "csv";
 
+  const { blobUrl, loading: blobLoading, error: blobError } = useAuthenticatedResource(
+    fileUrl && !isPdf ? fileUrl : null
+  );
+
+  const [content, setContent] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   useEffect(() => {
-    if (!fileUrl || isPdf) return;
+    if (!blobUrl || isPdf) return;
     setLoading(true);
     setError(null);
-    fetch(fileUrl)
+    fetch(blobUrl)
       .then((r) => {
         if (!r.ok) throw new Error(`Failed to load: ${r.status}`);
         return r.text();
@@ -97,17 +102,15 @@ export function DocumentPreview({ mimeType, fileUrl, fileName, className = "" }:
       .then(setContent)
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
-  }, [fileUrl, isPdf]);
+  }, [blobUrl, isPdf]);
 
   if (isPdf && fileUrl) {
     return (
-      <div className={`flex items-center justify-center bg-subtle rounded-lg overflow-hidden ${className}`}>
-        <iframe src={fileUrl} className="w-full h-full" title={fileName || "PDF"} />
-      </div>
+      <PdfPreview fileUrl={fileUrl} fileName={fileName} className={className} />
     );
   }
 
-  if (loading) {
+  if (blobLoading || loading) {
     return (
       <div className={`flex items-center justify-center bg-subtle rounded-lg ${className}`}>
         <Skeleton variant="rect" className="w-full h-full" />
@@ -115,12 +118,12 @@ export function DocumentPreview({ mimeType, fileUrl, fileName, className = "" }:
     );
   }
 
-  if (error) {
+  if (error || blobError) {
     return (
       <div className={`flex flex-col items-center justify-center bg-subtle rounded-lg p-6 ${className}`}>
         <AlertCircle className="h-8 w-8 text-tertiary mb-2" />
         <p className="text-sm text-secondary">Could not load preview</p>
-        <p className="text-xs text-tertiary mt-1">{error}</p>
+        <p className="text-xs text-tertiary mt-1">{error || blobError}</p>
       </div>
     );
   }
@@ -143,11 +146,33 @@ export function DocumentPreview({ mimeType, fileUrl, fileName, className = "" }:
         {isPdf ? "PDF Document" : isJson ? "JSON File" : isMd ? "Markdown File" : isTxt ? "Text File" : isCsv ? "CSV File" : "Document"}
       </p>
       {fileName && <p className="text-xs text-tertiary mt-1 truncate max-w-full">{fileName}</p>}
-      {fileUrl && (
-        <a href={fileUrl} download className="mt-3 inline-flex items-center gap-1.5 text-xs text-link hover:underline">
-          <Download className="h-3.5 w-3.5" /> Download
-        </a>
-      )}
+    </div>
+  );
+}
+
+function PdfPreview({ fileUrl, fileName, className }: { fileUrl: string; fileName?: string; className: string }) {
+  const { blobUrl, loading, error } = useAuthenticatedResource(fileUrl);
+
+  if (loading) {
+    return (
+      <div className={`flex items-center justify-center bg-subtle rounded-lg ${className}`}>
+        <Skeleton variant="rect" className="w-full h-full" />
+      </div>
+    );
+  }
+
+  if (error || !blobUrl) {
+    return (
+      <div className={`flex flex-col items-center justify-center bg-subtle rounded-lg p-6 ${className}`}>
+        <AlertCircle className="h-8 w-8 text-tertiary mb-2" />
+        <p className="text-sm text-secondary">Could not load PDF</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`flex items-center justify-center bg-subtle rounded-lg overflow-hidden ${className}`}>
+      <iframe src={blobUrl} className="w-full h-full" title={fileName || "PDF"} />
     </div>
   );
 }

@@ -48,12 +48,17 @@ function parseUrl(url: string): ParsedUrl {
 
     // Figma
     if (host.includes("figma.com")) {
-      const match = u.pathname.match(/\/file\/([^/]+)/) || u.pathname.match(/\/proto\/([^/]+)/) || u.pathname.match(/\/design\/([^/]+)/);
-      const fileId = match?.[1];
+      const segments = u.pathname.replace(/^\/+/, "").split("/").filter(Boolean);
+      const first = segments[0] || "";
+      const resourceTypes: Record<string, string> = {
+        file: "File", design: "Design", proto: "Prototype", board: "FigJam", make: "Make",
+      };
       const isDevMode = u.pathname.includes("dev-mode");
-      const isPrototype = u.pathname.includes("proto");
       const isFrame = u.hash.includes("node-id=");
-      const type = isDevMode ? "Dev Mode" : isPrototype ? "Prototype" : isFrame ? "Frame" : "File";
+      const fileId = segments[1] || null;
+      let type = resourceTypes[first] || "File";
+      if (isDevMode) type = "Dev Mode";
+      else if (isFrame) type = "Frame";
 
       return {
         provider: `Figma ${type}`, icon: Figma, color: "#a259ff",

@@ -15,7 +15,7 @@ import { formatFileSize } from "@/utils/formatters";
 import { toast } from "sonner";
 
 const DESIGN_INTEGRATIONS = [
-  { id: "figma", name: "Figma", icon: Figma, color: "text-[#a259ff]", urlKey: "figma_url", validate: (u: string) => /figma\.com\/(file|proto|design)\//.test(u) },
+  { id: "figma", name: "Figma", icon: Figma, color: "text-[#a259ff]", urlKey: "figma_url", validate: (u: string) => /figma\.com\/(file|proto|design|board|make)\//.test(u) },
   { id: "penpot", name: "Penpot", icon: Palette, color: "text-[#17a97c]", urlKey: "penpot_url", validate: (u: string) => /penpot\.app\//.test(u) },
   { id: "framer", name: "Framer", icon: Palette, color: "text-[#0055ff]", urlKey: "framer_url", validate: (u: string) => /framer\.com\//.test(u) },
   { id: "canva", name: "Canva", icon: Palette, color: "text-[#00c4cc]", urlKey: "canva_url", validate: (u: string) => /canva\.com\//.test(u) },
@@ -444,7 +444,22 @@ export default function ProjectDesignPage() {
                     <button onClick={() => window.open(previewUrl, "_blank")} className="p-1 rounded bg-surface/90 text-tertiary hover:text-primary" title="Preview">
                       <Eye className="h-3.5 w-3.5" />
                     </button>
-                    <button onClick={() => window.open(file.url, "_blank")} className="p-1 rounded bg-surface/90 text-tertiary hover:text-primary" title="Download">
+                    <button onClick={async () => {
+                      try {
+                        const token = localStorage.getItem("access_token");
+                        const res = await fetch(file.url, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+                        if (!res.ok) throw new Error("Download failed");
+                        const blob = await res.blob();
+                        const blobUrl = URL.createObjectURL(blob);
+                        const a = document.createElement("a");
+                        a.href = blobUrl;
+                        a.download = file.name || file.file_name || "download";
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(blobUrl);
+                      } catch { window.open(file.url, "_blank"); }
+                    }} className="p-1 rounded bg-surface/90 text-tertiary hover:text-primary" title="Download">
                       <Download className="h-3.5 w-3.5" />
                     </button>
                     <button onClick={() => deleteMutation.mutate(file.id)} className="p-1 rounded bg-surface/90 text-tertiary hover:text-danger" title="Delete">

@@ -13,6 +13,7 @@ interface PreviewEngineProps {
   fileUrl?: string;
   fileSize?: number;
   url?: string;
+  token?: string;
   className?: string;
 }
 
@@ -22,6 +23,7 @@ export function PreviewEngine({
   fileUrl,
   fileSize,
   url,
+  token,
   className = "",
 }: PreviewEngineProps) {
   const mime = mimeType?.toLowerCase() || "";
@@ -29,7 +31,7 @@ export function PreviewEngine({
 
   if (url && !fileUrl) {
     if (url.includes("figma.com")) {
-      return <FigmaPreview url={url} className={className} />;
+      return <FigmaPreview url={url} token={token} className={className} />;
     }
     if (url.includes("github.com")) {
       return <GitHubPreview url={url} className={className} />;

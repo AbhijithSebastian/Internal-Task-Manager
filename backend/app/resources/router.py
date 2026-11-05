@@ -600,9 +600,15 @@ def download_resource_file(
         raise HTTPException(404, "File not found on disk")
 
     from fastapi.responses import FileResponse
+    import hashlib
+    etag = hashlib.md5(f"{resource.id}-{resource.current_version}-{resource.file_size}".encode()).hexdigest()
+    cache_control = "private, max-age=3600" if inline else "private, max-age=0, must-revalidate"
+    headers = {"Cache-Control": cache_control, "ETag": f'"{etag}"'}
+    if inline:
+        headers["Content-Disposition"] = f'inline; filename="{resource.name}"'
     return FileResponse(
         path=resource.file_path,
         media_type=resource.mime_type or "application/octet-stream",
         filename=None if inline else resource.name,
-        headers={"Content-Disposition": f"inline; filename=\"{resource.name}\""} if inline else {},
+        headers=headers,
     )

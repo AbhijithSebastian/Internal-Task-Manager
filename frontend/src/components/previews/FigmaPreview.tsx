@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { Figma, ExternalLink, AlertCircle, Lock } from "lucide-react";
 import { formatRelative } from "@/utils/formatters";
+import { useAuthenticatedResource } from "@/hooks/useAuthenticatedResource";
 
 interface FigmaPreviewProps {
   url: string;
@@ -15,35 +16,85 @@ interface FigmaPreviewProps {
 
 interface FigmaMeta {
   fileId: string | null;
-  isPrototype: boolean;
-  isDevMode: boolean;
-  isFrame: boolean;
+  resourceType: "file" | "design" | "proto" | "board" | "make" | "unknown";
+  nodeId: string | null;
+  title: string | null;
 }
 
 function parseFigmaUrl(url: string): FigmaMeta | null {
   try {
     const u = new URL(url);
     if (!u.hostname.includes("figma.com")) return null;
-    const fileMatch = u.pathname.match(/\/(file|proto|design)\/([^/]+)/);
-    const fileId = fileMatch?.[2] || null;
-    return {
-      fileId,
-      isPrototype: u.pathname.includes("proto"),
-      isDevMode: u.pathname.includes("dev-mode"),
-      isFrame: u.hash.includes("node-id="),
-    };
+
+    const segments = u.pathname.replace(/^\/+/, "").split("/").filter(Boolean);
+    const first = segments[0] || "";
+
+    if (first === "file" || first === "proto" || first === "design" || first === "board" || first === "make") {
+      const fileId = segments[1] || null;
+      const title = segments.slice(2).join("/").replace(/\/+$/, "") || null;
+      const nodeId = u.hash.includes("node-id=")
+        ? u.hash.split("node-id=")[1]?.split("&")[0]?.replace(/-/g, ":") || null
+        : null;
+      return { fileId, resourceType: first as FigmaMeta["resourceType"], nodeId, title };
+    }
+
+    if (first === "board" || first === "make") {
+      const fileId = segments[1] || null;
+      return { fileId, resourceType: first, nodeId: null, title: segments.slice(2).join("/").replace(/\/+$/, "") || null };
+    }
+
+    const fileMatch = u.pathname.match(/\/(file|proto|design|board|make)\/([^/]+)/);
+    if (fileMatch) {
+      return { fileId: fileMatch[2], resourceType: fileMatch[1] as FigmaMeta["resourceType"], nodeId: null, title: null };
+    }
+
+    const communityMatch = u.pathname.match(/\/community\/(\d+)/);
+    if (communityMatch) {
+      return { fileId: null, resourceType: "unknown", nodeId: null, title: `Community #${communityMatch[1]}` };
+    }
+
+    return null;
   } catch {
     return null;
   }
 }
 
+const RESOURCE_LABELS: Record<string, string> = {
+  file: "File",
+  design: "Design",
+  proto: "Prototype",
+  board: "FigJam",
+  make: "Make",
+  unknown: "Figma",
+};
+
+const RESOURCE_COLORS: Record<string, string> = {
+  file: "bg-[#a259ff]/10",
+  design: "bg-[#a259ff]/10",
+  proto: "bg-[#ff7262]/10",
+  board: "bg-[#f24e1e]/10",
+  make: "bg-[#0acf83]/10",
+  unknown: "bg-[#a259ff]/10",
+};
+
+const RESOURCE_TEXT_COLORS: Record<string, string> = {
+  file: "text-[#a259ff]",
+  design: "text-[#a259ff]",
+  proto: "text-[#ff7262]",
+  board: "text-[#f24e1e]",
+  make: "text-[#0acf83]",
+  unknown: "text-[#a259ff]",
+};
+
 export function FigmaPreview({ url, token, className = "" }: FigmaPreviewProps) {
   const meta = parseFigmaUrl(url);
-  const typeLabel = meta?.isDevMode ? "Dev Mode" : meta?.isPrototype ? "Prototype" : meta?.isFrame ? "Frame" : "File";
+  const resourceLabel = RESOURCE_LABELS[meta?.resourceType || "unknown"];
+  const bgColor = RESOURCE_COLORS[meta?.resourceType || "unknown"];
+  const textColor = RESOURCE_TEXT_COLORS[meta?.resourceType || "unknown"];
   const embedUrl = meta?.fileId ? `https://www.figma.com/embed?embed_host=opencode&url=${encodeURIComponent(url)}` : null;
 
   const { data: figmaMeta, isLoading, isError, error } = useQuery({
-    queryKey: ["figma-meta", meta?.fileId],
+    queryKey: ["figma-meta", meta?.fileId, token],
     queryFn: async () => {
       if (!meta?.fileId) throw new Error("Invalid Figma URL");
       const params = new URLSearchParams();
@@ -66,16 +117,22 @@ export function FigmaPreview({ url, token, className = "" }: FigmaPreviewProps) 
   const embedError = error as Error | null;
   const figmaFile = isLoading ? null : figmaMeta;
 
+  const thumbnailApiUrl = figmaFile?.thumbnailUrl
+    ? `/api/v1/figma/thumbnail?url=${encodeURIComponent(figmaFile.thumbnailUrl)}${token ? `&token=${encodeURIComponent(token)}` : ""}`
+    : null;
+  const { blobUrl: thumbnailBlob } = useAuthenticatedResource(thumbnailApiUrl);
+
   return (
     <Card className={`p-4 ${className}`}>
       <div className="flex items-start gap-3">
-        <div className="shrink-0 w-10 h-10 rounded-lg bg-[#a259ff]/10 flex items-center justify-center">
-          <Figma className="h-5 w-5 text-[#a259ff]" />
+        <div className={`shrink-0 w-10 h-10 rounded-lg ${bgColor} flex items-center justify-center`}>
+          <Figma className={`h-5 w-5 ${textColor}`} />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-medium text-tertiary uppercase tracking-wider">Figma {typeLabel}</span>
-            <Badge variant="info" size="sm">{typeLabel}</Badge>
+            <span className="text-xs font-medium text-tertiary uppercase tracking-wider">Figma {resourceLabel}</span>
+            <Badge variant="info" size="sm">{resourceLabel}</Badge>
+            {meta?.nodeId && <Badge variant="neutral" size="sm">Frame</Badge>}
           </div>
           {isLoading ? (
             <div className="mt-1 space-y-1">
@@ -84,8 +141,10 @@ export function FigmaPreview({ url, token, className = "" }: FigmaPreviewProps) 
             </div>
           ) : figmaFile?.name ? (
             <p className="text-sm text-primary truncate mt-0.5">{figmaFile.name}</p>
+          ) : meta?.title ? (
+            <p className="text-sm text-primary truncate mt-0.5">{meta.title}</p>
           ) : (
-            <p className="text-sm text-primary truncate mt-0.5">Figma Design</p>
+            <p className="text-sm text-primary truncate mt-0.5">Figma {resourceLabel}</p>
           )}
           <a href={url} target="_blank" rel="noopener noreferrer">
             <Button size="sm" className="mt-2">
@@ -95,7 +154,13 @@ export function FigmaPreview({ url, token, className = "" }: FigmaPreviewProps) 
         </div>
       </div>
 
-      {meta?.fileId && embedUrl && (
+      {thumbnailBlob && (
+        <div className="mt-3 rounded-lg overflow-hidden border border-default bg-subtle">
+          <img src={thumbnailBlob} alt={figmaFile?.name || "Figma thumbnail"} className="w-full h-48 md:h-72 object-contain" />
+        </div>
+      )}
+
+      {!thumbnailBlob && meta?.fileId && embedUrl && (
         <div className="mt-3 rounded-lg overflow-hidden border border-default">
           <iframe
             src={embedUrl}
@@ -103,23 +168,26 @@ export function FigmaPreview({ url, token, className = "" }: FigmaPreviewProps) 
             allowFullScreen
             title="Figma Preview"
           />
-          <div className="flex items-center gap-4 p-2.5 bg-subtle border-t border-default text-xs text-tertiary">
-            {isLoading ? (
-              <Skeleton variant="rect" className="h-3 w-full" />
-            ) : figmaFile ? (
-              <>
-                <span>Pages: {figmaFile.pages?.length ?? "—"}</span>
-                <span>Owner: {figmaFile.owner?.name ?? "—"}</span>
-                <span>Updated: {figmaFile.lastModified ? formatRelative(figmaFile.lastModified) : "—"}</span>
-              </>
-            ) : (
-              <>
-                <span>Pages: —</span>
-                <span>Owner: —</span>
-                <span>Updated: —</span>
-              </>
-            )}
-          </div>
+        </div>
+      )}
+
+      {meta?.fileId && (
+        <div className="flex items-center gap-4 p-2.5 bg-subtle border-t border-default text-xs text-tertiary">
+          {isLoading ? (
+            <Skeleton variant="rect" className="h-3 w-full" />
+          ) : figmaFile ? (
+            <>
+              <span>Pages: {figmaFile.pages?.length ?? "—"}</span>
+              <span>Owner: {figmaFile.owner?.name ?? "—"}</span>
+              <span>Updated: {figmaFile.lastModified ? formatRelative(figmaFile.lastModified) : "—"}</span>
+            </>
+          ) : (
+            <>
+              <span>Pages: —</span>
+              <span>Owner: —</span>
+              <span>Updated: —</span>
+            </>
+          )}
         </div>
       )}
 

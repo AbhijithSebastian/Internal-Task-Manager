@@ -9,6 +9,38 @@ import {
 import { formatFileSize } from "@/utils/formatters";
 import type { Attachment } from "@/types";
 
+function AuthenticatedDownloadButton({ url, fileName }: { url: string; fileName?: string }) {
+  const handleClick = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    try {
+      const token = localStorage.getItem("access_token");
+      const res = await fetch(url, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+      if (!res.ok) throw new Error("Download failed");
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = fileName || "download";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(blobUrl);
+    } catch {
+      window.open(url, "_blank");
+    }
+  };
+
+  return (
+    <button
+      onClick={handleClick}
+      className="p-1 text-tertiary hover:text-primary transition-colors"
+      title="Download"
+    >
+      <Download className="h-3.5 w-3.5" />
+    </button>
+  );
+}
+
 interface AttachmentsSectionProps {
   modelType: string;
   modelId: number;
@@ -146,14 +178,7 @@ export function AttachmentsSection({
                 <p className="text-xs text-tertiary">{formatFileSize(file.size)}</p>
               </div>
               <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <a
-                  href={file.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="p-1 text-tertiary hover:text-primary transition-colors"
-                >
-                  <Download className="h-3.5 w-3.5" />
-                </a>
+                <AuthenticatedDownloadButton url={file.url} fileName={file.name || file.file_name} />
                 <button
                   type="button"
                   onClick={() => {

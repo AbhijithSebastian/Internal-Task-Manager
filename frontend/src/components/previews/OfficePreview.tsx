@@ -1,4 +1,5 @@
-import { FileText, FileSpreadsheet, Monitor, Download, ExternalLink } from "lucide-react";
+import { FileText, FileSpreadsheet, Monitor, ExternalLink } from "lucide-react";
+import { useAuthenticatedResource } from "@/hooks/useAuthenticatedResource";
 
 interface OfficePreviewProps {
   mimeType?: string;
@@ -12,7 +13,7 @@ export function OfficePreview({ mimeType, fileName, fileUrl, className = "" }: O
   const ext = (fileName?.split(".").pop() || "").toLowerCase();
 
   const isDoc = mime.includes("word") || mime.includes("document") || ["doc", "docx"].includes(ext);
-  const isSheet = mime.includes("spreadsheet") || mime.includes("excel") || ["xls", "xlsx", "csv"].includes(ext);
+  const isSheet = mime.includes("spreadsheet") || mime.includes("excel") || ["xls", "xlsx"].includes(ext);
   const isSlide = mime.includes("presentation") || ["ppt", "pptx"].includes(ext);
 
   const Icon = isDoc ? FileText : isSheet ? FileSpreadsheet : isSlide ? Monitor : FileText;
@@ -32,27 +33,40 @@ export function OfficePreview({ mimeType, fileName, fileUrl, className = "" }: O
           Preview not available for this format. Download the file to view it.
         </p>
         <div className="flex items-center gap-2 mt-3">
+          {fileUrl && <OfficeDownload fileUrl={fileUrl} fileName={fileName} />}
           {fileUrl && (
-            <a
-              href={fileUrl}
-              download
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md bg-surface border border-default text-primary hover:bg-hover transition-colors"
-            >
-              <Download className="h-3.5 w-3.5" /> Download
-            </a>
-          )}
-          {fileUrl && (
-            <a
-              href={fileUrl}
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
+              onClick={() => {
+                const token = localStorage.getItem("access_token");
+                fetch(fileUrl, { headers: token ? { Authorization: `Bearer ${token}` } : {} })
+                  .then(r => r.blob())
+                  .then(blob => {
+                    const url = URL.createObjectURL(blob);
+                    window.open(url, "_blank");
+                    setTimeout(() => URL.revokeObjectURL(url), 1000);
+                  })
+                  .catch(() => window.open(fileUrl, "_blank"));
+              }}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md bg-surface border border-default text-primary hover:bg-hover transition-colors"
             >
               <ExternalLink className="h-3.5 w-3.5" /> Open
-            </a>
+            </button>
           )}
         </div>
       </div>
     </div>
+  );
+}
+
+function OfficeDownload({ fileUrl, fileName }: { fileUrl: string; fileName?: string }) {
+  const { fetchDownload } = useAuthenticatedResource(fileUrl);
+
+  return (
+    <button
+      onClick={() => fetchDownload(fileName)}
+      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md bg-surface border border-default text-primary hover:bg-hover transition-colors"
+    >
+      Download
+    </button>
   );
 }
