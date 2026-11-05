@@ -75,4 +75,4 @@ htmlcov/
 *.tar.bz2
 *.tar.xz
 *.tar.zst
-```
+```archive/laravel/public/storage
