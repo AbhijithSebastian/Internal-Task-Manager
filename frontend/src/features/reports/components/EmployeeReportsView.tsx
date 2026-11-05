@@ -1,5 +1,9 @@
 import { useState } from "react";
 import type { PaginatedResponse, EmployeeReportRow } from "../services/reports";
+import { formatDate } from "@/utils/formatters";
+import { StatCard } from "@/components/shared/StatCard";
+import { KpiBlock } from "@/components/shared/KpiBlock";
+import { getPageNumbers } from "@/components/ui/Pagination";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Eye, Users, Calendar, Activity, Briefcase, Award, TrendingUp, BarChart3 } from "lucide-react";
@@ -201,7 +205,7 @@ function EmployeeDetailPanel({ row }: { row: EmployeeReportRow }) {
                 <Activity className="h-3 w-3 text-tertiary mt-0.5 shrink-0" />
                 <div>
                   <p className="text-secondary">{a.description}</p>
-                  <p className="text-[10px] text-tertiary">{a.created_at ? formatDateLocal(a.created_at) : ""}</p>
+                  <p className="text-[10px] text-tertiary">{a.created_at ? formatDate(a.created_at) : ""}</p>
                 </div>
               </div>
             ))}
@@ -212,44 +216,6 @@ function EmployeeDetailPanel({ row }: { row: EmployeeReportRow }) {
   );
 }
 
-function formatDateLocal(dateStr: string) {
-  try {
-    return new Date(dateStr).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-  } catch {
-    return dateStr;
-  }
-}
 
-function StatCard({ icon: Icon, label, value }: { icon: any; label: string; value: string }) {
-  return (
-    <div className="flex items-center gap-2 p-2 rounded-md bg-surface border border-default/50">
-      <Icon className="h-3.5 w-3.5 text-tertiary shrink-0" />
-      <div className="min-w-0 overflow-hidden">
-        <p className="text-[10px] text-tertiary">{label}</p>
-        <p className="text-xs font-medium text-primary truncate">{value}</p>
-      </div>
-    </div>
-  );
-}
 
-function KpiBlock({ label, value, sub, color }: { label: string; value: number | string; sub?: string; color?: string }) {
-  return (
-    <div className="p-2 rounded-md bg-surface border border-default/50">
-      <p className="text-[10px] text-tertiary">{label}</p>
-      <p className={cn("text-base font-bold text-primary", color)}>{value}</p>
-      {sub && <p className="text-[10px] text-tertiary mt-0.5">{sub}</p>}
-    </div>
-  );
-}
 
-function getPageNumbers(current: number, total: number): (number | "...")[] {
-  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
-  const pages: (number | "...")[] = [1];
-  if (current > 3) pages.push("...");
-  const start = Math.max(2, current - 1);
-  const end = Math.min(total - 1, current + 1);
-  for (let i = start; i <= end; i++) pages.push(i);
-  if (current < total - 2) pages.push("...");
-  pages.push(total);
-  return pages;
-}

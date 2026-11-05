@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { projectService } from "@/features/projects/services/projects";
 import type { Project, Task, ProjectMember, Meeting, ActivityLog } from "@/types";
 
@@ -42,6 +43,22 @@ export function useProjectActivity(id: number | string | undefined, enabled = tr
   });
 }
 
+export function useUpdateProject() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number | string; data: Partial<Project> }) =>
+      projectService.updateProject(id, data),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["project", variables.id] });
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+      queryClient.invalidateQueries({ queryKey: ["project-activity", variables.id] });
+      queryClient.invalidateQueries({ queryKey: ["projects", "recent"] });
+      toast.success("Project updated");
+    },
+    onError: () => toast.error("Failed to update project"),
+  });
+}
+
 export function useUpdateProjectStatus() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -50,7 +67,10 @@ export function useUpdateProjectStatus() {
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["project", variables.id] });
       queryClient.invalidateQueries({ queryKey: ["projects"] });
+      queryClient.invalidateQueries({ queryKey: ["project-activity", variables.id] });
+      toast.success("Status updated");
     },
+    onError: () => toast.error("Failed to update status"),
   });
 }
 
@@ -60,7 +80,10 @@ export function useDeleteProject() {
     mutationFn: (id: number | string) => projectService.deleteProject(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["projects"] });
+      queryClient.invalidateQueries({ queryKey: ["projects", "recent"] });
+      toast.success("Project deleted");
     },
+    onError: () => toast.error("Failed to delete project"),
   });
 }
 
@@ -72,7 +95,10 @@ export function useAddProjectMember() {
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["project-members", variables.id] });
       queryClient.invalidateQueries({ queryKey: ["project", variables.id] });
+      queryClient.invalidateQueries({ queryKey: ["project-activity", variables.id] });
+      toast.success("Member added");
     },
+    onError: () => toast.error("Failed to add member"),
   });
 }
 
@@ -84,7 +110,10 @@ export function useRemoveProjectMember() {
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["project-members", variables.id] });
       queryClient.invalidateQueries({ queryKey: ["project", variables.id] });
+      queryClient.invalidateQueries({ queryKey: ["project-activity", variables.id] });
+      toast.success("Member removed");
     },
+    onError: () => toast.error("Failed to remove member"),
   });
 }
 
@@ -95,7 +124,25 @@ export function useUpdateProjectMember() {
       projectService.updateProjectMember(id, userId, { role }),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["project-members", variables.id] });
+      queryClient.invalidateQueries({ queryKey: ["project", variables.id] });
+      queryClient.invalidateQueries({ queryKey: ["project-activity", variables.id] });
+      toast.success("Role updated");
     },
+    onError: () => toast.error("Failed to update role"),
+  });
+}
+
+export function useDuplicateProject() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, name }: { id: number | string; name?: string }) =>
+      projectService.duplicateProject(id, name),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+      queryClient.invalidateQueries({ queryKey: ["projects", "recent"] });
+      toast.success("Project duplicated");
+    },
+    onError: () => toast.error("Failed to duplicate project"),
   });
 }
 

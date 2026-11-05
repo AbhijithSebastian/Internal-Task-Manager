@@ -16,7 +16,7 @@ export default function MeetingFormPage() {
   const isEdit = !!id;
   const [form, setForm] = useState({
     title: "", meeting_date: "", location: "virtual",
-    summary: "", decisions_taken: "", blockers: "", action_items: "", notes: "",
+    duration: "", agenda: "", summary: "", decisions_taken: "", blockers: "", action_items: "", notes: "",
     project_id: "", attendees: "", recording_link: "", next_meeting_date: "", related_task_id: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -50,6 +50,8 @@ export default function MeetingFormPage() {
       title: (m.title as string) || "",
       meeting_date: ((m.meeting_date as string) || "").slice(0, 16) || "",
       location: (m.location as string) || "virtual",
+      duration: m.duration ? String(m.duration) : "",
+      agenda: (m.agenda as string) || "",
       summary: (m.summary as string) || "",
       decisions_taken: (m.decisions_taken as string) || "",
       blockers: (m.blockers as string) || "",
@@ -111,9 +113,12 @@ export default function MeetingFormPage() {
       ...form,
       project_id: form.project_id ? Number(form.project_id) : undefined,
       related_task_id: form.related_task_id ? Number(form.related_task_id) : undefined,
+      duration: form.duration ? Number(form.duration) : undefined,
       attendees: form.attendees ? form.attendees.split(",").map((s) => s.trim()) : [],
     };
     if (!payload.project_id) delete payload.project_id;
+    if (!payload.duration) delete payload.duration;
+    if (!payload.agenda) delete payload.agenda;
     if (!payload.recording_link) delete payload.recording_link;
     if (!payload.next_meeting_date) delete payload.next_meeting_date;
     mutation.mutate(payload);
@@ -149,6 +154,7 @@ export default function MeetingFormPage() {
                 ...projects.map((p: { id: number; name: string }) => ({ value: String(p.id), label: p.name })),
               ]} />
             </div>
+            <Input label="Duration (minutes)" type="number" value={form.duration} onChange={(e) => update("duration", e.target.value)} placeholder="60" />
             <Input label="Attendees (comma-separated emails)" value={form.attendees} onChange={(e) => update("attendees", e.target.value)} placeholder="user@example.com, user2@..." />
             <Input label="Recording Link" type="url" value={form.recording_link} onChange={(e) => update("recording_link", e.target.value)} placeholder="https://meet.google.com/..." />
             <Input label="Next Meeting Date" type="datetime-local" value={form.next_meeting_date} onChange={(e) => update("next_meeting_date", e.target.value)} />
@@ -162,6 +168,12 @@ export default function MeetingFormPage() {
         <Card>
           <h3 className="text-sm font-semibold text-primary mb-4">Meeting Notes</h3>
           <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-primary mb-1">Agenda</label>
+              <textarea value={form.agenda} onChange={(e) => update("agenda", e.target.value)} rows={2}
+                className="w-full rounded-md bg-surface border border-default px-3 py-2 text-sm text-primary placeholder:text-tertiary hover:border-hover focus:outline-none focus:ring-2 focus:ring-primary-ring focus:border-primary transition-colors duration-fast resize-y"
+                placeholder="Meeting agenda..." />
+            </div>
             <div>
               <label className="block text-sm font-medium text-primary mb-1">Summary</label>
               <textarea value={form.summary} onChange={(e) => update("summary", e.target.value)} rows={3}

@@ -3,7 +3,7 @@ from app.api.v1 import (
     auth, users, roles, permissions, projects, tasks,
     comments, meetings, announcements, reports, notifications,
     attachments, activity, dashboard, milestones, integrations,
-    resources, endpoints
+    resources, endpoints, github, figma
 )
 from app.modules.router import router as modules_router
 from app.search.router import router as search_router
@@ -31,4 +31,6 @@ api_router.include_router(milestones.router, prefix="/milestones", tags=["Milest
 api_router.include_router(modules_router, prefix="/modules", tags=["Modules"])
 api_router.include_router(integrations.router, prefix="/integrations", tags=["Integrations"])
 api_router.include_router(admin_router, prefix="/admin", tags=["Admin"])
+api_router.include_router(github.router, prefix="/github", tags=["GitHub"])
+api_router.include_router(figma.router, prefix="/figma", tags=["Figma"])
 api_router.include_router(search_router, prefix="/search", tags=["Search"])

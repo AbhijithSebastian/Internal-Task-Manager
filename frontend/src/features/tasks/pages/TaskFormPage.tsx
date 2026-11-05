@@ -3,6 +3,7 @@ import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { tasksService } from "@/features/tasks/services/tasks";
 import { api } from "@/services/api";
+import { queryKeys } from "@/services/queryKeys";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
@@ -52,18 +53,18 @@ export default function TaskFormPage() {
   const [uploading, setUploading] = useState(false);
 
   const { data: task, isLoading: taskLoading } = useQuery({
-    queryKey: ["task", id],
+    queryKey: queryKeys.tasks.detail(id!),
     queryFn: () => tasksService.get(Number(id)),
     enabled: isEdit,
   });
 
   const { data: projectsData } = useQuery({
-    queryKey: ["projects-list"],
+    queryKey: queryKeys.projects.all,
     queryFn: () => api.get("/projects", { params: { per_page: 100 } }).then((r) => r.data),
   });
 
   const { data: usersData } = useQuery({
-    queryKey: ["users-list"],
+    queryKey: queryKeys.users.list,
     queryFn: () => api.get("/users").then((r) => r.data),
   });
 
@@ -86,7 +87,7 @@ export default function TaskFormPage() {
     mutationFn: (data: Record<string, unknown>) =>
       isEdit ? tasksService.update(Number(id), data) : tasksService.create(data),
     onSuccess: async (result: any) => {
-      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all });
       if (!isEdit && files.length > 0) {
         const taskId = result.id || result?.data?.id;
         if (taskId) {

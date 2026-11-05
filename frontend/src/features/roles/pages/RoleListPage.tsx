@@ -76,7 +76,7 @@ export default function RoleListPage() {
 
   const { data: usersData, isLoading: usersLoading } = useQuery({
     queryKey: ["users"],
-    queryFn: () => api.get("/users", { params: { per_page: 200 } }).then((r) => r.data?.items || r.data?.data || []),
+    queryFn: () => api.get("/users", { params: { per_page: 100 } }).then((r) => r.data?.items || r.data?.data || []),
   });
 
   const roles = (Array.isArray(rolesData) ? rolesData : []) as (Role & { permissions?: Permission[]; user_count?: number })[];

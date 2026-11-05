@@ -119,6 +119,7 @@ async def upload_attachment(
 @router.get("/download/{attachment_id}")
 def download_attachment(
     attachment_id: int,
+    inline: bool = Query(False),
     db: Session = Depends(get_db),
     current_user: User = require_permissions(["attachments.download"]),
 ):
@@ -131,10 +132,17 @@ def download_attachment(
         raise HTTPException(404, "File not found on disk")
 
     from fastapi.responses import FileResponse
+    import hashlib
+    etag = hashlib.md5(f"{attachment.id}-{attachment.size}".encode()).hexdigest()
+    cache_control = "private, max-age=3600" if inline else "private, max-age=0, must-revalidate"
+    headers = {"Cache-Control": cache_control, "ETag": f'"{etag}"'}
+    if inline:
+        headers["Content-Disposition"] = f'inline; filename="{attachment.name}"'
     return FileResponse(
         path=str(file_path),
         media_type=attachment.mime_type or "application/octet-stream",
-        filename=attachment.name,
+        filename=None if inline else attachment.name,
+        headers=headers,
     )
 
 

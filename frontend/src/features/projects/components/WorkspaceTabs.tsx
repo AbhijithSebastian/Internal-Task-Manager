@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { FileText, CheckCircle2, Users, CalendarDays, Globe, Palette, FolderOpen, Activity, Github, Settings } from "lucide-react";
+import { FileText, CheckCircle2, Users, CalendarDays, Globe, Palette, FolderOpen, Activity, Github } from "lucide-react";
 
 const tabs = [
   { id: "", label: "Overview", icon: FileText, path: "" },
@@ -11,7 +11,6 @@ const tabs = [
   { id: "resources", label: "Resources", icon: FolderOpen, path: "resources" },
   { id: "activity", label: "Activity", icon: Activity, path: "activity" },
   { id: "github", label: "GitHub", icon: Github, path: "github" },
-  { id: "settings", label: "Settings", icon: Settings, path: "settings" },
 ];
 
 export function WorkspaceTabs({ projectId }: { projectId: number }) {

@@ -148,6 +148,8 @@ def list_resources(
     date_from: Optional[str] = Query(None),
     date_to: Optional[str] = Query(None),
     version: Optional[int] = Query(None),
+    linked_to: Optional[str] = Query(None, alias="linked_to"),
+    linked_id: Optional[int] = Query(None, alias="linked_id"),
     sort_by: str = Query("newest", regex="^(newest|oldest|recently_updated|alphabetical)$"),
     page: int = Query(1, ge=1),
     per_page: int = Query(20, ge=1, le=100),
@@ -162,8 +164,7 @@ def list_resources(
     if search:
         term = f"%{search}%"
         query = query.filter(
-            db.query(Resource.name.ilike(term) | Resource.description.ilike(term))
-            .exists().correlate(Resource)
+            Resource.name.ilike(term) | Resource.description.ilike(term)
         )
 
     if resource_type:
@@ -174,6 +175,11 @@ def list_resources(
         query = query.filter(Resource.uploaded_by == uploaded_by)
     if version:
         query = query.filter(Resource.current_version == version)
+    if linked_to and linked_id is not None:
+        query = query.join(ResourceLink).filter(
+            ResourceLink.linked_type == linked_to,
+            ResourceLink.linked_id == linked_id,
+        )
 
     sort_map = {
         "newest": Resource.created_at.desc(),
@@ -582,6 +588,7 @@ def get_resource_activity(
 @router.get("/{resource_id}/file")
 def download_resource_file(
     resource_id: int,
+    inline: bool = Query(False),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -593,8 +600,15 @@ def download_resource_file(
         raise HTTPException(404, "File not found on disk")
 
     from fastapi.responses import FileResponse
+    import hashlib
+    etag = hashlib.md5(f"{resource.id}-{resource.current_version}-{resource.file_size}".encode()).hexdigest()
+    cache_control = "private, max-age=3600" if inline else "private, max-age=0, must-revalidate"
+    headers = {"Cache-Control": cache_control, "ETag": f'"{etag}"'}
+    if inline:
+        headers["Content-Disposition"] = f'inline; filename="{resource.name}"'
     return FileResponse(
         path=resource.file_path,
         media_type=resource.mime_type or "application/octet-stream",
-        filename=resource.name,
+        filename=None if inline else resource.name,
+        headers=headers,
     )

@@ -1,13 +1,7 @@
 import { api } from "@/services/api";
-import type { Task } from "@/types";
+import type { Task, PaginatedResponse } from "@/types";
 
-export interface TasksResponse {
-  items: Task[];
-  total: number;
-  page: number;
-  per_page: number;
-  total_pages: number;
-}
+export type TasksResponse = PaginatedResponse<Task>;
 
 export const tasksService = {
   list(params?: Record<string, unknown>) {

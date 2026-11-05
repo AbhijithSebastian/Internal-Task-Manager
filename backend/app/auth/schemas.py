@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, field_validator
+from pydantic import BaseModel, EmailStr, Field, field_validator
 from typing import Optional
 from app.core.enums import UserRole
 
@@ -9,11 +9,27 @@ class LoginRequest(BaseModel):
 
 
 class RegisterRequest(BaseModel):
-    name: str
+    name: str = Field(min_length=1, max_length=255)
     email: EmailStr
     password: str
     password_confirmation: str
     job_title: Optional[str] = None
+
+    @field_validator("name")
+    @classmethod
+    def name_not_empty(cls, v):
+        if not v.strip():
+            raise ValueError("Name must not be empty")
+        return v.strip()
+
+    @field_validator("password")
+    @classmethod
+    def password_length(cls, v):
+        if len(v) < 8:
+            raise ValueError("Password must be at least 8 characters")
+        if len(v) > 128:
+            raise ValueError("Password must be at most 128 characters")
+        return v
 
     @field_validator("password_confirmation")
     @classmethod
@@ -36,6 +52,15 @@ class ResetPasswordRequest(BaseModel):
     email: EmailStr
     password: str
     password_confirmation: str
+
+    @field_validator("password")
+    @classmethod
+    def password_length(cls, v):
+        if len(v) < 8:
+            raise ValueError("Password must be at least 8 characters")
+        if len(v) > 128:
+            raise ValueError("Password must be at most 128 characters")
+        return v
 
     @field_validator("password_confirmation")
     @classmethod

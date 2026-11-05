@@ -2,11 +2,44 @@ import { useState, useRef, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/services/api";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { PreviewEngine } from "@/components/previews/PreviewEngine";
 import { 
-  Paperclip, Upload, FileText, Trash2, Download 
+  Paperclip, Upload, Trash2, Download 
 } from "lucide-react";
 import { formatFileSize } from "@/utils/formatters";
 import type { Attachment } from "@/types";
+
+function AuthenticatedDownloadButton({ url, fileName }: { url: string; fileName?: string }) {
+  const handleClick = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    try {
+      const token = localStorage.getItem("access_token");
+      const res = await fetch(url, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+      if (!res.ok) throw new Error("Download failed");
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = fileName || "download";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(blobUrl);
+    } catch {
+      window.open(url, "_blank");
+    }
+  };
+
+  return (
+    <button
+      onClick={handleClick}
+      className="p-1 text-tertiary hover:text-primary transition-colors"
+      title="Download"
+    >
+      <Download className="h-3.5 w-3.5" />
+    </button>
+  );
+}
 
 interface AttachmentsSectionProps {
   modelType: string;
@@ -124,7 +157,15 @@ export function AttachmentsSection({
         <ul className="space-y-1">
           {files.map((file) => (
             <li key={file.id} className="flex items-center gap-3 py-2 px-3 rounded-md hover:bg-hover group transition-colors">
-              <FileText className="h-4 w-4 text-tertiary shrink-0" />
+              <div className="shrink-0 w-8 h-8 rounded bg-subtle overflow-hidden flex items-center justify-center">
+                <PreviewEngine
+                  mimeType={file.mime_type}
+                  fileName={file.name || file.file_name}
+                  fileUrl={`${file.url}?inline=true`}
+                  fileSize={file.size}
+                  className="w-8 h-8"
+                />
+              </div>
               <div className="flex-1 min-w-0">
                 <a
                   href={file.url}
@@ -137,14 +178,7 @@ export function AttachmentsSection({
                 <p className="text-xs text-tertiary">{formatFileSize(file.size)}</p>
               </div>
               <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <a
-                  href={file.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="p-1 text-tertiary hover:text-primary transition-colors"
-                >
-                  <Download className="h-3.5 w-3.5" />
-                </a>
+                <AuthenticatedDownloadButton url={file.url} fileName={file.name || file.file_name} />
                 <button
                   type="button"
                   onClick={() => {

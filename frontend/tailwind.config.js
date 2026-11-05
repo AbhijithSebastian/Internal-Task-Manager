@@ -5,29 +5,6 @@ export default {
   theme: {
     extend: {
       colors: {
-        bg: {
-          app: "var(--bg-app)",
-          surface: "var(--bg-surface)",
-          subtle: "var(--bg-subtle)",
-          elevated: "var(--bg-elevated)",
-          inset: "var(--bg-inset)",
-          hover: "var(--bg-hover)",
-          active: "var(--bg-active)",
-          selected: "var(--bg-selected)",
-        },
-        text: {
-          primary: "var(--text-primary)",
-          secondary: "var(--text-secondary)",
-          tertiary: "var(--text-tertiary)",
-          inverse: "var(--text-inverse)",
-          link: "var(--text-link)",
-        },
-        border: {
-          DEFAULT: "var(--border-default)",
-          subtle: "var(--border-subtle)",
-          hover: "var(--border-hover)",
-          divider: "var(--border-divider)",
-        },
         primary: {
           DEFAULT: "var(--primary)",
           hover: "var(--primary-hover)",
@@ -46,6 +23,29 @@ export default {
           info: "var(--info)",
           "info-soft": "var(--info-soft)",
         },
+      },
+      backgroundColor: {
+        app: "var(--bg-app)",
+        surface: "var(--bg-surface)",
+        subtle: "var(--bg-subtle)",
+        elevated: "var(--bg-elevated)",
+        inset: "var(--bg-inset)",
+        hover: "var(--bg-hover)",
+        active: "var(--bg-active)",
+        selected: "var(--bg-selected)",
+      },
+      textColor: {
+        primary: "var(--text-primary)",
+        secondary: "var(--text-secondary)",
+        tertiary: "var(--text-tertiary)",
+        inverse: "var(--text-inverse)",
+        link: "var(--text-link)",
+      },
+      borderColor: {
+        DEFAULT: "var(--border-default)",
+        subtle: "var(--border-subtle)",
+        hover: "var(--border-hover)",
+        divider: "var(--border-divider)",
       },
       fontFamily: {
         sans: ["var(--font-sans)"],

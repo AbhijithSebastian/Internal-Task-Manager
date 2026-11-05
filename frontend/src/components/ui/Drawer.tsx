@@ -1,4 +1,5 @@
 import { useEffect, useRef, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -29,14 +30,14 @@ export function Drawer({ open, onClose, title, children, className }: DrawerProp
 
   if (!open) return null;
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-drawer-bg">
       <div className="absolute inset-0 bg-black/30" onClick={onClose} />
       <div
         ref={drawerRef}
         tabIndex={-1}
         className={cn(
-          "absolute right-0 top-0 bottom-0 w-full max-w-[560px] bg-surface shadow-drawer border-l border-default z-drawer flex flex-col animate-slide-in-right focus:outline-none",
+          "absolute right-0 top-0 bottom-0 w-full max-w-[560px] bg-surface shadow-drawer border-l z-drawer flex flex-col animate-slide-in-right focus:outline-none",
           className
         )}
       >
@@ -53,6 +54,7 @@ export function Drawer({ open, onClose, title, children, className }: DrawerProp
           {children}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

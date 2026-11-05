@@ -15,7 +15,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className="space-y-1.5">
         {label && (
-          <label htmlFor={inputId} className="block text-sm font-medium text-primary">
+          <label htmlFor={inputId} className="block text-sm font-medium text-secondary">
             {label}
           </label>
         )}
@@ -24,12 +24,12 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             id={inputId}
             className={cn(
-              "w-full h-9 px-3 rounded-md bg-surface border text-sm text-primary placeholder:text-tertiary transition-colors duration-fast",
-              "focus:outline-none focus:ring-2 focus:ring-primary-ring focus:border-primary",
+              "w-full h-9 px-3 rounded-lg bg-surface border text-sm text-primary placeholder:text-tertiary transition-all duration-fast",
+              "focus:outline-none focus:ring-2 focus:ring-primary-ring focus:border-primary focus:ring-offset-1",
               error
                 ? "border-semantic-danger focus:ring-semantic-danger/30 focus:border-semantic-danger"
                 : "border-default hover:border-hover",
-              "disabled:bg-subtle disabled:text-tertiary disabled:cursor-not-allowed",
+              "disabled:bg-bg-inset disabled:text-tertiary disabled:cursor-not-allowed",
               className
             )}
             aria-invalid={error ? "true" : undefined}

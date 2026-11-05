@@ -6,11 +6,13 @@ import { Table, type TableColumn } from "@/components/ui/Table";
 import { Button } from "@/components/ui/Button";
 import { Avatar } from "@/components/ui/Avatar";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { Drawer } from "@/components/ui/Drawer";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import { EnterpriseEmptyState } from "@/components/shared/EnterpriseEmptyState";
 import { useAuth } from "@/store/auth";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/services/api";
 import { Users, Plus, Search, CheckCircle2, X } from "lucide-react";
+import { MemberDetailDrawer } from "@/features/projects/components/MemberDetailDrawer";
 import type { ProjectMember, UserBrief } from "@/types";
 
 export default function ProjectMembersPage() {
@@ -23,6 +25,7 @@ export default function ProjectMembersPage() {
   const [selectedRole, setSelectedRole] = useState("member");
   const [removeConfirm, setRemoveConfirm] = useState<{ show: boolean; member: ProjectMember | null }>({ show: false, member: null });
   const [roleChange, setRoleChange] = useState<{ userId: number; role: string } | null>(null);
+  const [selectedMember, setSelectedMember] = useState<ProjectMember | null>(null);
 
   const { data: membersData, isLoading } = useProjectMembers(projectId);
   const addMemberMutation = useAddProjectMember();
@@ -58,13 +61,13 @@ export default function ProjectMembersPage() {
 
   const columns: TableColumn<ProjectMember>[] = [
     { key: "name", label: "Name", render: (m) => (
-      <div className="flex items-center gap-2">
+      <button onClick={() => setSelectedMember(m)} className="flex items-center gap-2 text-left hover:opacity-80 transition-opacity">
         <Avatar name={m.user?.name || "?"} size="sm" />
         <div className="min-w-0">
           <span className="text-sm text-primary">{m.user?.name || `User #${m.user_id}`}</span>
           {m.user?.email && <p className="text-xs text-tertiary truncate">{m.user.email}</p>}
         </div>
-      </div>
+      </button>
     )},
     { key: "role", label: "Role", render: (m) => canEdit && projectId ? (
       <select
@@ -90,8 +93,11 @@ export default function ProjectMembersPage() {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <p className="text-xs text-tertiary">{members.length} member{members.length !== 1 ? "s" : ""}</p>
-        {canEdit && <Button size="sm" variant="secondary" onClick={() => setShowAddMember(!showAddMember)}><Plus className="h-3.5 w-3.5" /> Add Member</Button>}
+        <div>
+          <h2 className="text-lg font-semibold text-primary">Members</h2>
+          <p className="text-sm text-tertiary">{members.length} member{members.length !== 1 ? "s" : ""}</p>
+        </div>
+        {canEdit && <Button size="sm" onClick={() => setShowAddMember(!showAddMember)}><Plus className="h-3.5 w-3.5" /> Add Member</Button>}
       </div>
 
       {showAddMember && (
@@ -167,24 +173,26 @@ export default function ProjectMembersPage() {
       ) : (
         <Table columns={columns} data={members} loading={false} keyExtractor={(m) => m.id}
           emptyState={
-            <div className="flex flex-col items-center py-10 text-center">
-              <Users className="h-8 w-8 text-tertiary mb-2" />
-              <p className="text-sm text-tertiary">No members yet</p>
-            </div>
+            <EnterpriseEmptyState
+              icon={<Users className="h-10 w-10" />}
+              title="No members yet"
+              description="Invite team members to collaborate on this project."
+              primaryAction={{ label: "Invite Members", onClick: () => setShowAddMember(true) }}
+            />
           } />
       )}
 
-      <Drawer open={removeConfirm.show} onClose={() => setRemoveConfirm({ show: false, member: null })} title="Remove member">
-        <div className="space-y-4">
-          <p className="text-sm text-secondary">
-            Remove <strong className="text-primary">{removeConfirm.member?.user?.name || `User #${removeConfirm.member?.user_id}`}</strong> from this project?
-          </p>
-          <div className="flex items-center gap-2">
-            <Button variant="danger" size="sm" onClick={() => { if (removeConfirm.member && projectId) removeMutation.mutate({ id: projectId, userId: removeConfirm.member.user_id }); }} loading={removeMutation.isPending}>Remove</Button>
-            <Button variant="secondary" size="sm" onClick={() => setRemoveConfirm({ show: false, member: null })}>Cancel</Button>
-          </div>
-        </div>
-      </Drawer>
+      <ConfirmDialog
+        open={removeConfirm.show}
+        onCancel={() => setRemoveConfirm({ show: false, member: null })}
+        onConfirm={() => { if (removeConfirm.member && projectId) removeMutation.mutate({ id: projectId, userId: removeConfirm.member.user_id }); }}
+        title="Remove member"
+        message={`Remove ${removeConfirm.member?.user?.name || `User #${removeConfirm.member?.user_id}`} from this project?`}
+        confirmLabel="Remove"
+        loading={removeMutation.isPending}
+      />
+
+      <MemberDetailDrawer member={selectedMember} onClose={() => setSelectedMember(null)} />
     </div>
   );
 }

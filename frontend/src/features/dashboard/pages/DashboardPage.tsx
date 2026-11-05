@@ -10,6 +10,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { formatRelative } from "@/utils/formatters";
+import { getPriorityVariant } from "@/utils/badgeVariants";
 import {
   CheckSquare,
   Clock,
@@ -62,18 +63,7 @@ interface DashboardAnnouncement {
   published_at?: string;
 }
 
-const priorityVariant = (p: string) => {
-  switch (p) {
-    case "urgent":
-      return "danger";
-    case "high":
-      return "warning";
-    case "medium":
-      return "info";
-    default:
-      return "neutral";
-  }
-};
+
 
 function TrendIndicator({ value }: { value: number }) {
   if (value > 0) {
@@ -412,7 +402,7 @@ export default function DashboardPage() {
                   <p className="text-sm text-primary truncate">{task.title}</p>
                   <p className="text-xs text-tertiary mt-0.5">{task.project_name || "No project"}</p>
                 </div>
-                <Badge variant={priorityVariant(task.priority)} size="sm" dot>{task.priority}</Badge>
+                <Badge variant={getPriorityVariant(task.priority)} size="sm" dot>{task.priority}</Badge>
               </button>
             ))}
           </div>
@@ -452,7 +442,7 @@ export default function DashboardPage() {
                       {task.due_date ? `Due ${formatRelative(task.due_date)}` : "No due date"}
                     </p>
                   </div>
-                  <Badge variant={priorityVariant(task.priority)} size="sm" dot>
+                  <Badge variant={getPriorityVariant(task.priority)} size="sm" dot>
                     {task.priority}
                   </Badge>
                 </button>
@@ -560,7 +550,7 @@ export default function DashboardPage() {
                         <span className="text-xs text-tertiary">
                           {a.published_at ? formatRelative(a.published_at) : ""}
                         </span>
-                        <Badge variant={priorityVariant(a.priority)} size="sm">
+                        <Badge variant={getPriorityVariant(a.priority)} size="sm">
                           {a.priority}
                         </Badge>
                       </div>

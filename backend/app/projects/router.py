@@ -69,6 +69,7 @@ class ProjectCreate(BaseModel):
     pm_id: Optional[int] = None
     lead_id: Optional[int] = None
     figma_url: Optional[str] = None
+    figma_token: Optional[str] = None
     github_url: Optional[str] = None
     docs_url: Optional[str] = None
     meeting_url: Optional[str] = None
@@ -85,6 +86,7 @@ class ProjectUpdate(BaseModel):
     pm_id: Optional[int] = None
     lead_id: Optional[int] = None
     figma_url: Optional[str] = None
+    figma_token: Optional[str] = None
     github_url: Optional[str] = None
     docs_url: Optional[str] = None
     meeting_url: Optional[str] = None
@@ -165,6 +167,7 @@ def create_project(data: ProjectCreate, db: Session = Depends(get_db),
         pm_id=data.pm_id,
         lead_id=data.lead_id,
         figma_url=data.figma_url,
+        figma_token=data.figma_token,
         github_url=data.github_url,
         docs_url=data.docs_url,
         meeting_url=data.meeting_url,
@@ -215,6 +218,8 @@ def update_project(project_id: int, data: ProjectUpdate, db: Session = Depends(g
         project.lead_id = data.lead_id
     if data.figma_url is not None:
         project.figma_url = data.figma_url
+    if data.figma_token is not None:
+        project.figma_token = data.figma_token
     if data.github_url is not None:
         project.github_url = data.github_url
     if data.docs_url is not None:
@@ -227,6 +232,48 @@ def update_project(project_id: int, data: ProjectUpdate, db: Session = Depends(g
 
     log_activity(db, "projects", project.id, "Project updated", causer_id=current_user.id)
     return format_project(project, db)
+
+
+class ProjectDuplicate(BaseModel):
+    name: Optional[str] = None
+
+
+@router.post("/{project_id}/duplicate", status_code=201)
+def duplicate_project(project_id: int, data: ProjectDuplicate = None,
+                      db: Session = Depends(get_db),
+                      current_user: User = require_permissions(["projects.create"])):
+    project = db.query(Project).filter(Project.id == project_id, Project.deleted_at.is_(None)).first()
+    if not project:
+        raise NotFoundException("Project", project_id)
+
+    if data is None:
+        data = ProjectDuplicate()
+
+    dup = Project(
+        name=data.name or f"{project.name} (Copy)",
+        description=project.description,
+        priority=project.priority or ProjectPriority.MEDIUM,
+        status=ProjectStatus.ACTIVE,
+        start_date=project.start_date,
+        end_date=project.end_date,
+        pm_id=current_user.id,
+        figma_url=project.figma_url,
+        github_url=project.github_url,
+        docs_url=project.docs_url,
+        author_id=current_user.id,
+    )
+    db.add(dup)
+    db.flush()
+
+    pm = ProjectMember(project_id=dup.id, user_id=current_user.id, role=ProjectMemberRole.OWNER)
+    db.add(pm)
+
+    db.commit()
+    db.refresh(dup)
+
+    log_activity(db, "projects", dup.id, "Project duplicated from #" + str(project_id),
+                 causer_id=current_user.id)
+    return format_project(dup, db)
 
 
 @router.delete("/{project_id}")
@@ -426,6 +473,7 @@ def format_project(p: Project, db: Session) -> dict:
         "project_manager": {"id": p.project_manager.id, "name": p.project_manager.name} if p.project_manager else None,
         "team_lead": {"id": p.team_lead.id, "name": p.team_lead.name} if p.team_lead else None,
         "figma_url": p.figma_url,
+        "figma_token": p.figma_token,
         "github_url": p.github_url,
         "docs_url": p.docs_url,
         "meeting_url": p.meeting_url,
