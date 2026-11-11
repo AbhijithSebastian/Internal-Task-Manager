@@ -1,0 +1,159 @@
+/* ═══════════════════════════════════════════════════════════════════
+   L1 · PRIMITIVES
+   ───────────────────────────────────────────────────────────────────
+   Raw values mirrored 1:1 from the Figma file "New One"
+   (file key wO6VElTpJrcQOG0j1GiyDJ, frame 1:1313 "Design System").
+
+   These are the only places in the app allowed to hold literal colour,
+   radius or gap values. Never reference a primitive directly from a
+   feature file — use a semantic token from `semantic.css`.
+   ═══════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ─── Base ──────────────────────────────────────────────────────── */
+  --color-white: #ffffff;
+  --color-black: #000000;
+
+  /* ─── Grey Scale ────────────────────────────────────────────────── */
+  --color-grey-50: #f5f5f5;
+  --color-grey-100: #ececec;
+  --color-grey-200: #d8d8d8;
+  --color-grey-300: #c5c5c5;
+  --color-grey-400: #b1b1b1;
+  --color-grey-500: #9e9e9e;
+  --color-grey-600: #7e7e7e;
+  --color-grey-700: #5f5f5f;
+  --color-grey-800: #3f3f3f;
+  --color-grey-900: #202020;
+
+  /* ─── Primary (brand blue) ──────────────────────────────────────── */
+  --color-primary-100: #e7f0fd;
+  --color-primary-200: #cee0fa;
+  --color-primary-300: #b6d1f7;
+  --color-primary-400: #9dc1f4;
+  --color-primary-500: #84b1f1;
+  --color-primary-600: #6ca3ef;
+  --color-primary-700: #5494ed;
+  --color-primary-800: #3b84e9;
+  --color-primary-900: #2375e7;
+  --color-primary-1000: #0a65e4;
+
+  /* ─── Secondary (ink / violet-grey) ─────────────────────────────── */
+  --color-secondary-100: #e7e7eb;
+  --color-secondary-200: #d0cfd7;
+  --color-secondary-300: #b9b7c3;
+  --color-secondary-400: #a19faf;
+  --color-secondary-500: #89879b;
+  --color-secondary-600: #726f86;
+  --color-secondary-700: #5b5772;
+  --color-secondary-800: #433f5e;
+  --color-secondary-900: #2c274a;
+  --color-secondary-1000: #140f36;
+
+  /* ─── Sky Blue (tinted surfaces) ────────────────────────────────── */
+  --color-sky-100: #f9fcff;
+  --color-sky-200: #f2faff;
+  --color-sky-300: #ecf7ff;
+  --color-sky-400: #e5f5ff;
+  --color-sky-500: #dff2ff;
+  --color-sky-600: #d8efff;
+  --color-sky-700: #d2edff;
+  --color-sky-800: #cbeaff;
+  --color-sky-900: #c5e8ff;
+  --color-sky-1000: #bee5ff;
+
+  /* ─── Success ───────────────────────────────────────────────────── */
+  --color-success-50: #f6fef9;
+  --color-success-100: #ecfdf3;
+  --color-success-200: #d1fadf;
+  --color-success-300: #a6f4c5;
+  --color-success-400: #6ce9a6;
+  --color-success-500: #32d583;
+  --color-success-600: #12b76a;
+  --color-success-700: #039855;
+  --color-success-800: #027a48;
+  --color-success-900: #05603a;
+  --color-success-1000: #054f31;
+
+  /* ─── Warning ───────────────────────────────────────────────────── */
+  --color-warning-50: #fffcf5;
+  --color-warning-100: #fffaeb;
+  --color-warning-200: #fef0c7;
+  --color-warning-300: #fedf89;
+  --color-warning-400: #fec84b;
+  --color-warning-500: #fdb022;
+  --color-warning-600: #f79009;
+  --color-warning-700: #dc6803;
+  --color-warning-800: #b54708;
+  --color-warning-900: #93370d;
+  --color-warning-1000: #792e0d;
+
+  /* ─── Error ─────────────────────────────────────────────────────── */
+  --color-error-50: #fffbfa;
+  --color-error-100: #fef3f2;
+  --color-error-200: #fee4e2;
+  --color-error-300: #fecdca;
+  --color-error-400: #fda29b;
+  --color-error-500: #f97066;
+  --color-error-600: #f04438;
+  --color-error-700: #d92d20;
+  --color-error-800: #b42318;
+  --color-error-900: #912018;
+  --color-error-1000: #7a271a;
+
+  /* ─── Radius ────────────────────────────────────────────────────── */
+  --radius-0: 0px;
+  --radius-5: 5px;
+  --radius-6: 6px;
+  --radius-8: 8px;
+  --radius-12: 12px;
+  --radius-50: 50px;
+  --radius-60: 60px;
+
+  /* ─── Gap / Padding (Figma spacing variables) ───────────────────── */
+  --gap-16: 16px;
+  --gap-20: 20px;
+
+  /* ─── Brand marks (third-party, intentionally not re-palettised) ── */
+  --color-brand-figma: #a259ff;
+  --color-brand-figma-proto: #ff7262;
+  --color-brand-figma-board: #f24e1e;
+  --color-brand-figma-make: #0acf83;
+  --color-brand-penpot: #17a97c;
+  --color-brand-framer: #0055ff;
+  --color-brand-canva: #00c4cc;
+  --color-brand-adobe-xd: #ff61f6;
+  --color-brand-sketch: #f7b731;
+  --color-brand-github: #0969da;
+  --color-brand-github-added: #3fb950;
+  --color-brand-github-removed: #f85149;
+  --color-brand-office-word: #2b5797;
+  --color-brand-office-excel: #217346;
+  --color-brand-office-powerpoint: #d24726;
+  --color-brand-youtube: #ff0000;
+  --color-brand-vimeo: #1ab7ea;
+  --color-brand-loom: #625df5;
+  --color-brand-google: #4285f4;
+  --color-brand-notion: #000000;
+  --color-brand-url: #64748b;
+  --color-brand-adobe-photoshop: #31a8ff;
+  --color-brand-adobe-illustrator: #ff9a00;
+  --color-brand-file-generic: #6b7280;
+  --color-brand-file-pdf: #ff0000;
+  --color-brand-file-archive: #f59e0b;
+  --color-brand-file-data: #10b981;
+
+  /* ─── Code language colours (GitHub linguist palette) ───────────── */
+  --color-lang-1: #3572a5;
+  --color-lang-2: #f1e05a;
+  --color-lang-3: #e34c26;
+  --color-lang-4: #563d7c;
+  --color-lang-5: #00add8;
+  --color-lang-6: #4f5d95;
+  --color-lang-7: #b07219;
+  --color-lang-8: #da5b0b;
+  --color-lang-9: #178600;
+  --color-lang-10: #1976d2;
+  --color-lang-11: #8b7355;
+  --color-lang-12: #009e73;
+}

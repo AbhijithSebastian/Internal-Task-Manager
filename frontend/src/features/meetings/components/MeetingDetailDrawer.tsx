@@ -1,0 +1,189 @@
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { api } from "@/services/api";
+import { useAuth } from "@/store/auth";
+import { Avatar, Button, Drawer, Skeleton } from "@/design-system";
+import { formatDateTime, formatRelative } from "@/utils/formatters";
+import { openDrawer } from "@/hooks/useDrawer";
+import { CalendarDays, MapPin, FileText, ListChecks, Trash2 } from "lucide-react";
+import { AttachmentsSection } from "@/components/shared/AttachmentsSection";
+import { RelatedItemsPanel } from "@/features/resources/components/RelatedItemsPanel";
+import type { Meeting } from "@/types";
+
+interface MeetingDetailDrawerProps {
+  meetingId: number | null;
+  open: boolean;
+  onClose: () => void;
+}
+
+export function MeetingDetailDrawer({ meetingId, open, onClose }: MeetingDetailDrawerProps) {
+  const { hasPermission } = useAuth();
+  const queryClient = useQueryClient();
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+
+  const { data: meeting, isLoading } = useQuery({
+    queryKey: ["meeting", meetingId],
+    queryFn: () => api.get(`/meetings/${meetingId}`).then((r) => r.data?.data || r.data),
+    enabled: open && !!meetingId,
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: () => api.delete(`/meetings/${meetingId}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["meetings"] });
+      onClose();
+    },
+  });
+
+  const m = meeting as Meeting | undefined;
+
+  return (
+    <>
+      <Drawer open={open} onClose={onClose} title={m?.title || "Meeting"}>
+        {isLoading ? (
+          <div className="space-y-4">
+            <Skeleton variant="rect" className="h-4 w-2/3" />
+            <Skeleton variant="rect" className="h-20 w-full" />
+            <Skeleton variant="rect" className="h-20 w-full" />
+          </div>
+        ) : !m ? (
+          <p className="text-sm text-secondary">Meeting not found.</p>
+        ) : (
+          <div className="space-y-6">
+            {m.project_name && (
+              <div className="flex items-center gap-2 text-sm text-secondary">
+                <FileText className="h-4 w-4" />
+                {m.project_name}
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex items-center gap-2 text-sm text-secondary">
+                <CalendarDays className="h-4 w-4 text-tertiary" />
+                <span>{formatDateTime(m.meeting_date)}</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-secondary">
+                <MapPin className="h-4 w-4 text-tertiary" />
+                <span>{m.location || "—"}</span>
+              </div>
+            </div>
+
+            {m.organizer && (
+              <div className="flex items-center gap-2">
+                <Avatar name={m.organizer.name} size="sm" />
+                <span className="text-sm text-secondary">
+                  Organized by <strong className="text-primary">{m.organizer.name}</strong>
+                </span>
+              </div>
+            )}
+
+            {m.summary && (
+              <div>
+                <h4 className="mb-1 text-xs font-semibold uppercase tracking-wide text-tertiary">
+                  Summary
+                </h4>
+                <p className="whitespace-pre-wrap text-sm leading-relaxed text-secondary">
+                  {m.summary}
+                </p>
+              </div>
+            )}
+
+            {m.decisions_taken && (
+              <div>
+                <h4 className="mb-1 text-xs font-semibold uppercase tracking-wide text-tertiary">
+                  Decisions Taken
+                </h4>
+                <p className="whitespace-pre-wrap text-sm leading-relaxed text-secondary">
+                  {m.decisions_taken}
+                </p>
+              </div>
+            )}
+
+            {m.blockers && (
+              <div>
+                <h4 className="mb-1 text-xs font-semibold uppercase tracking-wide text-tertiary">
+                  Blockers
+                </h4>
+                <p className="whitespace-pre-wrap text-sm leading-relaxed text-secondary">
+                  {m.blockers}
+                </p>
+              </div>
+            )}
+
+            {m.action_items && (
+              <div>
+                <h4 className="mb-1 text-xs font-semibold uppercase tracking-wide text-tertiary">
+                  Action Items
+                </h4>
+                <p className="whitespace-pre-wrap text-sm leading-relaxed text-secondary">
+                  {m.action_items}
+                </p>
+              </div>
+            )}
+
+            {m.notes && (
+              <div>
+                <h4 className="mb-1 text-xs font-semibold uppercase tracking-wide text-tertiary">
+                  Notes
+                </h4>
+                <p className="whitespace-pre-wrap text-sm leading-relaxed text-secondary">
+                  {m.notes}
+                </p>
+              </div>
+            )}
+
+            {m.related_task_id && (
+              <div className="border-t border-subtle pt-3">
+                <h4 className="mb-1 text-xs font-semibold uppercase tracking-wide text-tertiary">
+                  Related Task
+                </h4>
+                <button
+                  onClick={() => openDrawer("task", m.related_task_id!)}
+                  className="flex items-center gap-2 text-sm text-link hover:underline"
+                >
+                  <ListChecks className="h-3.5 w-3.5" />
+                  Task #{m.related_task_id}
+                </button>
+              </div>
+            )}
+
+            <div className="border-t border-subtle pt-4">
+              <AttachmentsSection modelType="meeting_log" modelId={m.id} />
+            </div>
+
+            <RelatedItemsPanel projectId={m.project_id} linkedType="meeting" linkedId={m.id} />
+
+            <div className="space-y-1 border-t border-subtle pt-4 text-xs text-tertiary">
+              <p>Created {formatRelative(m.created_at)}</p>
+              {m.updated_at && <p>Updated {formatRelative(m.updated_at)}</p>}
+            </div>
+
+            {hasPermission("meeting-delete") && (
+              <div className="pt-4">
+                {deleteConfirm ? (
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="danger"
+                      onClick={() => deleteMutation.mutate()}
+                      loading={deleteMutation.isPending}
+                    >
+                      Confirm Delete
+                    </Button>
+                    <Button size="sm" variant="secondary" onClick={() => setDeleteConfirm(false)}>
+                      Cancel
+                    </Button>
+                  </div>
+                ) : (
+                  <Button size="sm" variant="danger" onClick={() => setDeleteConfirm(true)}>
+                    <Trash2 className="h-3.5 w-3.5" /> Delete
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </Drawer>
+    </>
+  );
+}

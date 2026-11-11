@@ -1,0 +1,20 @@
+/* ═══════════════════════════════════════════════════════════════════
+   DESIGN SYSTEM · TOKENS
+   ───────────────────────────────────────────────────────────────────
+   Single entry point. Import order matters:
+
+     1. fonts       — @font-face declarations
+     2. primitives  — raw Figma values (L1)
+     3. semantic    — public aliases (L2)
+     4. typography  — type scale
+     5. motion      — durations and easing
+
+   Components must consume semantic tokens only. Raw values are
+   confined to `primitives.css`.
+   ═══════════════════════════════════════════════════════════════════ */
+
+@import "./fonts.css";
+@import "./primitives.css";
+@import "./semantic.css";
+@import "./typography.css";
+@import "./motion.css";

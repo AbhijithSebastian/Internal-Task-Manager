@@ -1,0 +1,402 @@
+import { useState } from "react";
+import type { PaginatedResponse, SubtaskReportRow } from "../services/reports";
+import { formatDate } from "@/utils/formatters";
+import { getStatusVariant, getPriorityVariant } from "@/utils/badgeVariants";
+import { StatCard } from "@/components/shared/StatCard";
+import { KpiBlock } from "@/components/shared/KpiBlock";
+import { Badge, Button, getPageNumbers } from "@/design-system";
+import {
+  Eye,
+  Calendar,
+  Clock,
+  User,
+  Paperclip,
+  Layers,
+  Activity,
+  CheckCircle2,
+} from "lucide-react";
+
+interface Props {
+  data: PaginatedResponse<SubtaskReportRow>;
+  sortBy: string;
+  sortDir: string;
+  onSort: (key: string) => void;
+  page: number;
+  onPageChange: (page: number) => void;
+  onPreview: (id: number) => void;
+}
+
+function SortHeader({
+  label,
+  field,
+  sortBy,
+  sortDir,
+  onSort,
+}: {
+  label: string;
+  field: string;
+  sortBy: string;
+  sortDir: string;
+  onSort: (f: string) => void;
+}) {
+  return (
+    <th
+      className="cursor-pointer select-none whitespace-nowrap px-2 py-2 text-left text-2xs font-medium uppercase tracking-wider text-secondary hover:text-primary"
+      onClick={() => onSort(field)}
+    >
+      <div className="flex items-center gap-1">
+        {label}
+        {sortBy === field && <span className="text-2xs">{sortDir === "asc" ? "▲" : "▼"}</span>}
+      </div>
+    </th>
+  );
+}
+
+export function SubtaskReportsView({
+  data,
+  sortBy,
+  sortDir,
+  onSort,
+  page,
+  onPageChange,
+  onPreview,
+}: Props) {
+  const items = data.items as SubtaskReportRow[];
+  const [expandedRow, setExpandedRow] = useState<number | null>(null);
+
+  return (
+    <div className="border-default overflow-hidden rounded-lg border bg-surface shadow-card">
+      <div className="overflow-x-auto">
+        <table className="w-full text-xs">
+          <thead>
+            <tr className="bg-subtle/50 border-b border-subtle">
+              <th className="w-6 px-2 py-2"></th>
+              <SortHeader
+                label="Subtask"
+                field="title"
+                sortBy={sortBy}
+                sortDir={sortDir}
+                onSort={onSort}
+              />
+              <SortHeader
+                label="Parent Task"
+                field="parent_task_title"
+                sortBy={sortBy}
+                sortDir={sortDir}
+                onSort={onSort}
+              />
+              <SortHeader
+                label="Project"
+                field="project_name"
+                sortBy={sortBy}
+                sortDir={sortDir}
+                onSort={onSort}
+              />
+              <SortHeader
+                label="Status"
+                field="status"
+                sortBy={sortBy}
+                sortDir={sortDir}
+                onSort={onSort}
+              />
+              <SortHeader
+                label="Priority"
+                field="priority"
+                sortBy={sortBy}
+                sortDir={sortDir}
+                onSort={onSort}
+              />
+              <th className="whitespace-nowrap px-2 py-2 text-left text-2xs font-medium uppercase tracking-wider text-secondary">
+                Assigned
+              </th>
+              <SortHeader
+                label="Completion"
+                field="completion_time"
+                sortBy={sortBy}
+                sortDir={sortDir}
+                onSort={onSort}
+              />
+              <th
+                className="px-2 py-2 text-center text-2xs font-medium uppercase tracking-wider text-secondary"
+                title="Attachments"
+              >
+                <Paperclip className="mx-auto h-3 w-3" />
+              </th>
+              <th className="w-20 px-2 py-2 text-right"></th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-subtle">
+            {items.map((row) => (
+              <SubtaskRow
+                key={row.id}
+                row={row}
+                isExpanded={expandedRow === row.id}
+                onToggle={() => setExpandedRow(expandedRow === row.id ? null : row.id)}
+                onPreview={() => onPreview(row.id)}
+              />
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {data.total_pages > 1 && (
+        <div className="flex items-center justify-between border-t border-subtle px-3 py-2">
+          <p className="text-2xs text-tertiary">
+            {(page - 1) * data.per_page + 1}–{Math.min(page * data.per_page, data.total)} of{" "}
+            {data.total}
+          </p>
+          <div className="flex items-center gap-1">
+            <button
+              disabled={page <= 1}
+              onClick={() => onPageChange(page - 1)}
+              className="border-default flex h-7 w-7 items-center justify-center rounded border text-xs text-secondary hover:bg-hover disabled:opacity-30"
+            >
+              ‹
+            </button>
+            {getPageNumbers(page, data.total_pages).map((p, i) =>
+              p === "..." ? (
+                <span key={`e${i}`} className="px-1 text-2xs text-tertiary">
+                  …
+                </span>
+              ) : (
+                <button
+                  key={String(p)}
+                  onClick={() => onPageChange(p as number)}
+                  className={`flex h-7 w-7 items-center justify-center rounded text-xs font-medium ${p === page ? "bg-primary text-inverse" : "text-secondary hover:bg-hover"}`}
+                >
+                  {p}
+                </button>
+              ),
+            )}
+            <button
+              disabled={page >= data.total_pages}
+              onClick={() => onPageChange(page + 1)}
+              className="border-default flex h-7 w-7 items-center justify-center rounded border text-xs text-secondary hover:bg-hover disabled:opacity-30"
+            >
+              ›
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SubtaskRow({
+  row,
+  isExpanded,
+  onToggle,
+  onPreview,
+}: {
+  row: SubtaskReportRow;
+  isExpanded: boolean;
+  onToggle: () => void;
+  onPreview: () => void;
+}) {
+  return (
+    <>
+      <tr className="cursor-pointer transition-colors hover:bg-hover" onClick={onToggle}>
+        <td className="px-2 py-2.5 text-2xs text-tertiary">{isExpanded ? "▾" : "▸"}</td>
+        <td className="px-2 py-2.5">
+          <div className="min-w-0">
+            <p className="max-w-[180px] truncate text-xs font-medium text-primary">{row.title}</p>
+            {row.notes && (
+              <p className="mt-0.5 max-w-[180px] truncate text-2xs text-tertiary">{row.notes}</p>
+            )}
+          </div>
+        </td>
+        <td className="max-w-[150px] truncate px-2 py-2.5 text-2xs text-secondary">
+          {row.parent_task_title || "—"}
+        </td>
+        <td className="max-w-[100px] truncate px-2 py-2.5 text-2xs text-secondary">
+          {row.project_name || "—"}
+        </td>
+        <td className="px-2 py-2.5">
+          <Badge variant={getStatusVariant(row.status)} size="sm">
+            {row.status_label}
+          </Badge>
+        </td>
+        <td className="px-2 py-2.5">
+          <Badge variant={getPriorityVariant(row.priority)} size="sm">
+            {row.priority_label}
+          </Badge>
+        </td>
+        <td className="px-2 py-2.5">
+          <div className="flex items-center gap-1">
+            {row.assignees.length > 0 ? (
+              <>
+                <span
+                  className="border-surface inline-flex h-5 w-5 items-center justify-center rounded-full border bg-primary-soft text-2xs font-medium text-primary"
+                  title={row.assignees[0].name}
+                >
+                  {row.assignees[0].name.charAt(0).toUpperCase()}
+                </span>
+                <span className="text-2xs text-secondary">{row.assignees[0].name}</span>
+                {row.assignees.length > 1 && (
+                  <span className="text-2xs text-tertiary">+{row.assignees.length - 1}</span>
+                )}
+              </>
+            ) : (
+              <span className="text-2xs text-tertiary">—</span>
+            )}
+          </div>
+        </td>
+        <td className="px-2 py-2.5">
+          {row.completion_time != null ? (
+            <span className="text-2xs text-secondary">{row.completion_time}h</span>
+          ) : row.status === "done" ? (
+            <span className="text-2xs text-tertiary">—</span>
+          ) : (
+            <span className="text-2xs text-tertiary">In progress</span>
+          )}
+        </td>
+        <td className="px-2 py-2.5 text-center text-2xs text-secondary">{row.attachment_count}</td>
+        <td className="px-2 py-2.5 text-right">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              onPreview();
+            }}
+          >
+            <Eye className="h-3 w-3" />
+          </Button>
+        </td>
+      </tr>
+      {isExpanded && (
+        <tr className="bg-subtle/30">
+          <td colSpan={10} className="px-4 py-3">
+            <SubtaskDetailPanel row={row} />
+          </td>
+        </tr>
+      )}
+    </>
+  );
+}
+
+function SubtaskDetailPanel({ row }: { row: SubtaskReportRow }) {
+  return (
+    <div className="space-y-4 duration-150 animate-in slide-in-from-top-1">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-5">
+        <StatCard icon={Layers} label="Parent Task" value={row.parent_task_title || "—"} />
+        <StatCard
+          icon={Calendar}
+          label="Created"
+          value={row.created_at ? formatDate(row.created_at) : "—"}
+        />
+        <StatCard
+          icon={Calendar}
+          label="Started"
+          value={row.started_date ? formatDate(row.started_date) : "—"}
+        />
+        <StatCard
+          icon={CheckCircle2}
+          label="Completed"
+          value={row.completed_date ? formatDate(row.completed_date) : "—"}
+        />
+        <StatCard
+          icon={Calendar}
+          label="Due"
+          value={row.due_date ? formatDate(row.due_date) : "—"}
+        />
+      </div>
+
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+        <StatCard
+          icon={Clock}
+          label="Duration"
+          value={row.duration_days != null ? `${row.duration_days}d` : "—"}
+        />
+        <StatCard
+          icon={Clock}
+          label="Completion Time"
+          value={row.completion_time != null ? `${row.completion_time}h` : "—"}
+        />
+        <StatCard icon={Paperclip} label="Attachments" value={String(row.attachment_count)} />
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <KpiBlock
+          label="Est. Hours"
+          value={row.estimated_hours != null ? `${row.estimated_hours}h` : "—"}
+        />
+        <KpiBlock
+          label="Duration"
+          value={row.duration_days != null ? `${row.duration_days}d` : "—"}
+        />
+        <KpiBlock
+          label="Completion"
+          value={row.completion_time != null ? `${row.completion_time}h` : "—"}
+        />
+        <KpiBlock
+          label="Efficiency"
+          value={
+            row.estimated_hours && row.completion_time
+              ? `${Math.round((row.estimated_hours / row.completion_time) * 100)}%`
+              : "—"
+          }
+          color={
+            row.estimated_hours && row.completion_time
+              ? row.estimated_hours >= row.completion_time
+                ? "text-semantic-success"
+                : "text-semantic-warning"
+              : undefined
+          }
+        />
+      </div>
+
+      {row.assignees.length > 0 && (
+        <div>
+          <h4 className="mb-1.5 text-2xs font-semibold uppercase tracking-wider text-tertiary">
+            <User className="mr-1 inline h-3 w-3" />
+            Assigned Users
+          </h4>
+          <div className="flex flex-wrap gap-1.5">
+            {row.assignees.map((a) => (
+              <span
+                key={a.id}
+                className="inline-flex items-center gap-1 rounded bg-subtle px-1.5 py-0.5 text-2xs text-secondary"
+              >
+                {a.name}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {row.notes && (
+        <div>
+          <h4 className="mb-1 text-2xs font-semibold uppercase tracking-wider text-tertiary">
+            Notes
+          </h4>
+          <p className="bg-subtle/50 rounded-md p-2 text-xs leading-relaxed text-secondary">
+            {row.notes}
+          </p>
+        </div>
+      )}
+
+      {row.activity_history.length > 0 && (
+        <div>
+          <h4 className="mb-1.5 text-2xs font-semibold uppercase tracking-wider text-tertiary">
+            <Activity className="mr-1 inline h-3 w-3" />
+            Activity History
+          </h4>
+          <div className="space-y-1.5">
+            {row.activity_history.map((a, i) => (
+              <div key={i} className="flex items-start gap-2 text-xs">
+                <Activity className="mt-0.5 h-3 w-3 shrink-0 text-tertiary" />
+                <div>
+                  <p className="text-secondary">{a.description}</p>
+                  <p className="text-2xs text-tertiary">
+                    {a.created_at ? formatDate(a.created_at) : ""}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

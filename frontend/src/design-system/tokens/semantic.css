@@ -1,0 +1,198 @@
+/* ═══════════════════════════════════════════════════════════════════
+   L2 · SEMANTIC ALIASES
+   ───────────────────────────────────────────────────────────────────
+   Every token name here is part of the public API of the design system.
+   Existing names are preserved so feature code keeps working; new
+   screens should prefer these over primitives.
+
+   Contrast rule (WCAG AA):
+     500/600 steps → fills, icons, borders
+     700/800 steps → text on light surfaces
+   ═══════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ─── Backgrounds ───────────────────────────────────────────────── */
+  --bg-app: var(--color-grey-50);
+  --bg-subtle: var(--color-grey-50);
+  --bg-surface: var(--color-white);
+  --bg-elevated: var(--color-white);
+  --bg-inset: var(--color-grey-50);
+
+  /* Interactive backgrounds */
+  --bg-hover: var(--color-grey-50);
+  --bg-active: var(--color-primary-100);
+  --bg-selected: var(--color-primary-100);
+  --bg-inverse: var(--color-grey-900);
+  --bg-overlay: color-mix(in srgb, var(--color-grey-900) 48%, transparent);
+
+  /* ─── Borders ───────────────────────────────────────────────────── */
+  --border-default: var(--color-grey-100);
+  --border-subtle: var(--color-grey-50);
+  --border-hover: var(--color-grey-200);
+  --border-divider: var(--color-grey-100);
+  --border-strong: var(--color-grey-300);
+  --border-focus: var(--color-primary-1000);
+
+  /* ─── Text ──────────────────────────────────────────────────────── */
+  --text-primary: var(--color-grey-900);
+  --text-secondary: var(--color-grey-700);
+  --text-tertiary: var(--color-grey-500);
+  --text-inverse: var(--color-white);
+  --text-link: var(--color-primary-1000);
+  --text-disabled: var(--color-grey-400);
+
+  /* ─── Primary brand ─────────────────────────────────────────────── */
+  --primary: var(--color-primary-1000);
+  --primary-hover: color-mix(in srgb, var(--color-primary-1000) 88%, var(--color-black));
+  --primary-active: color-mix(in srgb, var(--color-primary-1000) 76%, var(--color-black));
+  --primary-soft: var(--color-primary-100);
+  --primary-soft-hover: var(--color-primary-200);
+  --primary-ring: color-mix(in srgb, var(--color-primary-1000) 30%, transparent);
+
+  /* ─── Status: success ───────────────────────────────────────────── */
+  --success: var(--color-success-800);
+  --success-soft: var(--color-success-100);
+  --success-border: var(--color-success-200);
+  --success-strong: var(--color-success-700);
+
+  /* ─── Status: warning ───────────────────────────────────────────── */
+  --warning: var(--color-warning-800);
+  --warning-soft: var(--color-warning-100);
+  --warning-border: var(--color-warning-200);
+  --warning-strong: var(--color-warning-700);
+
+  /* ─── Status: danger ────────────────────────────────────────────── */
+  --danger: var(--color-error-800);
+  --danger-soft: var(--color-error-100);
+  --danger-border: var(--color-error-200);
+  --danger-strong: var(--color-error-700);
+
+  /* ─── Status: info ──────────────────────────────────────────────── */
+  --info: var(--color-primary-1000);
+  --info-soft: var(--color-primary-100);
+  --info-border: var(--color-primary-200);
+  --info-strong: var(--color-primary-900);
+
+  /* ─── Charts ────────────────────────────────────────────────────── */
+  --chart-1: var(--color-primary-1000);
+  --chart-2: var(--color-success-600);
+  --chart-3: var(--color-warning-600);
+  --chart-4: var(--color-error-600);
+  --chart-5: var(--color-secondary-600);
+  --chart-6: var(--color-primary-500);
+  --chart-7: var(--color-success-400);
+  --chart-8: var(--color-warning-400);
+  --chart-grid: var(--color-grey-100);
+  --chart-axis: var(--color-grey-500);
+  --chart-track: var(--color-grey-100);
+  --chart-neutral: var(--color-grey-400);
+  --chart-neutral-soft: var(--color-grey-300);
+
+  /* ─── Code languages (categorical) ──────────────────────────────── */
+  --lang-1: var(--color-lang-1);
+  --lang-2: var(--color-lang-2);
+  --lang-3: var(--color-lang-3);
+  --lang-4: var(--color-lang-4);
+  --lang-5: var(--color-lang-5);
+  --lang-6: var(--color-lang-6);
+  --lang-7: var(--color-lang-7);
+  --lang-8: var(--color-lang-8);
+  --lang-9: var(--color-lang-9);
+  --lang-10: var(--color-lang-10);
+  --lang-11: var(--color-lang-11);
+  --lang-12: var(--color-lang-12);
+
+  /* ─── Brand marks (third-party, intentionally not re-palettised) ── */
+  --brand-figma: var(--color-brand-figma);
+  --brand-figma-proto: var(--color-brand-figma-proto);
+  --brand-figma-board: var(--color-brand-figma-board);
+  --brand-figma-make: var(--color-brand-figma-make);
+  --brand-penpot: var(--color-brand-penpot);
+  --brand-framer: var(--color-brand-framer);
+  --brand-canva: var(--color-brand-canva);
+  --brand-adobe-xd: var(--color-brand-adobe-xd);
+  --brand-sketch: var(--color-brand-sketch);
+  --brand-github: var(--color-brand-github);
+  --brand-github-added: var(--color-brand-github-added);
+  --brand-github-removed: var(--color-brand-github-removed);
+  --brand-office-word: var(--color-brand-office-word);
+  --brand-office-excel: var(--color-brand-office-excel);
+  --brand-office-powerpoint: var(--color-brand-office-powerpoint);
+  --brand-youtube: var(--color-brand-youtube);
+  --brand-vimeo: var(--color-brand-vimeo);
+  --brand-loom: var(--color-brand-loom);
+  --brand-google: var(--color-brand-google);
+  --brand-notion: var(--color-brand-notion);
+  --brand-url: var(--color-brand-url);
+  --brand-adobe-photoshop: var(--color-brand-adobe-photoshop);
+  --brand-adobe-illustrator: var(--color-brand-adobe-illustrator);
+  --brand-file-generic: var(--color-brand-file-generic);
+  --brand-file-pdf: var(--color-brand-file-pdf);
+  --brand-file-archive: var(--color-brand-file-archive);
+  --brand-file-data: var(--color-brand-file-data);
+
+  /* ─── Elevation ─────────────────────────────────────────────────── */
+  --shadow-card: 0 1px 4.5px color-mix(in srgb, var(--color-black) 9%, transparent);
+  --shadow-elevated:
+    0 4px 16px color-mix(in srgb, var(--color-black) 7%, transparent),
+    0 2px 6px color-mix(in srgb, var(--color-black) 4%, transparent);
+  --shadow-dropdown:
+    0 8px 32px color-mix(in srgb, var(--color-black) 8%, transparent),
+    0 2px 8px color-mix(in srgb, var(--color-black) 4%, transparent);
+  --shadow-modal:
+    0 24px 64px color-mix(in srgb, var(--color-black) 12%, transparent),
+    0 8px 24px color-mix(in srgb, var(--color-black) 6%, transparent);
+  --shadow-drawer:
+    -6px 0 32px color-mix(in srgb, var(--color-black) 8%, transparent),
+    -2px 0 8px color-mix(in srgb, var(--color-black) 4%, transparent);
+
+  /* ─── Spacing (4px grid) ────────────────────────────────────────── */
+  --space-0: 0px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-14: 56px;
+  --space-16: 64px;
+  --space-20: 80px;
+  --space-24: 96px;
+
+  /* ─── Radius ────────────────────────────────────────────────────── */
+  --radius-sm: var(--radius-8);
+  --radius-md: var(--radius-8);
+  --radius-lg: var(--radius-12);
+  --radius-xl: var(--radius-12);
+  --radius-2xl: var(--radius-12);
+  --radius-full: 9999px;
+  --radius-pill: var(--radius-60);
+  --radius-control: var(--radius-8);
+  --radius-button: var(--radius-8);
+
+  /* ─── Controls ──────────────────────────────────────────────────── */
+  --control-height-sm: 28px;
+  --control-height-md: 34px;
+  --control-height-lg: 40px;
+  --control-icon-sm: 32px;
+  --control-icon-md: 38px;
+  --control-icon-lg: 44px;
+
+  /* ─── Layout ────────────────────────────────────────────────────── */
+  --navbar-height: 52px;
+  --container-max: 1440px;
+  --container-gutter: 21px;
+
+  /* ─── Z-Index Layers ────────────────────────────────────────────── */
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-drawer-bg: 300;
+  --z-drawer: 310;
+  --z-modal-bg: 400;
+  --z-modal: 410;
+  --z-toast: 500;
+  --z-tooltip: 600;
+}
