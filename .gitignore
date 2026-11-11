@@ -51,6 +51,11 @@ pip-selfcheck.json
 .DS_Store
 Thumbs.db
 
+# User uploads
+uploads/
+**/uploads/*
+!**/uploads/.gitkeep
+
 # Compressed files
 *.zip
 *.gz
